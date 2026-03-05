@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cola-manipulation-bound"
+version = "0.1.0"
+description = "Analytic upper bound on pool manipulation gain in the COLA draft mechanism"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = [
+    "numpy>=1.24",
+    "matplotlib>=3.7",
+    "scipy>=1.10",
+]
+
+[project.scripts]
+cola-bound = "cola.__main__:main"
