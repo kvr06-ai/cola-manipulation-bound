@@ -38,7 +38,7 @@ def main():
 
     print("COLA Pool Manipulation Bound Analysis")
     print("=" * 42)
-    print(f"Analytic bound (T_max=10, T_boundary=4): {bound*100:.2f}%")
+    print(f"Analytic bound (T_max=10, T_boundary=5): {bound*100:.2f}%")
     print()
     print("Comparison with Highley et al. (2026) simulation:")
     print(f"  Paper avg gain:        {comparison['paper_avg']*100:.1f}%")

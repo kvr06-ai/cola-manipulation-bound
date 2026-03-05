@@ -44,7 +44,7 @@ DRAFT_COEFFS = {i: max(0.1, 1.0 - (i - 1) * 0.07) for i in range(1, 15)}
 
 # Analytic bound parameters (from 1000-season simulation observations)
 T_MAX = 10        # max consecutive non-playoff years observed
-T_BOUNDARY = 4    # max consecutive misses for a team near the playoff line
+T_BOUNDARY = 5    # max consecutive misses for a team near the playoff line
 K_BAR_DEFAULT = 3.1  # average index multiplier across lottery teams
 
 # Paper's reported simulation results (for comparison)

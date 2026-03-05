@@ -10,7 +10,7 @@ COLA's incentive compatibility rests on five assumptions. Four are structural (p
 
 **The loophole:** A team could deliberately lose to a high-index opponent near the playoff line, pushing them into the playoffs and shrinking the lottery pool. This increases the manipulator's win probability. The paper's 1,000-season simulation shows the maximum gain is small (average 0.5%, extreme max 3.0%), but no formal bound exists.
 
-**This repo derives that bound.** Given realistic constraints on how large lottery indices can grow, we prove an analytic upper bound of ~3.0% on the maximum manipulation gain -- confirming the paper's simulation results and converting an empirical assumption into a formal condition.
+**This repo derives that bound.** Given realistic constraints on how large lottery indices can grow, we prove an analytic upper bound of ~4.0% on the maximum manipulation gain (confirming the paper's simulation results and converting an empirical assumption into a formal condition).
 
 ## The Bound
 
@@ -36,15 +36,17 @@ where p_i = L_i / P is the manipulator's base win probability. The gain is the p
 G_max ≤ T_max * (T_boundary - 1) / ((T_max + n - 1) * n * k̄)
 ```
 
-where T_boundary is the maximum consecutive misses for a team near the playoff line (structural anti-correlation: high index ⇒ weak team ⇒ far from playoff boundary), n = 14 lottery teams, and k̄ ≈ 3.1 is the average index multiplier.
+where T_boundary is the maximum consecutive misses for a team near the playoff line (high index implies weak team implies far from playoff boundary), n = 14 lottery teams, and k̄ ≈ 3.1 is the average index multiplier.
 
-With baseline parameters (T_max = 10, T_boundary = 4, n = 14, k̄ = 3.1):
+With baseline parameters (T_max = 10, T_boundary = 5, n = 14, k̄ = 3.1):
 
 ```
-G_max ≤ 10 * 3 / (23 * 14 * 3.1) ≈ 3.0%
+G_max ≤ 10 * 4 / (23 * 14 * 3.1) ≈ 4.0%
 ```
 
-This matches the paper's simulation extreme (3.0%) almost exactly — a tight bound.
+This contains the paper's simulation extreme (3.0%) with ~1.3x headroom.
+
+**Derivation note.** The bound uses a pessimistic estimate of p_i (minimum possible pool, where only the manipulator has a long drought) and the average Δ/P (from the paper's steady-state pool). These two worst cases don't co-occur: high p_i requires a small pool (few long-drought teams), while high Δ requires a high-index team near the boundary (implying multiple long-drought teams, hence a larger pool). The structural anti-correlation between these factors is what makes the bound tight.
 
 ## Quick Start
 
