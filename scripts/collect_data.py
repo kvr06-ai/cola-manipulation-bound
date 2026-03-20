@@ -107,8 +107,8 @@ SEASONS = {
         "finals_loser": "PHI",
         "cf_losers": ["MIL", "SAS"],
         "r2_losers": ["TOR", "NOP", "DAL", "SAC"],
-        "r1_losers": ["IND", "NYK", "DET", "ORL", "UTA", "POR", "MIN", "LAC"],
-        "draft": ["WAS", "LAC", "ATL", "CHI", "GSW", "MEM", "BKN", "CLE", "DET", "BOS", "HOU", "OKC", "MIL", "NYK"],
+        "r1_losers": ["IND", "NYK", "MIA", "ORL", "UTA", "POR", "MIN", "PHX"],
+        "draft": ["WAS", "LAC", "ATL", "CHI", "GSW", "MEM", "BKN", "CLE", "DET", "BOS", "BOS", "OKC", "HOU", "GSW"],
         "records": {
             "LAL": 56, "SAS": 58, "SAC": 55, "DAL": 53, "POR": 50, "UTA": 53,
             "MIN": 47, "OKC": 44, "HOU": 45, "PHX": 51, "DEN": 40, "MEM": 23, "LAC": 31, "GSW": 17,
@@ -127,7 +127,7 @@ SEASONS = {
         "cf_losers": ["SAC", "BOS"],
         "r2_losers": ["SAS", "DAL", "DET", "NOP"],
         "r1_losers": ["OKC", "POR", "UTA", "MIN", "IND", "TOR", "PHI", "ORL"],
-        "draft": ["HOU", "CHI", "GSW", "MEM", "DEN", "CLE", "NYK", "TOR", "PHX", "MIA", "WAS", "LAC", "MIL", "IND"],
+        "draft": ["HOU", "CHI", "GSW", "MEM", "DEN", "CLE", "NYK", "LAC", "PHX", "MIA", "WAS", "LAC", "MIL", "IND"],
         "records": {
             "LAL": 58, "SAC": 61, "SAS": 58, "DAL": 57, "OKC": 45, "POR": 49,
             "MIN": 50, "UTA": 44, "HOU": 28, "PHX": 36, "DEN": 27, "MEM": 23, "LAC": 39, "GSW": 21,
@@ -145,7 +145,7 @@ SEASONS = {
         "finals_loser": "BKN",
         "cf_losers": ["DAL", "DET"],
         "r2_losers": ["SAC", "LAL", "PHI", "BOS"],
-        "r1_losers": ["POR", "MIN", "PHX", "OKC", "IND", "ORL", "MIL", "ATL"],
+        "r1_losers": ["POR", "MIN", "PHX", "OKC", "IND", "ORL", "MIL", "NOP"],
         "draft": ["CLE", "DET", "DEN", "TOR", "MIA", "LAC", "CHI", "MIL", "NYK", "WAS", "GSW", "OKC", "MEM", "OKC"],
         "records": {
             "SAS": 60, "DAL": 60, "SAC": 59, "LAL": 50, "POR": 50, "MIN": 51,
@@ -165,7 +165,7 @@ SEASONS = {
         "cf_losers": ["IND", "MIN"],
         "r2_losers": ["BKN", "MIA", "SAS", "SAC"],
         "r1_losers": ["MIL", "NYK", "BOS", "NOP", "HOU", "MEM", "DAL", "DEN"],
-        "draft": ["ORL", "NOP", "CHI", "LAC", "WAS", "ATL", "PHX", "TOR", "NYK", "CLE", "GSW", "OKC", "POR", "UTA"],
+        "draft": ["ORL", "CHA", "CHI", "LAC", "WAS", "ATL", "PHX", "TOR", "PHI", "CLE", "GSW", "OKC", "POR", "UTA"],
         "records": {
             "DET": 54, "IND": 61, "BKN": 47, "MIL": 41, "MIA": 42, "NYK": 39,
             "BOS": 36, "NOP": 41, "PHI": 33, "CLE": 35, "TOR": 33, "WAS": 25,
@@ -225,7 +225,7 @@ SEASONS = {
         "cf_losers": ["DET", "UTA"],
         "r2_losers": ["BKN", "CHI", "PHX", "GSW"],
         "r1_losers": ["WAS", "TOR", "ORL", "MIA", "DEN", "LAL", "HOU", "DAL"],
-        "draft": ["POR", "OKC", "ATL", "MEM", "BOS", "MIL", "MIN", "CHA", "CHI", "SAC", "ATL", "PHI", "NOP", "IND"],
+        "draft": ["POR", "OKC", "ATL", "MEM", "BOS", "MIL", "MIN", "CHA", "CHI", "SAC", "ATL", "PHI", "NOP", "LAC"],
         "records": {
             "SAS": 58, "DAL": 67, "PHX": 61, "UTA": 51, "HOU": 52, "DEN": 45,
             "GSW": 42, "LAL": 42, "LAC": 40, "POR": 32, "OKC": 31, "MIN": 32,
@@ -265,7 +265,7 @@ SEASONS = {
         "cf_losers": ["CLE", "DEN"],
         "r2_losers": ["BOS", "ATL", "DAL", "HOU"],
         "r1_losers": ["DET", "CHI", "PHI", "MIA", "UTA", "NOP", "POR", "SAS"],
-        "draft": ["LAC", "MEM", "OKC", "SAC", "MIN", "GSW", "TOR", "NYK", "CHA", "MIL", "BKN", "CHA", "IND", "PHX"],
+        "draft": ["LAC", "MEM", "OKC", "SAC", "MIN", "MIN", "GSW", "NYK", "TOR", "MIL", "BKN", "CHA", "IND", "PHX"],
         "records": {
             "LAL": 65, "DEN": 54, "SAS": 54, "HOU": 53, "DAL": 50, "POR": 54,
             "NOP": 49, "UTA": 48, "PHX": 46, "OKC": 23, "GSW": 29, "MIN": 24,
@@ -285,7 +285,7 @@ SEASONS = {
         "cf_losers": ["ORL", "PHX"],
         "r2_losers": ["CLE", "ATL", "SAS", "UTA"],
         "r1_losers": ["CHI", "MIA", "MIL", "CHA", "OKC", "POR", "DAL", "DEN"],
-        "draft": ["WAS", "PHI", "BKN", "MIN", "SAC", "GSW", "DET", "LAC", "CHA", "IND", "NOP", "MEM", "TOR", "HOU"],
+        "draft": ["WAS", "PHI", "BKN", "MIN", "SAC", "GSW", "DET", "LAC", "UTA", "IND", "NOP", "MEM", "TOR", "HOU"],
         "records": {
             "LAL": 57, "PHX": 54, "DAL": 55, "DEN": 53, "UTA": 53, "SAS": 50,
             "POR": 50, "OKC": 50, "HOU": 42, "MEM": 40, "MIN": 15, "SAC": 25,
@@ -325,7 +325,7 @@ SEASONS = {
         "cf_losers": ["BOS", "SAS"],
         "r2_losers": ["IND", "PHI", "LAC", "LAL"],
         "r1_losers": ["NYK", "ATL", "ORL", "CHI", "DAL", "UTA", "MEM", "DEN"],
-        "draft": ["NOP", "CHA", "WAS", "CLE", "SAC", "POR", "GSW", "TOR", "DET", "NOP", "POR", "MIL", "PHX", "HOU"],
+        "draft": ["NOP", "CHA", "WAS", "CLE", "SAC", "POR", "GSW", "TOR", "DET", "NOP", "POR", "HOU", "PHX", "MIL"],
         "records": {
             "OKC": 47, "SAS": 50, "LAL": 41, "MEM": 41, "LAC": 40, "DEN": 38,
             "DAL": 36, "UTA": 36, "HOU": 34, "POR": 28, "PHX": 33, "MIN": 26,
@@ -425,7 +425,7 @@ SEASONS = {
         "cf_losers": ["BOS", "SAS"],
         "r2_losers": ["WAS", "TOR", "HOU", "UTA"],
         "r1_losers": ["MIL", "ATL", "CHI", "IND", "OKC", "POR", "LAC", "MEM"],
-        "draft": ["PHI", "LAL", "BOS", "PHX", "SAC", "ORL", "MIN", "NYK", "DAL", "POR", "CHA", "DET", "DEN", "MIA"],
+        "draft": ["PHI", "LAL", "BOS", "PHX", "SAC", "ORL", "CHI", "NYK", "DAL", "POR", "CHA", "DET", "UTA", "MIA"],
         "records": {
             "GSW": 67, "SAS": 61, "HOU": 55, "OKC": 47, "LAC": 51, "UTA": 51,
             "MEM": 43, "POR": 41, "DEN": 40, "NOP": 34, "DAL": 33, "SAC": 32,
@@ -445,7 +445,7 @@ SEASONS = {
         "cf_losers": ["BOS", "HOU"],
         "r2_losers": ["PHI", "TOR", "NOP", "UTA"],
         "r1_losers": ["MIA", "MIL", "IND", "WAS", "MIN", "POR", "SAS", "OKC"],
-        "draft": ["PHX", "SAC", "ATL", "MEM", "DAL", "ORL", "CHI", "CLE", "NYK", "PHI", "LAC", "LAC", "LAC", "DEN"],
+        "draft": ["PHX", "SAC", "ATL", "MEM", "DAL", "ORL", "CHI", "CLE", "NYK", "PHI", "CHA", "LAC", "LAC", "DEN"],
         "records": {
             "GSW": 58, "HOU": 65, "POR": 49, "OKC": 48, "UTA": 48, "NOP": 48,
             "SAS": 47, "MIN": 47, "DEN": 46, "LAC": 42, "LAL": 35, "SAC": 27,
@@ -465,7 +465,7 @@ SEASONS = {
         "cf_losers": ["MIL", "POR"],
         "r2_losers": ["PHI", "BOS", "HOU", "DEN"],
         "r1_losers": ["ORL", "BKN", "DET", "IND", "LAC", "SAS", "OKC", "UTA"],
-        "draft": ["NOP", "MEM", "NYK", "NOP", "CLE", "PHX", "CHI", "ATL", "WAS", "ATL", "MIN", "CHA", "MIA", "BOS"],
+        "draft": ["NOP", "MEM", "NYK", "ATL", "CLE", "PHX", "CHI", "ATL", "WAS", "ATL", "MIN", "CHA", "MIA", "BOS"],
         "records": {
             "GSW": 57, "DEN": 54, "POR": 53, "HOU": 53, "OKC": 49, "UTA": 50,
             "SAS": 48, "LAC": 48, "SAC": 39, "LAL": 37, "MIN": 36, "DAL": 33,
@@ -504,7 +504,7 @@ SEASONS = {
         "finals_loser": "PHX",
         "cf_losers": ["ATL", "LAC"],
         "r2_losers": ["PHI", "BKN", "UTA", "DEN"],
-        "r1_losers": ["NYK", "BOS", "WAS", "IND", "POR", "DAL", "MEM", "LAL"],
+        "r1_losers": ["NYK", "BOS", "WAS", "MIA", "POR", "DAL", "MEM", "LAL"],
         "draft": ["DET", "HOU", "CLE", "TOR", "ORL", "OKC", "GSW", "ORL", "SAC", "NOP", "CHA", "SAS", "IND", "GSW"],
         "records": {
             "PHX": 51, "UTA": 52, "LAC": 47, "DEN": 47, "DAL": 42, "POR": 42,

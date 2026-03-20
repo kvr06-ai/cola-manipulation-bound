@@ -368,15 +368,15 @@
           "madePlayoffs": true,
           "playoffResult": "conf_finals",
           "seriesWon": 2,
-          "draftPick": 13
+          "draftPick": null
         },
         {
           "id": "PHX",
           "name": "Phoenix Suns",
           "wins": 51,
           "losses": 31,
-          "madePlayoffs": false,
-          "playoffResult": null,
+          "madePlayoffs": true,
+          "playoffResult": "first_round",
           "seriesWon": 0,
           "draftPick": null
         },
@@ -395,8 +395,8 @@
           "name": "Miami Heat",
           "wins": 50,
           "losses": 32,
-          "madePlayoffs": false,
-          "playoffResult": null,
+          "madePlayoffs": true,
+          "playoffResult": "first_round",
           "seriesWon": 0,
           "draftPick": null
         },
@@ -408,7 +408,7 @@
           "madePlayoffs": true,
           "playoffResult": "first_round",
           "seriesWon": 0,
-          "draftPick": 14
+          "draftPick": null
         },
         {
           "id": "MIN",
@@ -448,7 +448,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": 11
+          "draftPick": 13
         },
         {
           "id": "OKC",
@@ -505,8 +505,8 @@
           "name": "Detroit Pistons",
           "wins": 32,
           "losses": 50,
-          "madePlayoffs": true,
-          "playoffResult": "first_round",
+          "madePlayoffs": false,
+          "playoffResult": null,
           "seriesWon": 0,
           "draftPick": 9
         },
@@ -515,8 +515,8 @@
           "name": "Los Angeles Clippers",
           "wins": 31,
           "losses": 51,
-          "madePlayoffs": true,
-          "playoffResult": "first_round",
+          "madePlayoffs": false,
+          "playoffResult": null,
           "seriesWon": 0,
           "draftPick": 2
         },
@@ -754,7 +754,7 @@
           "madePlayoffs": true,
           "playoffResult": "first_round",
           "seriesWon": 0,
-          "draftPick": 8
+          "draftPick": null
         },
         {
           "id": "MIL",
@@ -774,7 +774,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": 12
+          "draftPick": 8
         },
         {
           "id": "WAS",
@@ -1007,8 +1007,8 @@
           "name": "New Orleans Hornets",
           "wins": 47,
           "losses": 35,
-          "madePlayoffs": false,
-          "playoffResult": null,
+          "madePlayoffs": true,
+          "playoffResult": "first_round",
           "seriesWon": 0,
           "draftPick": null
         },
@@ -1107,8 +1107,8 @@
           "name": "Atlanta Hawks",
           "wins": 35,
           "losses": 47,
-          "madePlayoffs": true,
-          "playoffResult": "first_round",
+          "madePlayoffs": false,
+          "playoffResult": null,
           "seriesWon": 0,
           "draftPick": null
         },
@@ -1336,7 +1336,7 @@
           "madePlayoffs": true,
           "playoffResult": "first_round",
           "seriesWon": 0,
-          "draftPick": 2
+          "draftPick": null
         },
         {
           "id": "POR",
@@ -1356,7 +1356,7 @@
           "madePlayoffs": true,
           "playoffResult": "first_round",
           "seriesWon": 0,
-          "draftPick": 9
+          "draftPick": null
         },
         {
           "id": "OKC",
@@ -1406,7 +1406,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": null
+          "draftPick": 9
         },
         {
           "id": "TOR",
@@ -2254,7 +2254,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": null
+          "draftPick": 14
         },
         {
           "id": "ORL",
@@ -2284,7 +2284,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": 14
+          "draftPick": null
         },
         {
           "id": "PHI",
@@ -2896,7 +2896,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": 9
+          "draftPick": 12
         },
         {
           "id": "MIL",
@@ -2926,7 +2926,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": 7
+          "draftPick": 9
         },
         {
           "id": "NYK",
@@ -2946,7 +2946,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": 6
+          "draftPick": 7
         },
         {
           "id": "MIN",
@@ -3082,7 +3082,7 @@
           "madePlayoffs": true,
           "playoffResult": "second_round",
           "seriesWon": 1,
-          "draftPick": null
+          "draftPick": 9
         },
         {
           "id": "ATL",
@@ -3162,7 +3162,7 @@
           "madePlayoffs": true,
           "playoffResult": "first_round",
           "seriesWon": 0,
-          "draftPick": 9
+          "draftPick": null
         },
         {
           "id": "HOU",
@@ -3794,7 +3794,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": 14
+          "draftPick": 12
         },
         {
           "id": "PHX",
@@ -3814,7 +3814,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": 12
+          "draftPick": 14
         },
         {
           "id": "POR",
@@ -5214,7 +5214,7 @@
           "madePlayoffs": true,
           "playoffResult": "second_round",
           "seriesWon": 1,
-          "draftPick": null
+          "draftPick": 13
         },
         {
           "id": "CLE",
@@ -5314,7 +5314,7 @@
           "madePlayoffs": true,
           "playoffResult": "first_round",
           "seriesWon": 0,
-          "draftPick": null
+          "draftPick": 7
         },
         {
           "id": "MIA",
@@ -5334,7 +5334,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": 13
+          "draftPick": null
         },
         {
           "id": "DET",
@@ -5394,7 +5394,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": 7
+          "draftPick": null
         },
         {
           "id": "NYK",
@@ -5640,7 +5640,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": 11
+          "draftPick": 12
         },
         {
           "id": "DET",
@@ -5660,7 +5660,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": null
+          "draftPick": 11
         },
         {
           "id": "LAL",
@@ -6026,7 +6026,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": 8
+          "draftPick": 4
         },
         {
           "id": "CHI",
@@ -6505,8 +6505,8 @@
           "name": "Miami Heat",
           "wins": 40,
           "losses": 32,
-          "madePlayoffs": false,
-          "playoffResult": null,
+          "madePlayoffs": true,
+          "playoffResult": "first_round",
           "seriesWon": 0,
           "draftPick": null
         },
@@ -6555,8 +6555,8 @@
           "name": "Indiana Pacers",
           "wins": 34,
           "losses": 38,
-          "madePlayoffs": true,
-          "playoffResult": "first_round",
+          "madePlayoffs": false,
+          "playoffResult": null,
           "seriesWon": 0,
           "draftPick": 13
         },
