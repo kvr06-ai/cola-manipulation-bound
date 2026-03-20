@@ -104,13 +104,6 @@ function renderDraftTable() {
       tdValue.textContent = Math.round(team.index).toLocaleString();
     }
 
-    const tdProb = document.createElement('td');
-    if (currentVariant === 'classic' && team.probability != null) {
-      tdProb.textContent = (team.probability * 100).toFixed(1) + '%';
-    } else if (currentVariant === 'simple') {
-      tdProb.textContent = team.colaPosition <= 14 ? 'Deterministic' : '—';
-    }
-
     const tdActual = document.createElement('td');
     tdActual.textContent = team.draftPick ? '#' + team.draftPick : '—';
     if (team.draftPick && team.draftPick <= 3) {
@@ -123,23 +116,27 @@ function renderDraftTable() {
     tr.appendChild(tdRank);
     tr.appendChild(tdTeam);
     tr.appendChild(tdValue);
-    tr.appendChild(tdProb);
+    if (currentVariant === 'classic') {
+      const tdProb = document.createElement('td');
+      tdProb.textContent = (team.probability * 100).toFixed(1) + '%';
+      tr.appendChild(tdProb);
+    }
     tr.appendChild(tdActual);
     tr.appendChild(tdWins);
     tbody.appendChild(tr);
   }
 
-  // Update column headers to be self-explanatory
+  // Update column headers based on variant
   const valueHeader = document.getElementById('value-header');
   const probHeader = document.getElementById('prob-header');
   if (currentVariant === 'simple') {
     valueHeader.textContent = 'Drought (yrs)';
     valueHeader.title = 'Years without a playoff series win or top-3 draft pick';
-    probHeader.textContent = 'How Assigned';
-    probHeader.title = 'Simple COLA assigns picks deterministically (no lottery)';
+    probHeader.style.display = 'none';
   } else {
     valueHeader.textContent = 'Tickets';
     valueHeader.title = 'Accumulated lottery tickets (more = better odds of a high pick)';
+    probHeader.style.display = '';
     probHeader.textContent = 'Odds of #1 Pick';
     probHeader.title = 'Probability of receiving the #1 overall draft pick';
   }
