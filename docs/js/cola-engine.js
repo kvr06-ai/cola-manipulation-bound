@@ -49,19 +49,19 @@ function computeSimpleCOLA(seasonsData) {
       }
     }
 
-    // Update drought based on this season's outcomes
+    // Phase A: Update drought from playoff results only (no draft picks yet).
+    // Teams that won a playoff series get reset; everyone else increments.
+    // This is the state AT LOTTERY TIME — before picks are assigned.
     for (const team of season.teams) {
       const wonPlayoffSeries = team.seriesWon >= 1;
-      const gotTop3Pick = team.draftPick != null && team.draftPick <= 3;
-
-      if (wonPlayoffSeries || gotTop3Pick) {
+      if (wonPlayoffSeries) {
         drought[team.id] = 0;
       } else {
         drought[team.id] += 1;
       }
     }
 
-    // Compute draft order for non-playoff teams
+    // Compute draft order for non-playoff teams (using pre-draft drought)
     const lotteryTeams = season.teams
       .filter(t => !t.madePlayoffs)
       .map(t => ({
@@ -105,6 +105,15 @@ function computeSimpleCOLA(seasonsData) {
       teams: teamStates,
       draftOrder: draftOrder,
     };
+
+    // Phase B: Apply draft pick reset AFTER display state is captured.
+    // This carries forward to the next season's computation.
+    for (const team of season.teams) {
+      const gotTop3Pick = team.draftPick != null && team.draftPick <= 3;
+      if (gotTop3Pick) {
+        drought[team.id] = 0;
+      }
+    }
   }
 
   return results;
@@ -132,6 +141,8 @@ function computeClassicCOLA(seasonsData) {
       }
     }
 
+    // Phase A: Compute state AT LOTTERY TIME (before draft picks resolve).
+
     // Step 1: Increment non-playoff teams
     for (const team of season.teams) {
       if (!team.madePlayoffs) {
@@ -147,20 +158,12 @@ function computeClassicCOLA(seasonsData) {
       }
     }
 
-    // Step 3: Draft pick diminishment (picks 1-4)
-    for (const team of season.teams) {
-      if (team.draftPick != null && team.draftPick in DRAFT_DIMINISH) {
-        const frac = DRAFT_DIMINISH[team.draftPick];
-        index[team.id] *= (1 - frac);
-      }
-    }
-
     // Round indices to avoid floating point drift
     for (const id in index) {
       index[id] = Math.round(index[id] * 100) / 100;
     }
 
-    // Compute lottery probabilities for non-playoff teams
+    // Compute lottery probabilities for non-playoff teams (pre-draft state)
     const lotteryTeams = season.teams
       .filter(t => !t.madePlayoffs)
       .map(t => ({
@@ -180,29 +183,20 @@ function computeClassicCOLA(seasonsData) {
       probabilities[t.id] = totalPool > 0 ? t.index / totalPool : 0;
     }
 
-    // Sort by probability descending for display, then by index
+    // Sort by index descending for display
     const byProbability = [...lotteryTeams]
       .sort((a, b) => {
         if (b.index !== a.index) return b.index - a.index;
         return a.wins - b.wins; // fewer wins = higher priority in ties
       });
 
-    // Picks 5-14: reverse standings (fewest wins first)
-    const byReverseStandings = [...lotteryTeams]
-      .sort((a, b) => {
-        if (a.wins !== b.wins) return a.wins - b.wins;
-        return b.index - a.index; // higher index as tiebreak
-      });
-
-    // Build draft order display:
-    // Positions 1-4 ordered by probability, positions 5-14 by reverse standings
     const draftOrder = byProbability.map((t, i) => ({
       ...t,
       probability: probabilities[t.id],
-      colaPosition: i + 1, // by lottery weight
+      colaPosition: i + 1,
     }));
 
-    // Build team lookup (all teams)
+    // Build team lookup (all teams, using pre-draft state)
     const teamStates = {};
     for (const team of season.teams) {
       teamStates[team.id] = {
@@ -226,6 +220,18 @@ function computeClassicCOLA(seasonsData) {
       draftOrder: draftOrder,
       totalPool: totalPool,
     };
+
+    // Phase B: Apply draft pick diminishment AFTER display state is captured.
+    // This carries forward to the next season's computation.
+    for (const team of season.teams) {
+      if (team.draftPick != null && team.draftPick in DRAFT_DIMINISH) {
+        const frac = DRAFT_DIMINISH[team.draftPick];
+        index[team.id] *= (1 - frac);
+      }
+    }
+    for (const id in index) {
+      index[id] = Math.round(index[id] * 100) / 100;
+    }
   }
 
   return results;
