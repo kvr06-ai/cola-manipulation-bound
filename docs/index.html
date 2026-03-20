@@ -19,20 +19,74 @@
 
     <header>
         <h1>COLA Explorer</h1>
-        <p class="subtitle">How would the Carry-Over Lottery Allocation have changed the NBA Draft?<br>25 years of real data, two mechanism variants.</p>
-        <p class="links">
-            <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-heres-why">Why tanking is hard</a> &middot;
-            <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-key-insights">Key insights</a> &middot;
-            <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-four-candidates">Four candidates</a> &middot;
-            <a href="https://arxiv.org/html/2602.02487v1">arXiv paper</a>
-        </p>
+        <p class="subtitle">What if the NBA Draft rewarded patience instead of losing?<br>Explore 25 years of what-ifs with real data.</p>
     </header>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 0: What is this? -->
+    <!-- ============================================================ -->
+    <section>
+        <h2>The Problem: NBA Teams Are Rewarded for Losing</h2>
+        <p>In the NBA, the worst teams get the best draft picks. This creates a perverse incentive: once a team is out of playoff contention, losing more games <em>improves</em> their chances of landing a franchise-changing player. This is called <strong>tanking</strong>, and it's been a problem for decades. In 2024-25 alone, roughly 30% of teams were accused of tanking for the chance to draft Cooper Flagg or Ace Bailey.</p>
+
+        <p>Every proposed fix runs into the same wall: <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-heres-why">mathematicians proved in 2020</a> that <strong>no draft system based on a single season's record can simultaneously help weak teams and prevent tanking.</strong> It's impossible &mdash; not just hard, but provably impossible.</p>
+
+        <h2>The Solution: COLA</h2>
+        <p><strong>COLA (Carry-Over Lottery Allocation)</strong> is a new draft mechanism designed by <a href="https://highleytj.substack.com">Prof. Timothy Highley</a> and colleagues at La Salle University (<a href="https://arxiv.org/html/2602.02487v1">research paper</a>). It sidesteps the impossibility by changing what the draft looks at:</p>
+
+        <ul style="margin: 0.8rem 0 0.8rem 1.5rem; color: var(--text);">
+            <li><strong>Instead of this season's record</strong> (which rewards losing) &rarr;</li>
+            <li><strong>Use your multi-year playoff track record</strong> (which rewards competing).</li>
+        </ul>
+
+        <p>Under COLA, losing more games <em>never</em> improves your draft position. Teams that have been genuinely bad for years get the most help. Teams having one bad season after years of success don't jump the line.</p>
+
+        <h2>What This Tool Does</h2>
+        <p>This tool takes <strong>real NBA data from 2000 to 2025</strong> and asks: <em>what would the draft have looked like under COLA?</em> You can explore two COLA variants:</p>
+
+        <div class="info-cards" style="margin: 1rem 0;">
+            <div class="info-card">
+                <h3>Simple COLA</h3>
+                <p><strong>How it works:</strong> Count how many consecutive years a team has gone without (a) winning a playoff series or (b) getting a top-3 draft pick. The team with the longest drought gets the #1 pick. Ties broken by most wins.</p>
+                <p><strong>Key property:</strong> Fully deterministic. No lottery, no randomness. You always know exactly where you stand.</p>
+                <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-four-candidates">Highley's full explanation &rarr;</a>
+            </div>
+            <div class="info-card">
+                <h3>Classic COLA</h3>
+                <p><strong>How it works:</strong> Every year you miss the playoffs, you earn 1,000 lottery tickets. Making the playoffs (especially deep runs) and getting high draft picks reduce your ticket count. More tickets = better odds in the lottery.</p>
+                <p><strong>Key property:</strong> Tickets accumulate over years. A team that's been bad for a decade has far more tickets than a team in their first bad season.</p>
+                <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-four-candidates">Highley's full explanation &rarr;</a>
+            </div>
+        </div>
+
+        <h2>How to Use This Tool</h2>
+        <ol style="margin: 0.5rem 0 1rem 1.5rem; color: var(--text); line-height: 1.8;">
+            <li><strong>Season View</strong> &mdash; Slide to any season (2000&ndash;2025). Toggle between Simple and Classic COLA. The table shows each lottery team's COLA ranking, and the chart visualizes it.</li>
+            <li><strong>Team Timeline</strong> &mdash; Pick your team from the dropdown. Watch how their COLA score evolves year by year. Green dots = playoff years. Red = lottery years. Gold = championship.</li>
+            <li><strong>Side-by-Side Comparison</strong> &mdash; See how Simple COLA and Classic COLA would rank the same teams differently, alongside what actually happened.</li>
+        </ol>
+
+        <p style="color: var(--text-secondary); font-size: 0.85rem;">
+            <strong>Try this:</strong> Select the Sacramento Kings in the Team Timeline. They haven't won a playoff series since 2004 &mdash; under Classic COLA, they'd have the highest lottery index in the league. Then switch to the 76ers: despite a terrible 2024-25 season, their 7 consecutive years of playoff appearances mean their COLA index is near zero. COLA tells you who's been <em>chronically</em> bad, not who's bad <em>right now</em>.
+        </p>
+
+        <p class="links" style="margin-top: 1.2rem; font-size: 0.9rem;">
+            <strong>Learn more:</strong>
+            <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-heres-why">Part 1: Why tanking is hard</a> &middot;
+            <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-key-insights">Part 2: Key insights</a> &middot;
+            <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-four-candidates">Part 3: Four candidates</a> &middot;
+            <a href="https://arxiv.org/html/2602.02487v1">Research paper</a>
+        </p>
+    </section>
 
     <!-- ============================================================ -->
     <!-- SECTION 1: Season View -->
     <!-- ============================================================ -->
     <section>
         <h2>Season View</h2>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.8rem;">
+            Pick a season and a COLA variant. The table shows how each non-playoff team would be ranked under COLA. The <strong>Actual</strong> column shows which draft pick they really got &mdash; compare it to the COLA ranking to see what would have changed.
+        </p>
 
         <div class="controls">
             <label for="year-slider">Season:</label>
@@ -72,6 +126,9 @@
     <!-- ============================================================ -->
     <section>
         <h2>Team Timeline</h2>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.8rem;">
+            Pick a team and watch their COLA score evolve over 25 years. Rising lines mean the team is accumulating draft priority (missing playoffs, no high picks). Sharp drops mean a reset (playoff series win, high pick, or championship). Hover over any point for details.
+        </p>
         <div class="controls">
             <label for="team-select">Team:</label>
             <select id="team-select"></select>
@@ -92,7 +149,7 @@
     <section>
         <h2>Side-by-Side Comparison</h2>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.8rem;">
-            For the selected season: how would each variant rank the lottery teams?
+            For the selected season: how do Simple COLA and Classic COLA rank the same lottery teams? The <strong>Actual Pick</strong> column shows what really happened under the current NBA system. Look for teams where COLA and reality diverge &mdash; those are cases where the current system arguably got it wrong.
         </p>
         <table class="comparison-table">
             <thead>
@@ -114,29 +171,25 @@
     <!-- SECTION 4: How It Works -->
     <!-- ============================================================ -->
     <section>
-        <h2>How It Works</h2>
+        <h2>Methodology &amp; Notes</h2>
         <div class="info-cards">
             <div class="info-card">
-                <h3>Simple COLA</h3>
-                <p>Draft order is determined by <strong>drought length</strong>: consecutive years without winning a playoff series or receiving a top-3 draft pick. Longest drought gets the #1 pick. Tiebreaker: most regular-season wins.</p>
-                <p>No lottery. Fully deterministic. Losses never improve your position.</p>
-                <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-four-candidates">Read more &rarr;</a>
+                <h3>Data</h3>
+                <p>All data comes from <a href="https://www.basketball-reference.com">Basketball Reference</a>: 26 seasons (1999-00 through 2024-25), 775 team-season records. Every win total, playoff result, and draft pick has been individually verified.</p>
             </div>
             <div class="info-card">
-                <h3>Classic COLA</h3>
-                <p>Each non-playoff team accumulates a <strong>lottery index</strong> (+1,000/year). Playoff success and high draft picks reduce the index. Picks 1-4 are drawn via weighted lottery (more index = better odds). Picks 5-14 by reverse standings.</p>
-                <p>Teams that have been bad the longest get the best odds, but outcomes are probabilistic.</p>
-                <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-four-candidates">Read more &rarr;</a>
+                <h3>How We Compute COLA</h3>
+                <p>We walk real NBA history forward from 1999 (the start year <a href="https://www.youtube.com/watch?v=h78FiEZqMxQ">recommended by Prof. Highley</a>). Each year, we apply the actual playoff results and draft picks to update every team's COLA state. This is the same method Highley uses in his own analysis.</p>
             </div>
             <div class="info-card">
-                <h3>Why COLA?</h3>
-                <p>Munro &amp; Banchio (2020) proved no single-season, record-based draft mechanism can simultaneously help weak teams and prevent tanking. COLA escapes this impossibility by using <strong>multi-year playoff track records</strong> instead of single-season records.</p>
-                <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-heres-why">Read more &rarr;</a>
+                <h3>Classic COLA: Diminishment Rules</h3>
+                <p>Playoff success reduces your lottery index: Championship &rarr; reset to 0. Finals loss &rarr; &minus;75%. Conf. finals &rarr; &minus;50%. 2nd round &rarr; &minus;25%. 1st round exit &rarr; unchanged.</p>
+                <p>High draft picks also reduce it: Pick 1 &rarr; reset to 0. Pick 2 &rarr; &minus;75%. Pick 3 &rarr; &minus;50%. Pick 4 &rarr; &minus;25%.</p>
             </div>
             <div class="info-card">
-                <h3>About This Tool</h3>
-                <p>Uses actual NBA data from 1999-00 through 2024-25. COLA indices are computed using real playoff results and draft picks. Classic COLA shows <em>probabilities</em> (not deterministic outcomes) for picks 1-4.</p>
-                <p>COLA mechanism by <a href="https://arxiv.org/html/2602.02487v1">Highley, Duncan &amp; Volkov (2026)</a>.</p>
+                <h3>What This Tool Doesn't Do</h3>
+                <p>This is a <strong>counterfactual backtest</strong>, not a simulation. It shows what COLA <em>rankings and probabilities</em> would have been, but doesn't simulate who would have won the lottery. Classic COLA picks 1-4 are probabilistic &mdash; the chart shows odds, not outcomes.</p>
+                <p>Traded pick protections and play-in tournament effects are simplified. See the <a href="https://arxiv.org/html/2602.02487v1">paper</a> for full details.</p>
             </div>
         </div>
     </section>
