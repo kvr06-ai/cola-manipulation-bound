@@ -27,12 +27,12 @@
     <!-- ============================================================ -->
     <section>
         <h2>The Problem: NBA Teams Are Rewarded for Losing</h2>
-        <p>In the NBA, the worst teams get the best draft picks. This creates a perverse incentive: once a team is out of playoff contention, losing more games <em>improves</em> their chances of landing a franchise-changing player. This is called <strong>tanking</strong>, and it's been a problem for decades. In 2024-25 alone, roughly 30% of teams were accused of tanking for the chance to draft Cooper Flagg or Ace Bailey.</p>
+        <p>In the NBA, the worst teams get the best draft picks. Once a team is out of playoff contention, losing more games <em>improves</em> their chances of landing a franchise-changing player. This is called <strong>tanking</strong>. In 2024-25, roughly 30% of teams were accused of tanking for the chance to draft Cooper Flagg or Ace Bailey.</p>
 
-        <p>Every proposed fix runs into the same wall: <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-heres-why">mathematicians proved in 2020</a> that <strong>no draft system based on a single season's record can simultaneously help weak teams and prevent tanking.</strong> It's impossible &mdash; not just hard, but provably impossible.</p>
+        <p>Every proposed fix runs into the same wall: <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-heres-why">mathematicians proved in 2020</a> that <strong>no draft system based on a single season's record can simultaneously help weak teams and prevent tanking.</strong> It's not just hard. It's provably impossible.</p>
 
-        <h2>The Solution: COLA</h2>
-        <p><strong>COLA (Carry-Over Lottery Allocation)</strong> is a new draft mechanism designed by <a href="https://highleytj.substack.com">Prof. Timothy Highley</a> and colleagues at La Salle University (<a href="https://arxiv.org/html/2602.02487v1">research paper</a>). It sidesteps the impossibility by changing what the draft looks at:</p>
+        <h2>The Solution: Carry-Over Lottery Allocation (COLA)</h2>
+        <p><strong>Carry-Over Lottery Allocation (COLA)</strong> is a new draft mechanism designed by <a href="https://highleytj.substack.com">Prof. Timothy Highley</a> and colleagues at La Salle University (<a href="https://arxiv.org/html/2602.02487v1">research paper</a>). COLA escapes the impossibility by changing what the draft looks at:</p>
 
         <ul style="margin: 0.8rem 0 0.8rem 1.5rem; color: var(--text);">
             <li><strong>Instead of this season's record</strong> (which rewards losing) &rarr;</li>
@@ -53,7 +53,7 @@
             </div>
             <div class="info-card">
                 <h3>Classic COLA</h3>
-                <p><strong>How it works:</strong> Every year you miss the playoffs, you earn 1,000 lottery tickets. Making the playoffs (especially deep runs) and getting high draft picks reduce your ticket count. More tickets = better odds in the lottery.</p>
+                <p><strong>How it works:</strong> Every year you miss the playoffs, you earn 1,000 lottery tickets. Playoff success (especially deep runs) and high draft picks reduce your ticket count. More tickets = better odds in the lottery.</p>
                 <p><strong>Key property:</strong> Tickets accumulate over years. A team that's been bad for a decade has far more tickets than a team in their first bad season.</p>
                 <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-four-candidates">Highley's full explanation &rarr;</a>
             </div>
@@ -61,13 +61,13 @@
 
         <h2>How to Use This Tool</h2>
         <ol style="margin: 0.5rem 0 1rem 1.5rem; color: var(--text); line-height: 1.8;">
-            <li><strong>Season View</strong> &mdash; Slide to any season (2000&ndash;2025). Toggle between Simple and Classic COLA. The table shows each lottery team's COLA ranking, and the chart visualizes it.</li>
-            <li><strong>Team Timeline</strong> &mdash; Pick your team from the dropdown. Watch how their COLA score evolves year by year. Green dots = playoff years. Red = lottery years. Gold = championship.</li>
-            <li><strong>Side-by-Side Comparison</strong> &mdash; See how Simple COLA and Classic COLA would rank the same teams differently, alongside what actually happened.</li>
+            <li><strong>Season View:</strong> Slide to any season (2000 to 2025). Toggle between Simple and Classic COLA. The table shows each lottery team's COLA ranking; the chart visualizes it.</li>
+            <li><strong>Team Timeline:</strong> Pick your team from the dropdown. Watch how their COLA score evolves year by year. Green dots = playoff years. Red = lottery years. Gold = championship.</li>
+            <li><strong>Side-by-Side Comparison:</strong> See how Simple COLA and Classic COLA rank the same teams differently, alongside what actually happened.</li>
         </ol>
 
         <p style="color: var(--text-secondary); font-size: 0.85rem;">
-            <strong>Try this:</strong> Select the Sacramento Kings in the Team Timeline. They haven't won a playoff series since 2004 &mdash; under Classic COLA, they'd have the highest lottery index in the league. Then switch to the 76ers: despite a terrible 2024-25 season, their 7 consecutive years of playoff appearances mean their COLA index is near zero. COLA tells you who's been <em>chronically</em> bad, not who's bad <em>right now</em>.
+            <strong>Try this:</strong> Select the Sacramento Kings in the Team Timeline. They haven't won a playoff series since 2004, so under Classic COLA they'd have the highest lottery index in the league. Then switch to the 76ers: despite a terrible 2024-25 season, their 7 consecutive years of playoff appearances mean their COLA index is near zero. COLA identifies who's been <em>chronically</em> bad, not who's bad <em>right now</em>.
         </p>
 
         <p class="links" style="margin-top: 1.2rem; font-size: 0.9rem;">
@@ -85,7 +85,7 @@
     <section>
         <h2>Season View</h2>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.8rem;">
-            Pick a season and a COLA variant. The table shows how each non-playoff team would be ranked under COLA. The <strong>Actual</strong> column shows which draft pick they really got &mdash; compare it to the COLA ranking to see what would have changed.
+            Pick a season and a COLA variant. The table shows how each non-playoff team would rank under COLA. The <strong>Actual</strong> column shows which draft pick they really got (compare it to the COLA ranking to see what would have changed).
         </p>
 
         <div class="controls">
@@ -149,7 +149,7 @@
     <section>
         <h2>Side-by-Side Comparison</h2>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.8rem;">
-            For the selected season: how do Simple COLA and Classic COLA rank the same lottery teams? The <strong>Actual Pick</strong> column shows what really happened under the current NBA system. Look for teams where COLA and reality diverge &mdash; those are cases where the current system arguably got it wrong.
+            For the selected season: how do Simple COLA and Classic COLA rank the same lottery teams? The <strong>Actual Pick</strong> column shows what really happened under the current NBA system. Look for teams where COLA and reality diverge (those are cases where the current system arguably got it wrong).
         </p>
         <table class="comparison-table">
             <thead>
@@ -188,7 +188,7 @@
             </div>
             <div class="info-card">
                 <h3>What This Tool Doesn't Do</h3>
-                <p>This is a <strong>counterfactual backtest</strong>, not a simulation. It shows what COLA <em>rankings and probabilities</em> would have been, but doesn't simulate who would have won the lottery. Classic COLA picks 1-4 are probabilistic &mdash; the chart shows odds, not outcomes.</p>
+                <p>This is a <strong>what-if analysis</strong>, not a simulation. It shows what COLA rankings and probabilities would have been, but doesn't simulate who would have won the lottery. Classic COLA picks 1-4 are probabilistic (the chart shows odds, not outcomes).</p>
                 <p>Traded pick protections and play-in tournament effects are simplified. See the <a href="https://arxiv.org/html/2602.02487v1">paper</a> for full details.</p>
             </div>
         </div>
