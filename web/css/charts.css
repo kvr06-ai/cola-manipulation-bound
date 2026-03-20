@@ -1,0 +1,18 @@
+.chart-container {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.8rem;
+}
+
+.chart-container canvas {
+  max-height: 450px;
+}
+
+.chart-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: 0.3rem;
+}

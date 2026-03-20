@@ -1,0 +1,21 @@
+:root {
+  --bg: #1a1a2e;
+  --surface: #16213e;
+  --surface-alt: #0f3460;
+  --text: #e0e0e0;
+  --text-secondary: #a0a0b0;
+  --accent: #e94560;
+  --accent-dim: #c73e54;
+  --link: #53a8b6;
+  --border: #2a2a4a;
+  --code-bg: #0d1b2a;
+
+  --chart-simple: #53a8b6;
+  --chart-classic: #e94560;
+  --chart-actual: #a0a0b0;
+  --chart-grid: #2a2a4a;
+  --chart-highlight: #ffd166;
+
+  --radius: 6px;
+  --transition: 0.2s ease;
+}

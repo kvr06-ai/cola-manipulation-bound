@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COLA Explorer — NBA Draft Backtester</title>
+    <meta name="description" content="How would the Carry-Over Lottery Allocation have changed the NBA Draft? Explore 25 years of counterfactuals.">
+    <meta property="og:title" content="COLA Explorer — NBA Draft Backtester">
+    <meta property="og:description" content="See how COLA would have changed your team's draft odds. 25 years of real NBA data, two mechanism variants.">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/charts.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="container">
+
+    <header>
+        <h1>COLA Explorer</h1>
+        <p class="subtitle">How would the Carry-Over Lottery Allocation have changed the NBA Draft?<br>25 years of real data, two mechanism variants.</p>
+        <p class="links">
+            <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-heres-why">Why tanking is hard</a> &middot;
+            <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-key-insights">Key insights</a> &middot;
+            <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-four-candidates">Four candidates</a> &middot;
+            <a href="https://arxiv.org/html/2602.02487v1">arXiv paper</a>
+        </p>
+    </header>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 1: Season View -->
+    <!-- ============================================================ -->
+    <section>
+        <h2>Season View</h2>
+
+        <div class="controls">
+            <label for="year-slider">Season:</label>
+            <input type="range" id="year-slider" min="2000" max="2025" value="2025">
+            <span id="year-display" class="year-display">2024-25</span>
+
+            <div class="tabs">
+                <div class="tab" data-variant="simple">Simple COLA</div>
+                <div class="tab active" data-variant="classic">Classic COLA</div>
+            </div>
+        </div>
+
+        <div class="two-col">
+            <div>
+                <table class="draft-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Team</th>
+                            <th id="value-header">Index</th>
+                            <th id="prob-header">P(#1)</th>
+                            <th>Actual</th>
+                            <th>Record</th>
+                        </tr>
+                    </thead>
+                    <tbody id="draft-tbody"></tbody>
+                </table>
+            </div>
+            <div class="chart-container" style="min-height: 420px;">
+                <canvas id="lottery-chart"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 2: Team Timeline -->
+    <!-- ============================================================ -->
+    <section>
+        <h2>Team Timeline</h2>
+        <div class="controls">
+            <label for="team-select">Team:</label>
+            <select id="team-select"></select>
+            <span style="color: var(--text-secondary); font-size: 0.82rem;">
+                <span style="color: #69db7c;">&bull;</span> Playoffs &nbsp;
+                <span style="color: #e94560;">&bull;</span> Lottery &nbsp;
+                <span style="color: #ffd166;">&bull;</span> Champion
+            </span>
+        </div>
+        <div class="chart-container" style="min-height: 300px;">
+            <canvas id="timeline-chart"></canvas>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 3: Side-by-Side Comparison -->
+    <!-- ============================================================ -->
+    <section>
+        <h2>Side-by-Side Comparison</h2>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.8rem;">
+            For the selected season: how would each variant rank the lottery teams?
+        </p>
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Team</th>
+                    <th>Simple #</th>
+                    <th>Drought</th>
+                    <th>Classic #</th>
+                    <th>P(#1)</th>
+                    <th>Actual Pick</th>
+                    <th>Record</th>
+                </tr>
+            </thead>
+            <tbody id="comparison-tbody"></tbody>
+        </table>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 4: How It Works -->
+    <!-- ============================================================ -->
+    <section>
+        <h2>How It Works</h2>
+        <div class="info-cards">
+            <div class="info-card">
+                <h3>Simple COLA</h3>
+                <p>Draft order is determined by <strong>drought length</strong>: consecutive years without winning a playoff series or receiving a top-3 draft pick. Longest drought gets the #1 pick. Tiebreaker: most regular-season wins.</p>
+                <p>No lottery. Fully deterministic. Losses never improve your position.</p>
+                <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-four-candidates">Read more &rarr;</a>
+            </div>
+            <div class="info-card">
+                <h3>Classic COLA</h3>
+                <p>Each non-playoff team accumulates a <strong>lottery index</strong> (+1,000/year). Playoff success and high draft picks reduce the index. Picks 1-4 are drawn via weighted lottery (more index = better odds). Picks 5-14 by reverse standings.</p>
+                <p>Teams that have been bad the longest get the best odds, but outcomes are probabilistic.</p>
+                <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-four-candidates">Read more &rarr;</a>
+            </div>
+            <div class="info-card">
+                <h3>Why COLA?</h3>
+                <p>Munro &amp; Banchio (2020) proved no single-season, record-based draft mechanism can simultaneously help weak teams and prevent tanking. COLA escapes this impossibility by using <strong>multi-year playoff track records</strong> instead of single-season records.</p>
+                <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-heres-why">Read more &rarr;</a>
+            </div>
+            <div class="info-card">
+                <h3>About This Tool</h3>
+                <p>Uses actual NBA data from 1999-00 through 2024-25. COLA indices are computed using real playoff results and draft picks. Classic COLA shows <em>probabilities</em> (not deterministic outcomes) for picks 1-4.</p>
+                <p>COLA mechanism by <a href="https://arxiv.org/html/2602.02487v1">Highley, Duncan &amp; Volkov (2026)</a>.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        Built by <a href="https://kaushikrajan.me">Kaushik Rajan</a> &middot;
+        Data: <a href="https://www.basketball-reference.com">Basketball Reference</a> &middot;
+        Mechanism: <a href="https://highleytj.substack.com">Prof. Timothy Highley</a>, La Salle University &middot;
+        <a href="https://github.com/kvr06-ai/cola-manipulation-bound">Source</a>
+    </footer>
+
+</div>
+
+<script src="js/cola-engine.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

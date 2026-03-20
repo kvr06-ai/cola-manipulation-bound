@@ -1,6 +1,25 @@
-# cola-manipulation-bound
+# COLA Research Tools
 
-Analytic upper bound on pool manipulation gain in the Carry-Over Lottery Allocation (COLA) draft mechanism.
+Analytic bound on pool manipulation gain + interactive historical backtester for the Carry-Over Lottery Allocation (COLA) draft mechanism.
+
+**[Launch the COLA Explorer →](https://kvr06-ai.github.io/cola-manipulation-bound/)**
+
+---
+
+## COLA Explorer (Interactive Backtester)
+
+How would the NBA Draft have looked under COLA? This interactive tool lets you explore 25 years of counterfactuals (2000–2025) using real NBA data.
+
+- **Simple COLA:** Deterministic draft order by drought length (years without a playoff series win or top-3 pick). No lottery.
+- **Classic COLA:** Lottery index accumulates (+1,000/year for non-playoff teams), diminished by playoff success and high draft picks. Picks 1–4 by weighted lottery.
+
+Features: season slider, variant comparison, team timeline, side-by-side ranking table.
+
+Built on data from [Basketball Reference](https://www.basketball-reference.com). Mechanism by [Prof. Timothy Highley](https://highleytj.substack.com), La Salle University.
+
+---
+
+## Analytic Bound on Pool Manipulation
 
 ## Context
 
@@ -73,12 +92,23 @@ Plus a summary table printed to stdout.
 ## Structure
 
 ```
-cola/
-├── constants.py   # All NBA/COLA parameters (single source of truth)
-├── bound.py       # Core: exact gain, first-order approx, conditioned bound
-├── simulate.py    # Thin Bradley-Terry simulation + COLA mechanism
-├── plots.py       # Publication-quality figures
-└── __main__.py    # Entry point
+cola/                    # Analytic bound (Python)
+├── constants.py         # All NBA/COLA parameters (single source of truth)
+├── bound.py             # Core: exact gain, first-order approx, conditioned bound
+├── simulate.py          # Thin Bradley-Terry simulation + COLA mechanism
+├── plots.py             # Publication-quality figures
+└── __main__.py          # Entry point
+
+scripts/                 # Data pipeline
+└── collect_data.py      # Compiles NBA data 1999-2025 → web/data/nba-data.json
+
+web/                     # Interactive backtester (GitHub Pages)
+├── index.html           # Single-page app
+├── js/cola-engine.js    # Simple + Classic COLA state machines
+├── js/charts.js         # Chart.js wrappers
+├── js/app.js            # UI state management
+├── data/nba-data.json   # 26 seasons, 775 team-season records
+└── css/                 # Dark theme
 ```
 
 ## Usage as a Library
@@ -102,6 +132,7 @@ print(f"Max gain observed: {results['max']*100:.2f}%")
 1. Highley, T., Duncan, T., & Volkov, I. (2026). *Carry-Over Lottery Allocation: Practical Incentive-Compatible Drafts.* [arXiv:2602.02487](https://arxiv.org/abs/2602.02487).
 2. Munro, E. & Banchio, M. (2020). *A No-Tanking Draft Allocation Policy.* MIT Sloan Sports Analytics Conference. [PDF](https://www.evanmunro.ca/files/targeting.pdf).
 3. Highley, T. (2026). *Proof the NBA Draft Trade-Off Is Solved.* [YouTube](https://www.youtube.com/watch?v=p4mmmGGxBbw). Formal proof of Diet COLA incentive compatibility.
+4. Highley, T. (2026). *NBA Tanking Is Solvable* series. [Substack](https://highleytj.substack.com). Parts [1](https://highleytj.substack.com/p/nba-tanking-is-solvable-heres-why), [2](https://highleytj.substack.com/p/nba-tanking-is-solvable-key-insights), [3](https://highleytj.substack.com/p/nba-tanking-is-solvable-four-candidates).
 
 ## License
 
