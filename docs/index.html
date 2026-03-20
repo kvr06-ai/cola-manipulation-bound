@@ -104,12 +104,12 @@
                 <table class="draft-table">
                     <thead>
                         <tr>
-                            <th>#</th>
+                            <th title="Team's ranking under the selected COLA variant">COLA Rank</th>
                             <th>Team</th>
-                            <th id="value-header">Index</th>
-                            <th id="prob-header">P(#1)</th>
-                            <th>Actual</th>
-                            <th>Record</th>
+                            <th id="value-header" title="Classic: accumulated lottery tickets (more = better odds). Simple: years without a playoff series win or top-3 pick.">Tickets</th>
+                            <th id="prob-header" title="Probability of receiving the #1 overall draft pick">Odds of #1 Pick</th>
+                            <th title="The draft pick this team actually received in real life">Real Pick</th>
+                            <th title="Regular season win-loss record">W-L</th>
                         </tr>
                     </thead>
                     <tbody id="draft-tbody"></tbody>
@@ -155,12 +155,12 @@
             <thead>
                 <tr>
                     <th>Team</th>
-                    <th>Simple #</th>
-                    <th>Drought</th>
-                    <th>Classic #</th>
-                    <th>P(#1)</th>
-                    <th>Actual Pick</th>
-                    <th>Record</th>
+                    <th title="Rank under Simple COLA (by drought length)">Simple Rank</th>
+                    <th title="Years without a playoff series win or top-3 draft pick">Drought (yrs)</th>
+                    <th title="Rank under Classic COLA (by lottery ticket count)">Classic Rank</th>
+                    <th title="Probability of receiving the #1 overall pick under Classic COLA">Odds of #1</th>
+                    <th title="The draft pick this team actually received">Real Pick</th>
+                    <th title="Regular season win-loss record">W-L</th>
                 </tr>
             </thead>
             <tbody id="comparison-tbody"></tbody>

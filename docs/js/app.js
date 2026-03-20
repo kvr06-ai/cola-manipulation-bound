@@ -129,11 +129,20 @@ function renderDraftTable() {
     tbody.appendChild(tr);
   }
 
-  // Update column headers
-  document.getElementById('value-header').textContent =
-    currentVariant === 'simple' ? 'Drought' : 'Index';
-  document.getElementById('prob-header').textContent =
-    currentVariant === 'simple' ? 'Method' : 'P(#1)';
+  // Update column headers to be self-explanatory
+  const valueHeader = document.getElementById('value-header');
+  const probHeader = document.getElementById('prob-header');
+  if (currentVariant === 'simple') {
+    valueHeader.textContent = 'Drought (yrs)';
+    valueHeader.title = 'Years without a playoff series win or top-3 draft pick';
+    probHeader.textContent = 'How Assigned';
+    probHeader.title = 'Simple COLA assigns picks deterministically (no lottery)';
+  } else {
+    valueHeader.textContent = 'Tickets';
+    valueHeader.title = 'Accumulated lottery tickets (more = better odds of a high pick)';
+    probHeader.textContent = 'Odds of #1 Pick';
+    probHeader.title = 'Probability of receiving the #1 overall draft pick';
+  }
 }
 
 function renderLotteryChart() {

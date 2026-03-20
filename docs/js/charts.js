@@ -41,7 +41,7 @@ function createLotteryChart(canvasId) {
         x: {
           grid: { color: CHART_COLORS.grid },
           ticks: { color: CHART_COLORS.text, callback: (v) => v + '%' },
-          title: { display: true, text: 'P(#1 Pick)', color: CHART_COLORS.text },
+          title: { display: true, text: 'Odds of #1 Pick', color: CHART_COLORS.text },
         },
         y: {
           grid: { display: false },
@@ -66,21 +66,21 @@ function updateLotteryChart(draftOrder, variant) {
     lotteryChart.data.datasets[0].data = data;
     lotteryChart.data.datasets[0].backgroundColor = labels.map(() => CHART_COLORS.simple);
     lotteryChart.data.datasets[0].tooltipData = tooltips;
-    lotteryChart.options.scales.x.title.text = 'Drought (years)';
+    lotteryChart.options.scales.x.title.text = 'Years without playoff series win or top-3 pick';
     lotteryChart.options.scales.x.ticks.callback = (v) => v;
   } else {
     // Classic COLA: show probabilities
     const labels = draftOrder.map((t) => '#' + t.colaPosition + ' ' + t.id);
     const data = draftOrder.map((t) => (t.probability * 100));
     const tooltips = draftOrder.map(
-      (t) => (t.probability * 100).toFixed(1) + '% (Index: ' + Math.round(t.index).toLocaleString() + ')'
+      (t) => (t.probability * 100).toFixed(1) + '% chance (Tickets: ' + Math.round(t.index).toLocaleString() + ')'
     );
 
     lotteryChart.data.labels = labels;
     lotteryChart.data.datasets[0].data = data;
     lotteryChart.data.datasets[0].backgroundColor = labels.map(() => CHART_COLORS.classic);
     lotteryChart.data.datasets[0].tooltipData = tooltips;
-    lotteryChart.options.scales.x.title.text = 'P(#1 Pick)';
+    lotteryChart.options.scales.x.title.text = 'Odds of getting the #1 pick';
     lotteryChart.options.scales.x.ticks.callback = (v) => v.toFixed(0) + '%';
   }
 
@@ -174,17 +174,18 @@ function updateTimelineChart(teamId, variantData, variant, seasonsData) {
     // Tooltip
     const parts = [];
     if (variant === 'simple') {
-      parts.push('Drought: ' + teamState.drought);
+      parts.push('Drought: ' + teamState.drought + ' yrs');
     } else {
-      parts.push('Index: ' + Math.round(teamState.index).toLocaleString());
+      parts.push('Tickets: ' + Math.round(teamState.index).toLocaleString());
     }
     if (teamState.madePlayoffs) {
-      parts.push(teamState.playoffResult.replace('_', ' '));
+      const result = teamState.playoffResult.replace('_', ' ');
+      parts.push(result === 'champion' ? 'Won championship' : 'Playoffs (' + result + ')');
     } else {
-      parts.push('Lottery');
+      parts.push('Missed playoffs');
     }
     if (teamState.draftPick) {
-      parts.push('Pick #' + teamState.draftPick);
+      parts.push('Got pick #' + teamState.draftPick);
     }
     tooltips.push(parts.join(' | '));
   }
@@ -199,7 +200,7 @@ function updateTimelineChart(teamId, variantData, variant, seasonsData) {
   timelineChart.data.datasets[0].tooltipData = tooltips;
   timelineChart.options.scales.y.title = {
     display: true,
-    text: variant === 'simple' ? 'Drought (years)' : 'Lottery Index',
+    text: variant === 'simple' ? 'Years without playoff series win or top-3 pick' : 'Lottery tickets (accumulated over years)',
     color: CHART_COLORS.text,
   };
 
