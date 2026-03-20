@@ -732,7 +732,7 @@ if __name__ == "__main__":
     validate(data)
 
     # Write output
-    out_dir = Path(__file__).parent.parent / "web" / "data"
+    out_dir = Path(__file__).parent.parent / "docs" / "data"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "nba-data.json"
 

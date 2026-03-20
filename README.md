@@ -100,15 +100,15 @@ cola/                    # Analytic bound (Python)
 └── __main__.py          # Entry point
 
 scripts/                 # Data pipeline
-└── collect_data.py      # Compiles NBA data 1999-2025 → web/data/nba-data.json
+└── collect_data.py      # Compiles NBA data 1999-2025 → docs/data/nba-data.json
 
-web/                     # Interactive backtester (GitHub Pages)
+docs/                    # Interactive backtester (GitHub Pages)
 ├── index.html           # Single-page app
-├── js/cola-engine.js    # Simple + Classic COLA state machines
-├── js/charts.js         # Chart.js wrappers
-├── js/app.js            # UI state management
-├── data/nba-data.json   # 26 seasons, 775 team-season records
-└── css/                 # Dark theme
+├── js/cola-engine.js     # Simple + Classic COLA state machines
+├── js/charts.js          # Chart.js wrappers
+├── js/app.js             # UI state management
+├── data/nba-data.json    # 26 seasons, 775 team-season records
+└── css/                  # Dark theme
 ```
 
 ## Usage as a Library
