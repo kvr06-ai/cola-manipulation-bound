@@ -61,9 +61,12 @@ function computeSimpleCOLA(seasonsData) {
       }
     }
 
-    // Compute draft order for non-playoff teams (using pre-draft drought)
+    // Compute draft order for all 22 eligible teams (using pre-draft drought).
+    // Simple COLA eligibility: hasn't won a playoff series (seriesWon === 0).
+    // This includes 14 non-playoff teams AND 8 first-round losers.
+    // Classic COLA is different: only 14 non-playoff teams are lottery-eligible.
     const lotteryTeams = season.teams
-      .filter(t => !t.madePlayoffs)
+      .filter(t => t.seriesWon === 0)
       .map(t => ({
         id: t.id,
         name: t.name,
