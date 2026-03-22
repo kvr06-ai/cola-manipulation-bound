@@ -98,7 +98,7 @@ function renderDraftTable() {
     tdTeam.textContent = team.name || team.id;
 
     const tdValue = document.createElement('td');
-    if (currentVariant === 'simple') {
+    if (currentVariant === 'simple' || currentVariant === 'simpleLottery') {
       tdValue.textContent = team.drought + ' yrs';
     } else {
       tdValue.textContent = Math.round(team.index).toLocaleString();
@@ -119,9 +119,16 @@ function renderDraftTable() {
     tr.appendChild(tdRank);
     tr.appendChild(tdTeam);
     tr.appendChild(tdValue);
-    if (currentVariant === 'classic') {
+    if (currentVariant === 'classic' || currentVariant === 'simpleLottery') {
       const tdProb = document.createElement('td');
-      tdProb.textContent = (team.probability * 100).toFixed(1) + '%';
+      if (team.probability != null && team.probability > 0) {
+        tdProb.textContent = (team.probability * 100).toFixed(1) + '%';
+      } else if (currentVariant === 'simpleLottery' && !team.inLottery) {
+        tdProb.textContent = '—';
+        tdProb.title = 'Not in lottery (ranked 15-22 by drought)';
+      } else {
+        tdProb.textContent = (team.probability * 100).toFixed(1) + '%';
+      }
       tr.appendChild(tdProb);
     }
     tr.appendChild(tdActual);
@@ -136,6 +143,12 @@ function renderDraftTable() {
     valueHeader.textContent = 'Drought (yrs)';
     valueHeader.title = 'Years without a playoff series win or top-3 draft pick';
     probHeader.style.display = 'none';
+  } else if (currentVariant === 'simpleLottery') {
+    valueHeader.textContent = 'Drought (yrs)';
+    valueHeader.title = 'Years without a playoff series win or top-3 draft pick';
+    probHeader.style.display = '';
+    probHeader.textContent = 'Odds of #1 Pick';
+    probHeader.title = 'Pre-2019 NBA lottery odds based on drought ranking (top 14 only)';
   } else {
     valueHeader.textContent = 'Tickets';
     valueHeader.title = 'Accumulated lottery tickets (more = better odds of a high pick)';
@@ -169,38 +182,42 @@ function renderTimeline() {
 
 function renderComparison() {
   const simple = colaResults.simple[currentYear];
+  const simpleLottery = colaResults.simpleLottery[currentYear];
   const classic = colaResults.classic[currentYear];
-  if (!simple || !classic) return;
+  if (!simple || !simpleLottery || !classic) return;
 
   const tbody = document.getElementById('comparison-tbody');
   tbody.innerHTML = '';
 
-  // Simple COLA uses 22-team pool (seriesWon === 0), Classic uses 14 (non-playoff).
-  // Show the union so both variants are represented.
+  // Simple/Simple Lottery use 22-team pool (seriesWon === 0), Classic uses 14 (non-playoff).
+  // Show the union so all variants are represented.
   const season = nbaData.seasons.find((s) => s.year === currentYear);
   const lotteryTeams = season.teams.filter((t) => !t.madePlayoffs || t.seriesWon === 0);
 
   // Build lookup maps
   const simpleMap = {};
   simple.draftOrder.forEach((t) => { simpleMap[t.id] = t; });
+  const slMap = {};
+  simpleLottery.draftOrder.forEach((t) => { slMap[t.id] = t; });
   const classicMap = {};
   classic.draftOrder.forEach((t) => { classicMap[t.id] = t; });
 
-  // Sort by Classic COLA position
+  // Sort by Simple COLA position (common across Simple and Simple Lottery)
   const sorted = lotteryTeams
     .map((t) => ({
       id: t.id,
       name: t.name,
       simplePos: simpleMap[t.id] ? simpleMap[t.id].colaPosition : '—',
       simpleDrought: simpleMap[t.id] ? simpleMap[t.id].drought : '—',
+      slOdds: slMap[t.id] && slMap[t.id].probability > 0 ? (slMap[t.id].probability * 100).toFixed(1) + '%' : '—',
       classicPos: classicMap[t.id] ? classicMap[t.id].colaPosition : '—',
       classicProb: classicMap[t.id] ? (classicMap[t.id].probability * 100).toFixed(1) + '%' : '—',
       actualPick: t.draftPick ? '#' + t.draftPick : '—',
       wins: t.wins,
     }))
     .sort((a, b) => {
-      const aPos = typeof a.classicPos === 'number' ? a.classicPos : 99;
-      const bPos = typeof b.classicPos === 'number' ? b.classicPos : 99;
+      const aPos = typeof a.simplePos === 'number' ? a.simplePos : 99;
+      const bPos = typeof b.simplePos === 'number' ? b.simplePos : 99;
       return aPos - bPos;
     });
 
@@ -210,6 +227,7 @@ function renderComparison() {
       '<td>' + t.name + '</td>' +
       '<td>' + t.simplePos + '</td>' +
       '<td>' + t.simpleDrought + '</td>' +
+      '<td>' + t.slOdds + '</td>' +
       '<td>' + t.classicPos + '</td>' +
       '<td>' + t.classicProb + '</td>' +
       '<td>' + t.actualPick + '</td>' +

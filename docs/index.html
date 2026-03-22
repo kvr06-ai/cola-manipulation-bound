@@ -6,7 +6,7 @@
     <title>COLA Explorer — NBA Draft Backtester</title>
     <meta name="description" content="How would the Carry-Over Lottery Allocation have changed the NBA Draft? Explore 25 years of counterfactuals.">
     <meta property="og:title" content="COLA Explorer — NBA Draft Backtester">
-    <meta property="og:description" content="See how COLA would have changed your team's draft odds. 25 years of real NBA data, two mechanism variants.">
+    <meta property="og:description" content="See how COLA would have changed your team's draft odds. 25 years of real NBA data, three mechanism variants.">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/layout.css">
@@ -42,13 +42,19 @@
         <p>Under COLA, losing more games <em>never</em> improves your draft position. Teams that have been genuinely bad for years get the most help. Teams having one bad season after years of success don't jump the line.</p>
 
         <h2>What This Tool Does</h2>
-        <p>This tool takes <strong>real NBA data from 2000 to 2025</strong> and asks: <em>what would the draft have looked like under COLA?</em> You can explore two COLA variants:</p>
+        <p>This tool takes <strong>real NBA data from 2000 to 2025</strong> and asks: <em>what would the draft have looked like under COLA?</em> You can explore three COLA variants:</p>
 
         <div class="info-cards" style="margin: 1rem 0;">
             <div class="info-card">
                 <h3>Simple COLA</h3>
                 <p><strong>How it works:</strong> Count how many consecutive years a team has gone without (a) winning a playoff series or (b) getting a top-3 draft pick. The team with the longest drought gets the #1 pick. Ties broken by most wins. All 22 teams that failed to win a series are ranked (14 non-playoff + 8 first-round losers).</p>
                 <p><strong>Key property:</strong> Fully deterministic. No lottery, no randomness. You always know exactly where you stand.</p>
+                <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-four-candidates">Highley's full explanation &rarr;</a>
+            </div>
+            <div class="info-card">
+                <h3>Simple Lottery COLA</h3>
+                <p><strong>How it works:</strong> Same drought ranking as Simple COLA (22 teams by years without a playoff series win or top-3 pick). But instead of deterministic assignment, the top 14 teams enter a lottery using <strong>pre-2019 NBA odds</strong> (25% for the longest drought, down to 0.5% for the 14th). Bottom 8 teams are excluded from the lottery.</p>
+                <p><strong>Key property:</strong> Adds randomness to protect against gaming while keeping drought-based priority. The longest-suffering team has the best odds but isn't guaranteed pick #1.</p>
                 <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-four-candidates">Highley's full explanation &rarr;</a>
             </div>
             <div class="info-card">
@@ -100,6 +106,7 @@
 
             <div class="tabs">
                 <div class="tab" data-variant="simple">Simple COLA</div>
+                <div class="tab" data-variant="simpleLottery">Simple Lottery COLA</div>
                 <div class="tab active" data-variant="classic">Classic COLA</div>
             </div>
         </div>
@@ -160,16 +167,17 @@
     <section>
         <h2>Side-by-Side Comparison</h2>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.8rem;">
-            For the selected season: how do Simple COLA and Classic COLA rank the same teams? Simple COLA includes 22 teams (all that failed to win a playoff series); Classic COLA includes the 14 non-playoff teams. Teams in Simple COLA's pool but not Classic's show &ldquo;&mdash;&rdquo; for Classic columns.
+            For the selected season: how do all three variants rank the same teams? Simple and Simple Lottery COLA include 22 teams (all that failed to win a playoff series); Classic COLA includes the 14 non-playoff teams. <strong>SL Odds</strong> = Simple Lottery COLA's pre-2019 odds (top 14 by drought only).
         </p>
         <table class="comparison-table">
             <thead>
                 <tr>
                     <th>Team</th>
                     <th title="Rank under Simple COLA (by drought length)">Simple Rank</th>
-                    <th title="Years without a playoff series win or top-3 draft pick">Drought (yrs)</th>
+                    <th title="Years without a playoff series win or top-3 draft pick">Drought</th>
+                    <th title="Pre-2019 lottery odds based on Simple COLA drought ranking (top 14 only)">SL Odds</th>
                     <th title="Rank under Classic COLA (by lottery ticket count)">Classic Rank</th>
-                    <th title="Probability of receiving the #1 overall pick under Classic COLA">Odds of #1</th>
+                    <th title="Probability of receiving the #1 overall pick under Classic COLA">Classic Odds</th>
                     <th title="The draft pick this team actually received">Real Pick</th>
                     <th title="Regular season win-loss record">W-L</th>
                 </tr>

@@ -123,6 +123,63 @@ function computeSimpleCOLA(seasonsData) {
 }
 
 // =============================================================================
+// Simple Lottery COLA
+// =============================================================================
+// Same drought state as Simple COLA. Top 14 by drought get pre-2019 NBA
+// lottery odds for picks 1-3. Picks 4-14 by drought order. Bottom 8 of
+// the 22-team pool are excluded from lottery picks.
+//
+// Pre-2019 lottery: 3 picks drawn by lottery, picks 4-14 in order.
+// Odds of #1 pick by drought rank (source: NBA.com, 1994-2018 system):
+
+const PRE_2019_ODDS = [
+  0.250, 0.199, 0.156, 0.119, 0.088, 0.063, 0.043,
+  0.028, 0.017, 0.011, 0.008, 0.007, 0.006, 0.005,
+];
+
+function computeSimpleLotteryCOLA(seasonsData) {
+  // Reuse Simple COLA's drought computation — identical state machine.
+  const simpleResults = computeSimpleCOLA(seasonsData);
+  const results = {};
+
+  for (const [yearStr, simpleYear] of Object.entries(simpleResults)) {
+    const year = Number(yearStr);
+
+    // Take the same draft order (22 teams sorted by drought DESC, wins DESC)
+    const draftOrder = simpleYear.draftOrder.map((t, i) => {
+      const inLottery = i < 14;
+      return {
+        ...t,
+        probability: inLottery ? PRE_2019_ODDS[i] : 0,
+        inLottery: inLottery,
+      };
+    });
+
+    // Build team lookup (copy from simple, add probability)
+    const teamStates = {};
+    for (const [id, state] of Object.entries(simpleYear.teams)) {
+      teamStates[id] = {
+        ...state,
+        probability: null,
+        inLottery: false,
+      };
+    }
+    for (const d of draftOrder) {
+      teamStates[d.id].probability = d.probability;
+      teamStates[d.id].inLottery = d.inLottery;
+      teamStates[d.id].colaPosition = d.colaPosition;
+    }
+
+    results[year] = {
+      teams: teamStates,
+      draftOrder: draftOrder,
+    };
+  }
+
+  return results;
+}
+
+// =============================================================================
 // Classic COLA
 // =============================================================================
 // Lottery index: +1000 per year for non-playoff teams.
@@ -247,11 +304,12 @@ function computeClassicCOLA(seasonsData) {
 function computeAllVariants(seasonsData) {
   return {
     simple: computeSimpleCOLA(seasonsData),
+    simpleLottery: computeSimpleLotteryCOLA(seasonsData),
     classic: computeClassicCOLA(seasonsData),
   };
 }
 
 // Export for use in app.js (and for Node.js testing)
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { computeSimpleCOLA, computeClassicCOLA, computeAllVariants, ALPHA, PLAYOFF_DIMINISH, DRAFT_DIMINISH };
+  module.exports = { computeSimpleCOLA, computeSimpleLotteryCOLA, computeClassicCOLA, computeAllVariants, ALPHA, PLAYOFF_DIMINISH, DRAFT_DIMINISH, PRE_2019_ODDS };
 }

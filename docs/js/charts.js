@@ -68,6 +68,26 @@ function updateLotteryChart(draftOrder, variant) {
     lotteryChart.data.datasets[0].tooltipData = tooltips;
     lotteryChart.options.scales.x.title.text = 'Years without playoff series win or top-3 pick';
     lotteryChart.options.scales.x.ticks.callback = (v) => v;
+  } else if (variant === 'simpleLottery') {
+    // Simple Lottery COLA: pre-2019 odds for top 14, 0% for bottom 8
+    const labels = draftOrder.map((t) => '#' + t.colaPosition + ' ' + t.id);
+    const data = draftOrder.map((t) => (t.probability || 0) * 100);
+    const tooltips = draftOrder.map((t) => {
+      if (t.inLottery) {
+        return ((t.probability || 0) * 100).toFixed(1) + '% chance (Drought: ' + t.drought + ' yrs)';
+      }
+      return 'Not in lottery (Drought: ' + t.drought + ' yrs)';
+    });
+    const colors = draftOrder.map((t) =>
+      t.inLottery ? CHART_COLORS.simple : CHART_COLORS.grid
+    );
+
+    lotteryChart.data.labels = labels;
+    lotteryChart.data.datasets[0].data = data;
+    lotteryChart.data.datasets[0].backgroundColor = colors;
+    lotteryChart.data.datasets[0].tooltipData = tooltips;
+    lotteryChart.options.scales.x.title.text = 'Odds of getting the #1 pick (pre-2019 lottery)';
+    lotteryChart.options.scales.x.ticks.callback = (v) => v.toFixed(0) + '%';
   } else {
     // Classic COLA: show probabilities
     const labels = draftOrder.map((t) => '#' + t.colaPosition + ' ' + t.id);
@@ -159,7 +179,7 @@ function updateTimelineChart(teamId, variantData, variant, seasonsData) {
       continue;
     }
 
-    const value = variant === 'simple' ? teamState.drought : teamState.index;
+    const value = (variant === 'simple' || variant === 'simpleLottery') ? teamState.drought : teamState.index;
     data.push(value);
 
     // Color by playoff status
@@ -173,7 +193,7 @@ function updateTimelineChart(teamId, variantData, variant, seasonsData) {
 
     // Tooltip
     const parts = [];
-    if (variant === 'simple') {
+    if (variant === 'simple' || variant === 'simpleLottery') {
       parts.push('Drought: ' + teamState.drought + ' yrs');
     } else {
       parts.push('Tickets: ' + Math.round(teamState.index).toLocaleString());
@@ -190,7 +210,7 @@ function updateTimelineChart(teamId, variantData, variant, seasonsData) {
     tooltips.push(parts.join(' | '));
   }
 
-  const color = variant === 'simple' ? CHART_COLORS.simple : CHART_COLORS.classic;
+  const color = (variant === 'simple' || variant === 'simpleLottery') ? CHART_COLORS.simple : CHART_COLORS.classic;
 
   timelineChart.data.labels = labels;
   timelineChart.data.datasets[0].data = data;
@@ -200,7 +220,7 @@ function updateTimelineChart(teamId, variantData, variant, seasonsData) {
   timelineChart.data.datasets[0].tooltipData = tooltips;
   timelineChart.options.scales.y.title = {
     display: true,
-    text: variant === 'simple' ? 'Years without playoff series win or top-3 pick' : 'Lottery tickets (accumulated over years)',
+    text: (variant === 'simple' || variant === 'simpleLottery') ? 'Years without playoff series win or top-3 pick' : 'Lottery tickets (accumulated over years)',
     color: CHART_COLORS.text,
   };
 
