@@ -106,6 +106,9 @@ function renderDraftTable() {
 
     const tdActual = document.createElement('td');
     tdActual.textContent = team.draftPick ? '#' + team.draftPick : '—';
+    if (!team.draftPick) {
+      tdActual.title = 'No first-round pick (traded or forfeited)';
+    }
     if (team.draftPick && team.draftPick <= 3) {
       tdActual.classList.add('highlight');
     }
