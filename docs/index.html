@@ -47,7 +47,7 @@
         <div class="info-cards" style="margin: 1rem 0;">
             <div class="info-card">
                 <h3>Simple COLA</h3>
-                <p><strong>How it works:</strong> Count how many consecutive years a team has gone without (a) winning a playoff series or (b) getting a top-3 draft pick. The team with the longest drought gets the #1 pick. Ties broken by most wins.</p>
+                <p><strong>How it works:</strong> Count how many consecutive years a team has gone without (a) winning a playoff series or (b) getting a top-3 draft pick. The team with the longest drought gets the #1 pick. Ties broken by most wins. All 22 teams that failed to win a series are ranked (14 non-playoff + 8 first-round losers).</p>
                 <p><strong>Key property:</strong> Fully deterministic. No lottery, no randomness. You always know exactly where you stand.</p>
                 <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-four-candidates">Highley's full explanation &rarr;</a>
             </div>
@@ -90,7 +90,7 @@
     <section>
         <h2>Season View</h2>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.8rem;">
-            Pick a season and a COLA variant. The table shows how each non-playoff team would rank under COLA. The <strong>Actual</strong> column shows which draft pick they really got (compare it to the COLA ranking to see what would have changed).
+            Pick a season and a COLA variant. Classic COLA ranks the 14 non-playoff teams. Simple COLA ranks all 22 teams that failed to win a playoff series (14 non-playoff + 8 first-round losers). The <strong>Real Pick</strong> column shows which draft pick they actually got.
         </p>
 
         <div class="controls">
@@ -154,7 +154,7 @@
     <section>
         <h2>Side-by-Side Comparison</h2>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.8rem;">
-            For the selected season: how do Simple COLA and Classic COLA rank the same lottery teams? The <strong>Actual Pick</strong> column shows what really happened under the current NBA system. Look for teams where COLA and reality diverge (those are cases where the current system arguably got it wrong).
+            For the selected season: how do Simple COLA and Classic COLA rank the same teams? Simple COLA includes 22 teams (all that failed to win a playoff series); Classic COLA includes the 14 non-playoff teams. Teams in Simple COLA's pool but not Classic's show &ldquo;&mdash;&rdquo; for Classic columns.
         </p>
         <table class="comparison-table">
             <thead>
@@ -180,7 +180,7 @@
         <div class="info-cards">
             <div class="info-card">
                 <h3>Data</h3>
-                <p>All data comes from <a href="https://www.basketball-reference.com">Basketball Reference</a>: 26 seasons (1999-00 through 2024-25), 775 team-season records. Every win total, playoff result, and draft pick has been individually verified.</p>
+                <p>All data comes from <a href="https://www.basketball-reference.com">Basketball Reference</a>: 26 seasons (1999-00 through 2024-25), 775 team-season records. Win totals, playoff results, and lottery picks (1-14) have been individually verified against the source. Picks 15-30 are sourced programmatically from Basketball Reference draft pages and reflect the original pick holder; draft-night trades in this range are not corrected. Minnesota forfeited their first-round pick in 2001 and 2002 (Joe Smith salary cap violation).</p>
             </div>
             <div class="info-card">
                 <h3>How We Compute COLA</h3>

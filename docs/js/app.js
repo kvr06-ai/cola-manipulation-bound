@@ -161,9 +161,10 @@ function renderComparison() {
   const tbody = document.getElementById('comparison-tbody');
   tbody.innerHTML = '';
 
-  // Get all non-playoff teams
+  // Simple COLA uses 22-team pool (seriesWon === 0), Classic uses 14 (non-playoff).
+  // Show the union so both variants are represented.
   const season = nbaData.seasons.find((s) => s.year === currentYear);
-  const lotteryTeams = season.teams.filter((t) => !t.madePlayoffs);
+  const lotteryTeams = season.teams.filter((t) => !t.madePlayoffs || t.seriesWon === 0);
 
   // Build lookup maps
   const simpleMap = {};
