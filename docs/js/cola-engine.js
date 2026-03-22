@@ -301,15 +301,91 @@ function computeClassicCOLA(seasonsData) {
 // Combined
 // =============================================================================
 
+// =============================================================================
+// Countdown COLA
+// =============================================================================
+// Same drought as Simple COLA. McCarty number = drought × wins (fresh each
+// season). Teams ranked by McCarty number DESC, tiebreak by drought DESC.
+//
+// Survivor-style elimination lottery:
+//   For each pick, the top 5 remaining teams form a pool.
+//   Tickets: rank 1 in pool → 6, rank 2 → 5, rank 3 → 4, rank 4 → 3, rank 5 → 2.
+//   Draw winner, remove, repeat for next pick.
+//
+// Properties (from Highley's Substack Part 3):
+//   - No team falls more than 4 spots below expected position.
+//   - Chances of getting a pick 6+ better than expected are <5%.
+//
+// For display: we show the #1 pick probability (always the top 5 teams:
+// 30%, 25%, 20%, 15%, 10%). Full pick-by-pick probabilities require Monte
+// Carlo simulation and are not computed here.
+
+const COUNTDOWN_POOL_TICKETS = [6, 5, 4, 3, 2]; // tickets for ranks 1-5 in each pool
+const COUNTDOWN_POOL_TOTAL = 20; // sum of tickets
+
+function computeCountdownCOLA(seasonsData) {
+  // Reuse Simple COLA's drought computation.
+  const simpleResults = computeSimpleCOLA(seasonsData);
+  const results = {};
+
+  for (const [yearStr, simpleYear] of Object.entries(simpleResults)) {
+    const year = Number(yearStr);
+
+    // Compute McCarty number for each team in the 22-team pool
+    const draftOrder = simpleYear.draftOrder
+      .map((t) => ({
+        ...t,
+        mccarty: t.drought * t.wins,
+      }))
+      .sort((a, b) => {
+        if (b.mccarty !== a.mccarty) return b.mccarty - a.mccarty;
+        if (b.drought !== a.drought) return b.drought - a.drought;
+        return b.wins - a.wins;
+      })
+      .map((t, i) => ({
+        ...t,
+        colaPosition: i + 1,
+        // #1 pick probability: only top 5 have non-zero odds
+        probability: i < 5 ? COUNTDOWN_POOL_TICKETS[i] / COUNTDOWN_POOL_TOTAL : 0,
+        inLottery: i < 5, // "in lottery" for #1 pick purposes
+      }));
+
+    // Build team lookup
+    const teamStates = {};
+    for (const [id, state] of Object.entries(simpleYear.teams)) {
+      teamStates[id] = {
+        ...state,
+        mccarty: state.drought * (state.wins || 0),
+        probability: null,
+        inLottery: false,
+      };
+    }
+    for (const d of draftOrder) {
+      teamStates[d.id].mccarty = d.mccarty;
+      teamStates[d.id].probability = d.probability;
+      teamStates[d.id].inLottery = d.inLottery;
+      teamStates[d.id].colaPosition = d.colaPosition;
+    }
+
+    results[year] = {
+      teams: teamStates,
+      draftOrder: draftOrder,
+    };
+  }
+
+  return results;
+}
+
 function computeAllVariants(seasonsData) {
   return {
     simple: computeSimpleCOLA(seasonsData),
     simpleLottery: computeSimpleLotteryCOLA(seasonsData),
+    countdown: computeCountdownCOLA(seasonsData),
     classic: computeClassicCOLA(seasonsData),
   };
 }
 
 // Export for use in app.js (and for Node.js testing)
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { computeSimpleCOLA, computeSimpleLotteryCOLA, computeClassicCOLA, computeAllVariants, ALPHA, PLAYOFF_DIMINISH, DRAFT_DIMINISH, PRE_2019_ODDS };
+  module.exports = { computeSimpleCOLA, computeSimpleLotteryCOLA, computeCountdownCOLA, computeClassicCOLA, computeAllVariants, ALPHA, PLAYOFF_DIMINISH, DRAFT_DIMINISH, PRE_2019_ODDS, COUNTDOWN_POOL_TICKETS };
 }

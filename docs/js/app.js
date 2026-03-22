@@ -100,6 +100,8 @@ function renderDraftTable() {
     const tdValue = document.createElement('td');
     if (currentVariant === 'simple' || currentVariant === 'simpleLottery') {
       tdValue.textContent = team.drought + ' yrs';
+    } else if (currentVariant === 'countdown') {
+      tdValue.textContent = team.mccarty.toLocaleString();
     } else {
       tdValue.textContent = Math.round(team.index).toLocaleString();
     }
@@ -119,13 +121,15 @@ function renderDraftTable() {
     tr.appendChild(tdRank);
     tr.appendChild(tdTeam);
     tr.appendChild(tdValue);
-    if (currentVariant === 'classic' || currentVariant === 'simpleLottery') {
+    if (currentVariant === 'classic' || currentVariant === 'simpleLottery' || currentVariant === 'countdown') {
       const tdProb = document.createElement('td');
       if (team.probability != null && team.probability > 0) {
-        tdProb.textContent = (team.probability * 100).toFixed(1) + '%';
-      } else if (currentVariant === 'simpleLottery' && !team.inLottery) {
+        tdProb.textContent = (team.probability * 100).toFixed(0) + '%';
+      } else if ((currentVariant === 'simpleLottery' || currentVariant === 'countdown') && !team.inLottery) {
         tdProb.textContent = '—';
-        tdProb.title = 'Not in lottery (ranked 15-22 by drought)';
+        tdProb.title = currentVariant === 'countdown'
+          ? 'Not in #1 pick pool (only top 5 by McCarty number)'
+          : 'Not in lottery (ranked 15-22 by drought)';
       } else {
         tdProb.textContent = (team.probability * 100).toFixed(1) + '%';
       }
@@ -149,6 +153,12 @@ function renderDraftTable() {
     probHeader.style.display = '';
     probHeader.textContent = 'Odds of #1 Pick';
     probHeader.title = 'Pre-2019 NBA lottery odds based on drought ranking (top 14 only)';
+  } else if (currentVariant === 'countdown') {
+    valueHeader.textContent = 'McCarty #';
+    valueHeader.title = 'Drought × regular-season wins (higher = better draft position)';
+    probHeader.style.display = '';
+    probHeader.textContent = 'Odds of #1 Pick';
+    probHeader.title = 'Survivor-style lottery: top 5 by McCarty number get 30%/25%/20%/15%/10%';
   } else {
     valueHeader.textContent = 'Tickets';
     valueHeader.title = 'Accumulated lottery tickets (more = better odds of a high pick)';
@@ -183,8 +193,9 @@ function renderTimeline() {
 function renderComparison() {
   const simple = colaResults.simple[currentYear];
   const simpleLottery = colaResults.simpleLottery[currentYear];
+  const countdown = colaResults.countdown[currentYear];
   const classic = colaResults.classic[currentYear];
-  if (!simple || !simpleLottery || !classic) return;
+  if (!simple || !simpleLottery || !countdown || !classic) return;
 
   const tbody = document.getElementById('comparison-tbody');
   tbody.innerHTML = '';
@@ -199,10 +210,12 @@ function renderComparison() {
   simple.draftOrder.forEach((t) => { simpleMap[t.id] = t; });
   const slMap = {};
   simpleLottery.draftOrder.forEach((t) => { slMap[t.id] = t; });
+  const cdMap = {};
+  countdown.draftOrder.forEach((t) => { cdMap[t.id] = t; });
   const classicMap = {};
   classic.draftOrder.forEach((t) => { classicMap[t.id] = t; });
 
-  // Sort by Simple COLA position (common across Simple and Simple Lottery)
+  // Sort by Simple COLA position
   const sorted = lotteryTeams
     .map((t) => ({
       id: t.id,
@@ -210,6 +223,8 @@ function renderComparison() {
       simplePos: simpleMap[t.id] ? simpleMap[t.id].colaPosition : '—',
       simpleDrought: simpleMap[t.id] ? simpleMap[t.id].drought : '—',
       slOdds: slMap[t.id] && slMap[t.id].probability > 0 ? (slMap[t.id].probability * 100).toFixed(1) + '%' : '—',
+      cdPos: cdMap[t.id] ? cdMap[t.id].colaPosition : '—',
+      cdMccarty: cdMap[t.id] ? cdMap[t.id].mccarty : '—',
       classicPos: classicMap[t.id] ? classicMap[t.id].colaPosition : '—',
       classicProb: classicMap[t.id] ? (classicMap[t.id].probability * 100).toFixed(1) + '%' : '—',
       actualPick: t.draftPick ? '#' + t.draftPick : '—',
@@ -228,6 +243,8 @@ function renderComparison() {
       '<td>' + t.simplePos + '</td>' +
       '<td>' + t.simpleDrought + '</td>' +
       '<td>' + t.slOdds + '</td>' +
+      '<td>' + t.cdPos + '</td>' +
+      '<td>' + t.cdMccarty + '</td>' +
       '<td>' + t.classicPos + '</td>' +
       '<td>' + t.classicProb + '</td>' +
       '<td>' + t.actualPick + '</td>' +
