@@ -129,6 +129,12 @@ function renderDraftTable() {
     tbody.appendChild(tr);
   }
 
+  // Show cold-start note for the first season (no prior history)
+  const coldNote = document.getElementById('cold-start-note');
+  if (coldNote) {
+    coldNote.style.display = currentYear === 2000 ? 'block' : 'none';
+  }
+
   // Update column headers based on variant
   const valueHeader = document.getElementById('value-header');
   const probHeader = document.getElementById('prob-header');
