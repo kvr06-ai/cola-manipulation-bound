@@ -129,12 +129,6 @@ function renderDraftTable() {
     tbody.appendChild(tr);
   }
 
-  // Show cold-start note for the first season (no prior history)
-  const coldNote = document.getElementById('cold-start-note');
-  if (coldNote) {
-    coldNote.style.display = currentYear === 2000 ? 'block' : 'none';
-  }
-
   // Update column headers based on variant
   const valueHeader = document.getElementById('value-header');
   const probHeader = document.getElementById('prob-header');
@@ -154,7 +148,18 @@ function renderDraftTable() {
 function renderLotteryChart() {
   const variantData = colaResults[currentVariant][currentYear];
   if (!variantData) return;
-  updateLotteryChart(variantData.draftOrder, currentVariant);
+
+  const canvas = document.getElementById('lottery-chart');
+  const overlay = document.getElementById('cold-start-overlay');
+
+  if (currentYear === 2000) {
+    canvas.style.display = 'none';
+    overlay.style.display = 'flex';
+  } else {
+    canvas.style.display = '';
+    overlay.style.display = 'none';
+    updateLotteryChart(variantData.draftOrder, currentVariant);
+  }
 }
 
 function renderTimeline() {
