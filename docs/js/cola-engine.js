@@ -11,7 +11,7 @@
 // Constants (source of truth: cola/constants.py)
 // =============================================================================
 const ALPHA = 1000;
-const TOP_PICKS_RAFFLED = 4;
+
 
 // Fraction of index REMOVED. index *= (1 - fraction).
 const PLAYOFF_DIMINISH = {
@@ -307,21 +307,104 @@ function computeClassicCOLA(seasonsData) {
 // Same drought as Simple COLA. McCarty number = drought × wins (fresh each
 // season). Teams ranked by McCarty number DESC, tiebreak by drought DESC.
 //
-// Survivor-style elimination lottery:
-//   For each pick, the top 5 remaining teams form a pool.
-//   Tickets: rank 1 in pool → 6, rank 2 → 5, rank 3 → 4, rank 4 → 3, rank 5 → 2.
-//   Draw winner, remove, repeat for next pick.
+// Survivor-style elimination lottery (bottom-up):
+//   1. Rank all 22 teams by McCarty number (highest = rank 1).
+//   2. Start from pick #22 (worst pick), working up to pick #1.
+//   3. For each pick: form a pool from the 5 LOWEST-ranked remaining teams.
+//      Tickets: lowest in pool → 6, next → 5, ..., highest in pool → 2.
+//      Draw one team — they receive that pick and are eliminated.
+//   4. When fewer than 5 teams remain, pool = all remaining with same
+//      ticket ratio (truncated from the low end).
+//   5. Last team standing gets pick #1.
 //
 // Properties (from Highley's Substack Part 3):
 //   - No team falls more than 4 spots below expected position.
 //   - Chances of getting a pick 6+ better than expected are <5%.
 //
-// For display: we show the #1 pick probability (always the top 5 teams:
-// 30%, 25%, 20%, 15%, 10%). Full pick-by-pick probabilities require Monte
-// Carlo simulation and are not computed here.
+// Full pick-by-pick probabilities computed via Monte Carlo simulation
+// (10,000 trials per season).
 
 const COUNTDOWN_POOL_TICKETS = [6, 5, 4, 3, 2]; // tickets for ranks 1-5 in each pool
-const COUNTDOWN_POOL_TOTAL = 20; // sum of tickets
+const MC_TRIALS = 10000;
+
+/**
+ * Run one trial of the Countdown COLA survivor-style draft.
+ *
+ * @param {Array} rankedIds - Team IDs sorted by McCarty DESC (index 0 = rank 1 = best).
+ * @returns {Object} { teamId: pickNumber } mapping for this trial.
+ */
+function countdownTrial(rankedIds) {
+  // "remaining" tracks teams still in play, ordered worst-to-best (reversed).
+  // We pop from the end (worst remaining) to form pools.
+  const remaining = [...rankedIds].reverse(); // index 0 = worst (lowest McCarty)
+  const assignment = {};
+  const totalPicks = remaining.length;
+
+  for (let pick = totalPicks; pick >= 1; pick--) {
+    if (remaining.length === 1) {
+      assignment[remaining[0]] = pick;
+      break;
+    }
+
+    // Form pool from the bottom (lowest McCarty) of remaining
+    const poolSize = Math.min(5, remaining.length);
+    const pool = remaining.slice(0, poolSize); // worst teams first
+
+    // Assign tickets: worst (index 0) → 6, next → 5, ... best in pool → 2
+    const tickets = COUNTDOWN_POOL_TICKETS.slice(0, poolSize);
+    const ticketTotal = tickets.reduce((a, b) => a + b, 0);
+
+    // Weighted random draw
+    const roll = Math.random() * ticketTotal;
+    let cumulative = 0;
+    let drawn = 0;
+    for (let i = 0; i < poolSize; i++) {
+      cumulative += tickets[i];
+      if (roll < cumulative) {
+        drawn = i;
+        break;
+      }
+    }
+
+    // Assign pick and eliminate
+    assignment[pool[drawn]] = pick;
+    remaining.splice(drawn, 1);
+  }
+
+  return assignment;
+}
+
+/**
+ * Run Monte Carlo simulation for one season's Countdown COLA.
+ *
+ * @param {Array} rankedIds - Team IDs sorted by McCarty DESC.
+ * @returns {Object} { teamId: { pickProbs: [p1, p2, ...pN], expectedPick: number } }
+ */
+function countdownMonteCarlo(rankedIds) {
+  const n = rankedIds.length;
+  // pickCounts[teamId][pickIndex] = count of times team got that pick
+  const pickCounts = {};
+  for (const id of rankedIds) {
+    pickCounts[id] = new Array(n).fill(0);
+  }
+
+  for (let t = 0; t < MC_TRIALS; t++) {
+    const assignment = countdownTrial(rankedIds);
+    for (const [id, pick] of Object.entries(assignment)) {
+      pickCounts[id][pick - 1] += 1;
+    }
+  }
+
+  // Convert counts to probabilities
+  const result = {};
+  for (const id of rankedIds) {
+    const probs = pickCounts[id].map(c => c / MC_TRIALS);
+    const expected = probs.reduce((sum, p, i) => sum + p * (i + 1), 0);
+    result[id] = { pickProbs: probs, expectedPick: expected };
+  }
+
+  return result;
+}
 
 function computeCountdownCOLA(seasonsData) {
   // Reuse Simple COLA's drought computation.
@@ -331,8 +414,8 @@ function computeCountdownCOLA(seasonsData) {
   for (const [yearStr, simpleYear] of Object.entries(simpleResults)) {
     const year = Number(yearStr);
 
-    // Compute McCarty number for each team in the 22-team pool
-    const draftOrder = simpleYear.draftOrder
+    // Compute McCarty number and rank
+    const ranked = simpleYear.draftOrder
       .map((t) => ({
         ...t,
         mccarty: t.drought * t.wins,
@@ -341,14 +424,21 @@ function computeCountdownCOLA(seasonsData) {
         if (b.mccarty !== a.mccarty) return b.mccarty - a.mccarty;
         if (b.drought !== a.drought) return b.drought - a.drought;
         return b.wins - a.wins;
-      })
-      .map((t, i) => ({
-        ...t,
-        colaPosition: i + 1,
-        // #1 pick probability: only top 5 have non-zero odds
-        probability: i < 5 ? COUNTDOWN_POOL_TICKETS[i] / COUNTDOWN_POOL_TOTAL : 0,
-        inLottery: i < 5, // "in lottery" for #1 pick purposes
-      }));
+      });
+
+    const rankedIds = ranked.map(t => t.id);
+
+    // Run Monte Carlo
+    const mc = countdownMonteCarlo(rankedIds);
+
+    const draftOrder = ranked.map((t, i) => ({
+      ...t,
+      colaPosition: i + 1,
+      probability: mc[t.id].pickProbs[0], // P(get pick #1)
+      expectedPick: mc[t.id].expectedPick,
+      pickProbs: mc[t.id].pickProbs,
+      inLottery: mc[t.id].pickProbs[0] >= 0.005, // show if ≥0.5%
+    }));
 
     // Build team lookup
     const teamStates = {};
@@ -357,12 +447,14 @@ function computeCountdownCOLA(seasonsData) {
         ...state,
         mccarty: state.drought * (state.wins || 0),
         probability: null,
+        expectedPick: null,
         inLottery: false,
       };
     }
     for (const d of draftOrder) {
       teamStates[d.id].mccarty = d.mccarty;
       teamStates[d.id].probability = d.probability;
+      teamStates[d.id].expectedPick = d.expectedPick;
       teamStates[d.id].inLottery = d.inLottery;
       teamStates[d.id].colaPosition = d.colaPosition;
     }

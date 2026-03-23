@@ -73,8 +73,9 @@ function updateLotteryChart(draftOrder, variant) {
     const labels = draftOrder.map((t) => '#' + t.colaPosition + ' ' + t.id);
     const data = draftOrder.map((t) => t.mccarty);
     const tooltips = draftOrder.map((t) => {
-      const prob = t.inLottery ? ' | #1 pick: ' + (t.probability * 100).toFixed(0) + '%' : '';
-      return 'McCarty: ' + t.mccarty + ' (drought ' + t.drought + ' × ' + t.wins + ' wins)' + prob;
+      const prob = t.probability > 0 ? ' | #1 pick: ' + (t.probability * 100).toFixed(1) + '%' : '';
+      const exp = t.expectedPick ? ' | E[pick]: ' + t.expectedPick.toFixed(1) : '';
+      return 'McCarty: ' + t.mccarty + ' (drought ' + t.drought + ' × ' + t.wins + ' wins)' + prob + exp;
     });
     const colors = draftOrder.map((t) =>
       t.inLottery ? CHART_COLORS.highlight : CHART_COLORS.simple

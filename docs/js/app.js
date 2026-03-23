@@ -123,13 +123,22 @@ function renderDraftTable() {
     tr.appendChild(tdValue);
     if (currentVariant === 'classic' || currentVariant === 'simpleLottery' || currentVariant === 'countdown') {
       const tdProb = document.createElement('td');
-      if (team.probability != null && team.probability > 0) {
-        tdProb.textContent = (team.probability * 100).toFixed(0) + '%';
-      } else if ((currentVariant === 'simpleLottery' || currentVariant === 'countdown') && !team.inLottery) {
+      if (currentVariant === 'countdown') {
+        // Monte Carlo probabilities: show 1 decimal, <1% for tiny values
+        const pct = (team.probability || 0) * 100;
+        if (pct >= 0.5) {
+          tdProb.textContent = pct.toFixed(1) + '%';
+        } else if (pct > 0) {
+          tdProb.textContent = '<1%';
+        } else {
+          tdProb.textContent = '—';
+        }
+        if (team.expectedPick) {
+          tdProb.title = 'E[pick] = ' + team.expectedPick.toFixed(1) + ' (Monte Carlo, 10k trials)';
+        }
+      } else if (currentVariant === 'simpleLottery' && !team.inLottery) {
         tdProb.textContent = '—';
-        tdProb.title = currentVariant === 'countdown'
-          ? 'Not in #1 pick pool (only top 5 by McCarty number)'
-          : 'Not in lottery (ranked 15-22 by drought)';
+        tdProb.title = 'Not in lottery (ranked 15-22 by drought)';
       } else {
         tdProb.textContent = (team.probability * 100).toFixed(1) + '%';
       }
@@ -158,7 +167,7 @@ function renderDraftTable() {
     valueHeader.title = 'Drought × regular-season wins (higher = better draft position)';
     probHeader.style.display = '';
     probHeader.textContent = 'Odds of #1 Pick';
-    probHeader.title = 'Survivor-style lottery: top 5 by McCarty number get 30%/25%/20%/15%/10%';
+    probHeader.title = 'Monte Carlo simulation (10,000 trials) of survivor-style bottom-up elimination lottery';
   } else {
     valueHeader.textContent = 'Tickets';
     valueHeader.title = 'Accumulated lottery tickets (more = better odds of a high pick)';
@@ -225,6 +234,7 @@ function renderComparison() {
       slOdds: slMap[t.id] && slMap[t.id].probability > 0 ? (slMap[t.id].probability * 100).toFixed(1) + '%' : '—',
       cdPos: cdMap[t.id] ? cdMap[t.id].colaPosition : '—',
       cdMccarty: cdMap[t.id] ? cdMap[t.id].mccarty : '—',
+      cdOdds: cdMap[t.id] && cdMap[t.id].probability >= 0.005 ? (cdMap[t.id].probability * 100).toFixed(1) + '%' : cdMap[t.id] && cdMap[t.id].probability > 0 ? '<1%' : '—',
       classicPos: classicMap[t.id] ? classicMap[t.id].colaPosition : '—',
       classicProb: classicMap[t.id] ? (classicMap[t.id].probability * 100).toFixed(1) + '%' : '—',
       actualPick: t.draftPick ? '#' + t.draftPick : '—',
@@ -245,6 +255,7 @@ function renderComparison() {
       '<td>' + t.slOdds + '</td>' +
       '<td>' + t.cdPos + '</td>' +
       '<td>' + t.cdMccarty + '</td>' +
+      '<td>' + t.cdOdds + '</td>' +
       '<td>' + t.classicPos + '</td>' +
       '<td>' + t.classicProb + '</td>' +
       '<td>' + t.actualPick + '</td>' +
