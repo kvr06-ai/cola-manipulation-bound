@@ -3,6 +3,59 @@
 a, a:visited, a:active { color: var(--link); }
 a:hover { color: var(--link); opacity: 0.85; }
 
+/* ── Shared navigation bar ── */
+.site-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.site-nav a.nav-brand,
+.site-nav a.nav-brand:visited,
+.site-nav a.nav-brand:active {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--accent);
+  text-decoration: none;
+  letter-spacing: 0.05em;
+}
+
+.site-nav .nav-links {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.site-nav .nav-links a,
+.site-nav .nav-links a:visited,
+.site-nav .nav-links a:active {
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  border-radius: var(--radius);
+  transition: background var(--transition), color var(--transition);
+}
+
+.site-nav .nav-links a:hover {
+  background: var(--surface-alt);
+  color: var(--text);
+  opacity: 1;
+}
+
+.site-nav .nav-links a.nav-active,
+.site-nav .nav-links a.nav-active:visited {
+  color: var(--accent);
+  background: rgba(233, 69, 96, 0.12);
+  font-weight: 600;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--bg);
@@ -77,4 +130,6 @@ footer a:hover { text-decoration: underline; }
 @media (max-width: 768px) {
   .two-col { grid-template-columns: 1fr; }
   header h1 { font-size: 1.4rem; }
+  .site-nav { padding: 0.5rem 1rem; }
+  .site-nav .nav-links a { font-size: 0.8rem; padding: 0.25rem 0.5rem; }
 }
