@@ -1,0 +1,201 @@
+/* ── Trade Simulator page-specific styles ── */
+
+.section-intro {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+/* Option cards — 2×2 grid */
+.option-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.option-card {
+  cursor: pointer;
+  display: block;
+}
+
+.option-card input[type="checkbox"] {
+  display: none;
+}
+
+.option-card-inner {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.2rem;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.option-card input:checked ~ .option-card-inner {
+  border-color: var(--accent);
+  background: var(--surface-alt);
+}
+
+.option-card-inner h3 {
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.option-card-inner p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.4rem;
+  line-height: 1.5;
+}
+
+.option-color {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.option-tradeoff {
+  font-style: italic;
+  font-size: 0.8rem !important;
+  opacity: 0.8;
+}
+
+.badge {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Controls */
+.controls-row {
+  display: flex;
+  gap: 1.5rem;
+  align-items: end;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.control-group label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.year-display {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--accent);
+  min-width: 4ch;
+}
+
+/* Snapshot table */
+.table-scroll {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+#snapshot-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+#snapshot-table th {
+  background: var(--surface-alt);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.5rem 0.6rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+#snapshot-table th:first-child,
+#snapshot-table td:first-child {
+  text-align: left;
+}
+
+#snapshot-table td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
+#snapshot-table tr.traded-pick {
+  background: rgba(233, 69, 96, 0.06);
+}
+
+#snapshot-table tr.traded-pick td:nth-child(3) {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Case study cards */
+.case-study-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.2rem;
+}
+
+.case-study-card h3 {
+  font-size: 0.95rem;
+  margin-bottom: 0.4rem;
+  color: var(--text);
+}
+
+.case-study-card p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.case-study-card .jump-btn {
+  display: inline-block;
+  font-size: 0.8rem;
+  color: var(--link);
+  cursor: pointer;
+  text-decoration: none;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+.case-study-card .jump-btn:hover {
+  text-decoration: underline;
+}
+
+/* Chart container */
+.chart-container {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .option-cards { grid-template-columns: 1fr; }
+  .controls-row { flex-direction: column; align-items: stretch; }
+  #snapshot-table { font-size: 0.75rem; }
+  #snapshot-table th, #snapshot-table td { padding: 0.3rem 0.4rem; }
+}

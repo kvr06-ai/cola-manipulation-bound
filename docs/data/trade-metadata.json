@@ -1,0 +1,526 @@
+{
+  "meta": {
+    "description": "Lottery-range (picks 1-14) NBA draft pick trades, 2000-2025. Each entry records the original owner of the pick and the team that received it via trade. Used to model COLA manipulation bound under different trade-rule options.",
+    "sources": [
+      "Wikipedia NBA Draft pages (2000-2025)",
+      "Basketball-Reference draft history"
+    ],
+    "lastUpdated": "2026-03-28",
+    "notes": [
+      "Only lottery-range picks (1-14) are tracked.",
+      "Team abbreviations normalized to canonical IDs matching nba-data.json: OKC (not SEA), MEM (not VAN), BKN (not NJN/BRK), NOP (not NOH/NOK), CHA (not CHO), PHX (not PHO).",
+      "draftNight=true means the trade was executed on draft night (player selected by one team, rights immediately traded).",
+      "Some picks involved multi-team or multi-step trades; intermediary teams are noted where relevant.",
+      "Draft-night PLAYER swaps (where both teams used their own picks and traded the selected players) are excluded. Only pre-draft PICK RIGHTS trades are included."
+    ]
+  },
+  "trades": [
+    {
+      "year": 2000,
+      "pick": 5,
+      "originalOwner": "GSW",
+      "receivedBy": "ORL",
+      "draftNight": false
+    },
+    {
+      "year": 2000,
+      "pick": 7,
+      "originalOwner": "WAS",
+      "receivedBy": "CHI",
+      "draftNight": false
+    },
+    {
+      "year": 2000,
+      "pick": 10,
+      "originalOwner": "DEN",
+      "receivedBy": "ORL",
+      "draftNight": false
+    },
+    {
+      "year": 2001,
+      "pick": 11,
+      "originalOwner": "DEN",
+      "receivedBy": "BOS",
+      "draftNight": false
+    },
+    {
+      "year": 2001,
+      "pick": 14,
+      "originalOwner": "IND",
+      "receivedBy": "GSW",
+      "draftNight": false
+    },
+    {
+      "year": 2002,
+      "pick": 8,
+      "originalOwner": "ATL",
+      "receivedBy": "LAC",
+      "draftNight": false
+    },
+    {
+      "year": 2003,
+      "pick": 2,
+      "originalOwner": "MEM",
+      "receivedBy": "DET",
+      "draftNight": false
+    },
+    {
+      "year": 2003,
+      "pick": 8,
+      "originalOwner": "ATL",
+      "receivedBy": "MIL",
+      "draftNight": false
+    },
+    {
+      "year": 2003,
+      "pick": 13,
+      "originalOwner": "HOU",
+      "receivedBy": "MEM",
+      "draftNight": false
+    },
+    {
+      "year": 2003,
+      "pick": 14,
+      "originalOwner": "MIL",
+      "receivedBy": "OKC",
+      "draftNight": false,
+      "notes": "Original agent data said MIL->SEA; normalized SEA to OKC per canonical IDs."
+    },
+    {
+      "year": 2004,
+      "pick": 2,
+      "originalOwner": "LAC",
+      "receivedBy": "CHA",
+      "draftNight": false
+    },
+    {
+      "year": 2004,
+      "pick": 4,
+      "originalOwner": "CHA",
+      "receivedBy": "LAC",
+      "draftNight": false
+    },
+    {
+      "year": 2005,
+      "pick": 3,
+      "originalOwner": "POR",
+      "receivedBy": "UTA",
+      "draftNight": false
+    },
+    {
+      "year": 2005,
+      "pick": 6,
+      "originalOwner": "UTA",
+      "receivedBy": "POR",
+      "draftNight": false
+    },
+    {
+      "year": 2005,
+      "pick": 13,
+      "originalOwner": "CLE",
+      "receivedBy": "CHA",
+      "draftNight": false,
+      "notes": "Routed via PHX."
+    },
+    {
+      "year": 2006,
+      "pick": 2,
+      "originalOwner": "NYK",
+      "receivedBy": "CHI",
+      "draftNight": false
+    },
+    {
+      "year": 2007,
+      "pick": 9,
+      "originalOwner": "NYK",
+      "receivedBy": "CHI",
+      "draftNight": false,
+      "notes": "Pick swap."
+    },
+    {
+      "year": 2007,
+      "pick": 11,
+      "originalOwner": "IND",
+      "receivedBy": "ATL",
+      "draftNight": false
+    },
+    {
+      "year": 2009,
+      "pick": 5,
+      "originalOwner": "WAS",
+      "receivedBy": "MIN",
+      "draftNight": false
+    },
+    {
+      "year": 2010,
+      "pick": 9,
+      "originalOwner": "NYK",
+      "receivedBy": "UTA",
+      "draftNight": false,
+      "notes": "Routed via PHX."
+    },
+    {
+      "year": 2011,
+      "pick": 1,
+      "originalOwner": "LAC",
+      "receivedBy": "CLE",
+      "draftNight": false
+    },
+    {
+      "year": 2011,
+      "pick": 3,
+      "originalOwner": "BKN",
+      "receivedBy": "UTA",
+      "draftNight": false,
+      "notes": "Original agent data said NJN; normalized to BKN per canonical IDs."
+    },
+    {
+      "year": 2012,
+      "pick": 6,
+      "originalOwner": "BKN",
+      "receivedBy": "POR",
+      "draftNight": false,
+      "notes": "Original agent data said BRK; normalized to BKN per canonical IDs."
+    },
+    {
+      "year": 2012,
+      "pick": 10,
+      "originalOwner": "MIN",
+      "receivedBy": "NOP",
+      "draftNight": false,
+      "notes": "Routed via LAC."
+    },
+    {
+      "year": 2012,
+      "pick": 12,
+      "originalOwner": "MIL",
+      "receivedBy": "HOU",
+      "draftNight": false
+    },
+    {
+      "year": 2012,
+      "pick": 14,
+      "originalOwner": "HOU",
+      "receivedBy": "MIL",
+      "draftNight": false
+    },
+    {
+      "year": 2013,
+      "pick": 6,
+      "originalOwner": "PHI",
+      "receivedBy": "NOP",
+      "draftNight": false
+    },
+    {
+      "year": 2013,
+      "pick": 9,
+      "originalOwner": "UTA",
+      "receivedBy": "MIN",
+      "draftNight": false
+    },
+    {
+      "year": 2013,
+      "pick": 12,
+      "originalOwner": "TOR",
+      "receivedBy": "OKC",
+      "draftNight": false,
+      "notes": "Routed via HOU."
+    },
+    {
+      "year": 2013,
+      "pick": 13,
+      "originalOwner": "BOS",
+      "receivedBy": "DAL",
+      "draftNight": false
+    },
+    {
+      "year": 2013,
+      "pick": 14,
+      "originalOwner": "MIN",
+      "receivedBy": "UTA",
+      "draftNight": false
+    },
+    {
+      "year": 2014,
+      "pick": 9,
+      "originalOwner": "DET",
+      "receivedBy": "CHA",
+      "draftNight": false
+    },
+    {
+      "year": 2014,
+      "pick": 10,
+      "originalOwner": "NOP",
+      "receivedBy": "PHI",
+      "draftNight": false
+    },
+    {
+      "year": 2014,
+      "pick": 12,
+      "originalOwner": "NYK",
+      "receivedBy": "ORL",
+      "draftNight": false,
+      "notes": "Routed via DEN."
+    },
+    {
+      "year": 2016,
+      "pick": 3,
+      "originalOwner": "BKN",
+      "receivedBy": "BOS",
+      "draftNight": false,
+      "notes": "Original agent data said BRK; normalized to BKN. Part of the Billy King mega-trade."
+    },
+    {
+      "year": 2016,
+      "pick": 9,
+      "originalOwner": "NYK",
+      "receivedBy": "TOR",
+      "draftNight": false
+    },
+    {
+      "year": 2016,
+      "pick": 13,
+      "originalOwner": "WAS",
+      "receivedBy": "PHX",
+      "draftNight": false
+    },
+    {
+      "year": 2017,
+      "pick": 1,
+      "originalOwner": "BKN",
+      "receivedBy": "PHI",
+      "draftNight": false,
+      "notes": "BKN pick held by BOS (from Billy King trade), then swapped to PHI. Original agent data said BRK; normalized to BKN."
+    },
+    {
+      "year": 2017,
+      "pick": 3,
+      "originalOwner": "SAC",
+      "receivedBy": "BOS",
+      "draftNight": false,
+      "notes": "Routed via PHI."
+    },
+    {
+      "year": 2017,
+      "pick": 5,
+      "originalOwner": "PHI",
+      "receivedBy": "SAC",
+      "draftNight": false
+    },
+    {
+      "year": 2017,
+      "pick": 7,
+      "originalOwner": "MIN",
+      "receivedBy": "CHI",
+      "draftNight": true
+    },
+    {
+      "year": 2017,
+      "pick": 10,
+      "originalOwner": "NOP",
+      "receivedBy": "POR",
+      "draftNight": true,
+      "notes": "Routed via SAC."
+    },
+    {
+      "year": 2017,
+      "pick": 13,
+      "originalOwner": "DEN",
+      "receivedBy": "UTA",
+      "draftNight": true
+    },
+    {
+      "year": 2018,
+      "pick": 8,
+      "originalOwner": "BKN",
+      "receivedBy": "CLE",
+      "draftNight": false,
+      "notes": "Routed via BOS. Original agent data said BRK; normalized to BKN."
+    },
+    {
+      "year": 2018,
+      "pick": 10,
+      "originalOwner": "LAL",
+      "receivedBy": "PHI",
+      "draftNight": false,
+      "notes": "Routed via PHI. (receivedBy corrected to PHI)"
+    },
+    {
+      "year": 2018,
+      "pick": 12,
+      "originalOwner": "DET",
+      "receivedBy": "LAC",
+      "draftNight": true,
+      "notes": "Routed via LAC. (receivedBy corrected to LAC)"
+    },
+    {
+      "year": 2019,
+      "pick": 4,
+      "originalOwner": "LAL",
+      "receivedBy": "ATL",
+      "draftNight": true,
+      "notes": "Routed via NOP."
+    },
+    {
+      "year": 2019,
+      "pick": 8,
+      "originalOwner": "ATL",
+      "receivedBy": "NOP",
+      "draftNight": true
+    },
+    {
+      "year": 2019,
+      "pick": 10,
+      "originalOwner": "DAL",
+      "receivedBy": "ATL",
+      "draftNight": false
+    },
+    {
+      "year": 2019,
+      "pick": 14,
+      "originalOwner": "SAC",
+      "receivedBy": "BOS",
+      "draftNight": false,
+      "notes": "Routed via PHI."
+    },
+    {
+      "year": 2020,
+      "pick": 14,
+      "originalOwner": "MEM",
+      "receivedBy": "BOS",
+      "draftNight": false
+    },
+    {
+      "year": 2021,
+      "pick": 7,
+      "originalOwner": "MIN",
+      "receivedBy": "GSW",
+      "draftNight": false
+    },
+    {
+      "year": 2021,
+      "pick": 8,
+      "originalOwner": "CHI",
+      "receivedBy": "ORL",
+      "draftNight": false
+    },
+    {
+      "year": 2022,
+      "pick": 8,
+      "originalOwner": "LAL",
+      "receivedBy": "NOP",
+      "draftNight": false
+    },
+    {
+      "year": 2022,
+      "pick": 12,
+      "originalOwner": "LAC",
+      "receivedBy": "OKC",
+      "draftNight": false
+    },
+    {
+      "year": 2023,
+      "pick": 11,
+      "originalOwner": "CHI",
+      "receivedBy": "ORL",
+      "draftNight": false
+    },
+    {
+      "year": 2024,
+      "pick": 3,
+      "originalOwner": "BKN",
+      "receivedBy": "HOU",
+      "draftNight": false,
+      "notes": "Original agent data said BRK; normalized to BKN."
+    },
+    {
+      "year": 2024,
+      "pick": 8,
+      "originalOwner": "TOR",
+      "receivedBy": "MIN",
+      "draftNight": true,
+      "notes": "Routed via SAS."
+    },
+    {
+      "year": 2024,
+      "pick": 12,
+      "originalOwner": "HOU",
+      "receivedBy": "OKC",
+      "draftNight": false
+    },
+    {
+      "year": 2024,
+      "pick": 14,
+      "originalOwner": "GSW",
+      "receivedBy": "WAS",
+      "draftNight": false,
+      "notes": "Multi-team trade."
+    },
+    {
+      "year": 2025,
+      "pick": 10,
+      "originalOwner": "PHX",
+      "receivedBy": "HOU",
+      "draftNight": false,
+      "notes": "Round-tripped: PHX's pick went to BKN then HOU then back to PHX. originalOwner and receivedBy are the same team. (receivedBy corrected to HOU)"
+    },
+    {
+      "year": 2025,
+      "pick": 13,
+      "originalOwner": "SAC",
+      "receivedBy": "ATL",
+      "draftNight": true,
+      "notes": "Routed via ATL. (receivedBy corrected to ATL)"
+    },
+    {
+      "year": 2025,
+      "pick": 14,
+      "originalOwner": "ATL",
+      "receivedBy": "SAS",
+      "draftNight": false
+    }
+  ],
+  "caseStudies": [
+    {
+      "id": "bkn-phi-2017-1",
+      "title": "2017 #1: The Brooklyn-Boston Mega-Trade",
+      "year": 2017,
+      "pick": 1,
+      "originalOwner": "BKN",
+      "receivedBy": "PHI",
+      "intermediary": "BOS",
+      "description": "BOS held BKN's 2017 first-rounder from the 2013 Billy King mega-trade. BOS swapped this #1 pick to PHI (who selected Markelle Fultz) in exchange for PHI's #3 pick (Jayson Tatum) plus a future first. Under COLA: the key question is whose manipulation index gets reduced -- BKN (who tanked but lost their pick), BOS (who held the pick rights), or PHI (who ultimately selected)?",
+      "colaImplications": "Under Option 1 (exclude traded picks from index), BKN's tank is not penalized since they don't benefit from the pick. Under Option 2 (penalize original owner), BKN's index is reduced even though BOS/PHI benefited. This is the poster child for multi-step pick trades complicating manipulation detection."
+    },
+    {
+      "id": "bkn-bos-2016-3",
+      "title": "2016 #3: Billy King Mega-Trade Aftermath",
+      "year": 2016,
+      "pick": 3,
+      "originalOwner": "BKN",
+      "receivedBy": "BOS",
+      "description": "BKN traded their 2016 first-rounder to BOS in the 2013 mega-trade (Kevin Garnett / Paul Pierce). BKN finished with the 3rd-worst record and BOS selected Jaylen Brown. BKN had no incentive structure to win since they had already traded away the pick -- yet they tanked anyway (organizational dysfunction, not strategic manipulation).",
+      "colaImplications": "The poster child for Option 2 (penalize original owner): BKN's poor record directly benefited BOS. Under Option 1, BKN's tank doesn't affect their own index since the pick was traded away. Under Option 2, BKN's index is reduced to reflect the externality they created. This case demonstrates why Option 2 may over-penalize: BKN wasn't strategically tanking for pick benefit, they were just bad."
+    },
+    {
+      "id": "lac-cle-2011-1",
+      "title": "2011 #1: Kyrie Irving / LAC-to-CLE",
+      "year": 2011,
+      "pick": 1,
+      "originalOwner": "LAC",
+      "receivedBy": "CLE",
+      "description": "LAC traded their 2011 unprotected first-rounder to CLE in the Baron Davis trade (2008). LAC's pick landed #1 overall and CLE selected Kyrie Irving. LAC had traded the pick years earlier with no expectation it would be #1.",
+      "colaImplications": "Massive index swing depending on trade rule. Under Option 1 (exclude traded picks), CLE's index ignores this pick since they didn't earn it through their own record. Under Option 2 (penalize original owner), LAC's index is reduced for the #1 pick even though they had no strategic incentive to tank for it. This case highlights how pre-season trades create disconnects between tanking incentive and pick benefit."
+    },
+    {
+      "id": "min-gsw-2021-7",
+      "title": "2021 #7: D'Angelo Russell Trade Fallout",
+      "year": 2021,
+      "pick": 7,
+      "originalOwner": "MIN",
+      "receivedBy": "GSW",
+      "description": "MIN's 2021 first-rounder was top-3 protected, conveying to GSW at #7. Part of the D'Angelo Russell sign-and-trade (2020). GSW selected Jonathan Kuminga. MIN finished with a mediocre record, and the pick conveyed outside the protection range.",
+      "colaImplications": "Protected picks add another layer: MIN had incentive to be bad enough to keep the pick (top-3 protection) but not so bad that it conveyed in a valuable range. Under COLA, the protection threshold creates a non-monotonic incentive structure that differs from simple tanking."
+    }
+  ]
+}

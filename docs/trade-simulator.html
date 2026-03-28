@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-Z7FBHQWTDS"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-Z7FBHQWTDS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COLA Trade Simulator — How Should Traded Picks Work?</title>
+    <meta name="description" content="Explore how different trade-handling rules change NBA draft lottery outcomes under COLA. Compare four options across 26 seasons of real data.">
+    <meta property="og:title" content="COLA Trade Simulator">
+    <meta property="og:description" content="How should traded draft picks work under COLA? Compare four options with real NBA history.">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/charts.css">
+    <link rel="stylesheet" href="css/trade-simulator.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div id="site-nav"></div>
+<div class="container">
+
+    <header>
+        <h1>Trade Simulator</h1>
+        <p class="subtitle">How should traded draft picks work under COLA?<br>Compare four rule options across 26 seasons of real NBA data.</p>
+    </header>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 1: Introduction -->
+    <!-- ============================================================ -->
+    <section>
+        <h2>The Trade Problem</h2>
+        <p>Under COLA, when a team wins a top-4 draft pick, their lottery index is reduced. But what happens when the pick was <em>traded</em>? If the Clippers trade a pick to the Sixers and it becomes #1 overall, whose index should be reduced?</p>
+        <p>This is one of the key design decisions for any practical COLA implementation. <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-bring-your">Prof. Highley's analysis</a> identifies four options, each with different trade-offs. This tool lets you see how each option would have played out across 26 seasons of real NBA history.</p>
+        <p>Across our dataset, <strong id="trade-count">63</strong> lottery picks (1-14) were traded before the draft, including <strong id="cola-trade-count">12</strong> in the top 4 that trigger COLA index diminishment.</p>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 2: Option Cards -->
+    <!-- ============================================================ -->
+    <section>
+        <h2>Four Trade-Handling Options</h2>
+        <p class="section-intro">Select an option to highlight it in the charts below, or use the checkboxes to compare multiple options.</p>
+        <div class="option-cards">
+            <label class="option-card" data-rule="original_owner">
+                <input type="checkbox" name="trade-rule" value="original_owner">
+                <div class="option-card-inner">
+                    <h3><span class="option-color" style="background: var(--chart-simple)"></span> Option 1: Reduce Original Owner</h3>
+                    <p>The team that originally held the draft position has their index reduced, even though they traded it away and didn't benefit from the pick.</p>
+                    <p class="option-tradeoff">Violates "help the unlucky" — penalizes teams that didn't win anything.</p>
+                </div>
+            </label>
+
+            <label class="option-card" data-rule="receiving_team">
+                <input type="checkbox" name="trade-rule" value="receiving_team" checked>
+                <div class="option-card-inner">
+                    <h3><span class="option-color" style="background: var(--accent)"></span> Option 2: Reduce Receiving Team <span class="badge">Recommended</span></h3>
+                    <p>The team that acquired and benefited from the pick has their index reduced. Combined with a strengthened Stepien Rule requiring teams to retain their own lottery pick every other season.</p>
+                    <p class="option-tradeoff">Highley's recommendation. Fair, but enables the strengthened Stepien Rule to prevent systematic avoidance.</p>
+                </div>
+            </label>
+
+            <label class="option-card" data-rule="split">
+                <input type="checkbox" name="trade-rule" value="split">
+                <div class="option-card-inner">
+                    <h3><span class="option-color" style="background: var(--chart-highlight)"></span> Option 3: Split Reduction</h3>
+                    <p>Both teams share the diminishment — half applied to each. Attempts to balance fairness across both parties.</p>
+                    <p class="option-tradeoff">More complex. Raises questions about why both teams are penalized.</p>
+                </div>
+            </label>
+
+            <label class="option-card" data-rule="exclude">
+                <input type="checkbox" name="trade-rule" value="exclude">
+                <div class="option-card-inner">
+                    <h3><span class="option-color" style="background: var(--chart-option4)"></span> Option 4: Exclude from Lottery</h3>
+                    <p>Traded picks cannot win the lottery at all — they're slotted at position 5 or later. No diminishment is applied.</p>
+                    <p class="option-tradeoff">Simplest rule, but reduces the trade value of draft picks significantly.</p>
+                </div>
+            </label>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 3: Index Trajectory Comparison -->
+    <!-- ============================================================ -->
+    <section>
+        <h2>Index Trajectory Comparison</h2>
+        <p>See how a team's Classic COLA index evolves differently under each trade rule across 26 seasons.</p>
+        <div class="controls-row">
+            <div class="control-group">
+                <label for="team-select">Team</label>
+                <select id="team-select"></select>
+            </div>
+        </div>
+        <div class="chart-container" style="height: 350px;">
+            <canvas id="trajectory-chart"></canvas>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 4: Season Snapshot Table -->
+    <!-- ============================================================ -->
+    <section>
+        <h2>Season Snapshot</h2>
+        <p>Compare lottery team rankings under each trade rule for a single season. Traded picks are highlighted.</p>
+        <div class="controls-row">
+            <div class="control-group">
+                <label for="year-slider">Season</label>
+                <input type="range" id="year-slider" min="2000" max="2025" value="2017">
+                <span id="year-display" class="year-display">2017</span>
+            </div>
+        </div>
+        <div class="table-scroll">
+            <table id="snapshot-table">
+                <thead>
+                    <tr>
+                        <th>Team</th>
+                        <th>Real Pick</th>
+                        <th>Traded?</th>
+                        <th>Opt 1 Index</th>
+                        <th>Opt 1 Rank</th>
+                        <th>Opt 2 Index</th>
+                        <th>Opt 2 Rank</th>
+                        <th>Opt 3 Index</th>
+                        <th>Opt 3 Rank</th>
+                        <th>Opt 4 Index</th>
+                        <th>Opt 4 Rank</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 5: Case Studies -->
+    <!-- ============================================================ -->
+    <section>
+        <h2>Case Studies</h2>
+        <p>Notable trades that illustrate the differences between options.</p>
+        <div id="case-studies" class="info-cards">
+            <!-- Populated by JS -->
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Footer -->
+    <!-- ============================================================ -->
+    <footer>
+        <p>Data: 63 traded lottery picks across 26 NBA seasons (2000&ndash;2025) &middot; <a href="https://arxiv.org/html/2602.02487v1">COLA Paper</a> &middot; <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-bring-your">Substack Part 4</a> &middot; <a href="https://github.com/kvr06-ai/cola-manipulation-bound">GitHub</a></p>
+    </footer>
+
+</div>
+
+<script src="js/nav.js"></script>
+<script src="js/cola-engine.js"></script>
+<script src="js/trade-simulator-charts.js"></script>
+<script src="js/trade-simulator-app.js"></script>
+</body>
+</html>

@@ -468,6 +468,204 @@ function computeCountdownCOLA(seasonsData) {
   return results;
 }
 
+// =============================================================================
+// Trade-Rule-Aware Classic COLA
+// =============================================================================
+// Same as computeClassicCOLA but Phase B (draft pick diminishment) varies by
+// trade rule. Only picks 1-4 trigger diminishment, and only traded picks
+// behave differently across rules.
+
+const TRADE_RULES = {
+  ORIGINAL_OWNER: 'original_owner',
+  RECEIVING_TEAM: 'receiving_team',
+  SPLIT: 'split',
+  EXCLUDE: 'exclude',
+};
+
+/**
+ * Build a lookup from trade metadata: (year, pick) -> trade entry.
+ */
+function buildTradeLookup(tradeMetadata) {
+  const lookup = {};
+  for (const tr of tradeMetadata.trades) {
+    lookup[tr.year + '-' + tr.pick] = tr;
+  }
+  return lookup;
+}
+
+/**
+ * Classic COLA with configurable trade-handling rule.
+ *
+ * For RECEIVING_TEAM rule, output is identical to computeClassicCOLA
+ * (regression baseline).
+ */
+function computeClassicCOLAWithTradeRule(seasonsData, tradeMetadata, tradeRule) {
+  const results = {};
+  const index = {};
+  const tradeLookup = buildTradeLookup(tradeMetadata);
+
+  for (const season of seasonsData) {
+    const year = season.year;
+
+    for (const team of season.teams) {
+      if (!(team.id in index)) {
+        index[team.id] = 0;
+      }
+    }
+
+    // Phase A: identical to computeClassicCOLA
+
+    for (const team of season.teams) {
+      if (!team.madePlayoffs) {
+        index[team.id] += ALPHA;
+      }
+    }
+
+    for (const team of season.teams) {
+      if (team.playoffResult && team.playoffResult in PLAYOFF_DIMINISH) {
+        const frac = PLAYOFF_DIMINISH[team.playoffResult];
+        index[team.id] *= (1 - frac);
+      }
+    }
+
+    for (const id in index) {
+      index[id] = Math.round(index[id] * 100) / 100;
+    }
+
+    // Lottery probabilities (exclude rule may filter traded picks)
+    const lotteryTeams = season.teams
+      .filter(function (t) { return !t.madePlayoffs; })
+      .map(function (t) {
+        return {
+          id: t.id,
+          name: t.name,
+          index: index[t.id],
+          wins: t.wins,
+          losses: t.losses,
+          draftPick: t.draftPick,
+        };
+      });
+
+    // For EXCLUDE rule: traded picks in 1-4 cannot win the lottery
+    var excludedFromLottery = {};
+    if (tradeRule === TRADE_RULES.EXCLUDE) {
+      for (var ti = 0; ti < lotteryTeams.length; ti++) {
+        var lt = lotteryTeams[ti];
+        if (lt.draftPick != null && lt.draftPick <= 4) {
+          var trInfo = tradeLookup[year + '-' + lt.draftPick];
+          if (trInfo) {
+            excludedFromLottery[lt.id] = true;
+          }
+        }
+      }
+    }
+
+    var totalPool = 0;
+    for (var ti = 0; ti < lotteryTeams.length; ti++) {
+      if (!excludedFromLottery[lotteryTeams[ti].id]) {
+        totalPool += lotteryTeams[ti].index;
+      }
+    }
+
+    var probabilities = {};
+    for (var ti = 0; ti < lotteryTeams.length; ti++) {
+      var lt = lotteryTeams[ti];
+      if (excludedFromLottery[lt.id]) {
+        probabilities[lt.id] = 0;
+      } else {
+        probabilities[lt.id] = totalPool > 0 ? lt.index / totalPool : 0;
+      }
+    }
+
+    var byProbability = lotteryTeams.slice().sort(function (a, b) {
+      if (b.index !== a.index) return b.index - a.index;
+      return a.wins - b.wins;
+    });
+
+    var draftOrder = byProbability.map(function (t, i) {
+      return Object.assign({}, t, {
+        probability: probabilities[t.id],
+        colaPosition: i + 1,
+        excluded: !!excludedFromLottery[t.id],
+      });
+    });
+
+    var teamStates = {};
+    for (var si = 0; si < season.teams.length; si++) {
+      var team = season.teams[si];
+      teamStates[team.id] = {
+        index: index[team.id],
+        madePlayoffs: team.madePlayoffs,
+        playoffResult: team.playoffResult,
+        seriesWon: team.seriesWon,
+        wins: team.wins,
+        losses: team.losses,
+        draftPick: team.draftPick,
+        probability: probabilities[team.id] || null,
+        colaPosition: null,
+      };
+    }
+    for (var di = 0; di < draftOrder.length; di++) {
+      teamStates[draftOrder[di].id].colaPosition = draftOrder[di].colaPosition;
+    }
+
+    results[year] = {
+      teams: teamStates,
+      draftOrder: draftOrder,
+      totalPool: totalPool,
+    };
+
+    // Phase B: Trade-rule-aware draft pick diminishment
+    for (var si = 0; si < season.teams.length; si++) {
+      var team = season.teams[si];
+      if (team.draftPick == null || !(team.draftPick in DRAFT_DIMINISH)) continue;
+
+      var frac = DRAFT_DIMINISH[team.draftPick];
+      var trInfo = tradeLookup[year + '-' + team.draftPick];
+
+      if (!trInfo) {
+        // Not a traded pick — standard diminishment to the holder
+        index[team.id] *= (1 - frac);
+      } else if (tradeRule === TRADE_RULES.RECEIVING_TEAM) {
+        // Diminish the team that received/used the pick (current holder)
+        index[team.id] *= (1 - frac);
+      } else if (tradeRule === TRADE_RULES.ORIGINAL_OWNER) {
+        // Diminish the original owner instead
+        if (trInfo.originalOwner in index) {
+          index[trInfo.originalOwner] *= (1 - frac);
+        }
+      } else if (tradeRule === TRADE_RULES.SPLIT) {
+        // Half diminishment to each
+        index[team.id] *= (1 - frac / 2);
+        if (trInfo.originalOwner in index && trInfo.originalOwner !== team.id) {
+          index[trInfo.originalOwner] *= (1 - frac / 2);
+        }
+      } else if (tradeRule === TRADE_RULES.EXCLUDE) {
+        // No diminishment for traded picks
+        // (they were excluded from the lottery in Phase A)
+      }
+    }
+
+    for (var id in index) {
+      index[id] = Math.round(index[id] * 100) / 100;
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Compute Classic COLA under all four trade rules.
+ */
+function computeAllTradeRules(seasonsData, tradeMetadata) {
+  return {
+    original_owner: computeClassicCOLAWithTradeRule(seasonsData, tradeMetadata, TRADE_RULES.ORIGINAL_OWNER),
+    receiving_team: computeClassicCOLAWithTradeRule(seasonsData, tradeMetadata, TRADE_RULES.RECEIVING_TEAM),
+    split: computeClassicCOLAWithTradeRule(seasonsData, tradeMetadata, TRADE_RULES.SPLIT),
+    exclude: computeClassicCOLAWithTradeRule(seasonsData, tradeMetadata, TRADE_RULES.EXCLUDE),
+  };
+}
+
 function computeAllVariants(seasonsData) {
   return {
     simple: computeSimpleCOLA(seasonsData),
@@ -479,5 +677,5 @@ function computeAllVariants(seasonsData) {
 
 // Export for use in app.js (and for Node.js testing)
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { computeSimpleCOLA, computeSimpleLotteryCOLA, computeCountdownCOLA, computeClassicCOLA, computeAllVariants, ALPHA, PLAYOFF_DIMINISH, DRAFT_DIMINISH, PRE_2019_ODDS, COUNTDOWN_POOL_TICKETS };
+  module.exports = { computeSimpleCOLA, computeSimpleLotteryCOLA, computeCountdownCOLA, computeClassicCOLA, computeAllVariants, TRADE_RULES, buildTradeLookup, computeClassicCOLAWithTradeRule, computeAllTradeRules, ALPHA, PLAYOFF_DIMINISH, DRAFT_DIMINISH, PRE_2019_ODDS, COUNTDOWN_POOL_TICKETS };
 }
