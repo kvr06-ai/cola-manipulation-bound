@@ -7,6 +7,7 @@
   var pages = [
     { href: 'index.html', label: 'Explorer' },
     { href: 'trade-simulator.html', label: 'Trade Simulator' },
+    { href: 'process.html', label: 'The Process' },
   ];
 
   function renderNav() {

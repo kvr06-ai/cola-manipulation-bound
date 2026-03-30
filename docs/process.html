@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-Z7FBHQWTDS"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-Z7FBHQWTDS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Process Under COLA — Would Multi-Year Tanking Still Work?</title>
+    <meta name="description" content="The Sixers tanked for four straight years and got four top-3 picks. Under COLA, the strategy self-destructs. See how with real data.">
+    <meta property="og:title" content="The Process Under COLA">
+    <meta property="og:description" content="The Sixers' Process got them four top-3 picks. Under COLA, they'd have been dead last in lottery priority by year four.">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/charts.css">
+    <link rel="stylesheet" href="css/trade-simulator.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div id="site-nav"></div>
+<div class="container">
+
+    <header>
+        <h1>The Process Under COLA</h1>
+        <p class="subtitle">The Sixers tanked for four straight years and got four top-3 picks.<br>Under COLA, the strategy self-destructs.</p>
+    </header>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 1: The Story -->
+    <!-- ============================================================ -->
+    <section>
+        <h2>What Was &ldquo;The Process&rdquo;?</h2>
+        <p>In the NBA, the worst teams get the best draft picks. From 2013 to 2017, the Philadelphia 76ers exploited this by deliberately fielding terrible rosters &mdash; a strategy their GM Sam Hinkie called <strong>&ldquo;The Process.&rdquo;</strong> The payoff: four consecutive top-3 picks, including Joel Embiid (#3), Ben Simmons (#1), and Markelle Fultz (#1).</p>
+
+        <p>The Process worked because the NBA draft has <strong>no memory</strong>. No matter how many top picks you&rsquo;ve received, you can tank again next year and get another one. There is no penalty for repeat winners.</p>
+
+        <p><strong><a href="https://arxiv.org/html/2602.02487v1">COLA (Carry-Over Lottery Allocation)</a></strong> changes this. Under COLA, every non-playoff team accumulates &ldquo;lottery tickets&rdquo; over time &mdash; but when you win a top draft pick, your tickets are <strong>reduced</strong>. Win the #1 pick? Your tickets reset to zero. Win #3? Cut in half. This means each top pick makes the <em>next</em> top pick harder to get.</p>
+
+        <p>The question: <strong>would The Process have worked under COLA?</strong> This page applies COLA&rsquo;s rules to real Sixers history to find out. <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-bring-your">Read Prof. Highley&rsquo;s full analysis &rarr;</a></p>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 2: The Chart -->
+    <!-- ============================================================ -->
+    <section>
+        <h2>Lottery Ticket Count: 2010&ndash;2025</h2>
+        <p>The red line shows Philadelphia&rsquo;s lottery ticket count under COLA. The dashed gray line shows the top lottery team&rsquo;s tickets for comparison. Each draft pick is annotated &mdash; watch how the Sixers&rsquo; tickets crash after every top selection.</p>
+        <div class="chart-container" style="height: 400px;">
+            <canvas id="process-chart"></canvas>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 3: Year-by-Year Table -->
+    <!-- ============================================================ -->
+    <section>
+        <h2>Year by Year: The Process Under COLA</h2>
+        <p>Despite being the worst team in the NBA in 2016 (10&ndash;72), Philadelphia ranked only 10th in COLA lottery priority. By 2017, they were dead last &mdash; the <em>least</em> likely lottery team to get the #1 pick.</p>
+        <div class="table-scroll">
+            <table id="process-table">
+                <thead>
+                    <tr>
+                        <th>Season</th>
+                        <th>W-L</th>
+                        <th>Real Pick</th>
+                        <th>COLA Tickets</th>
+                        <th>COLA Rank</th>
+                        <th>#1 Probability</th>
+                        <th>Top Team</th>
+                    </tr>
+                </thead>
+                <tbody id="process-tbody"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 4: The Verdict -->
+    <!-- ============================================================ -->
+    <section>
+        <h2>The Verdict</h2>
+        <p>Under COLA, The Process is self-defeating. Each top pick erases the advantage that years of losing built. A team can&rsquo;t game the system by tanking repeatedly &mdash; the mechanism has <strong>memory</strong>.</p>
+
+        <p>This doesn&rsquo;t mean bad teams can&rsquo;t rebuild. A team that genuinely struggles will accumulate tickets naturally and eventually get draft help. The difference is that <strong>deliberate, repeated tanking</strong> hits diminishing returns fast &mdash; while <strong>organic rebuilding</strong> is rewarded over time. COLA distinguishes between the two.</p>
+
+        <p><a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-bring-your">Highley&rsquo;s Part 4</a> puts it simply: <em>&ldquo;The Process worked because the Sixers could tank, get a high pick, and return to the top of the lottery the following year. Under COLA, returning to the top is much harder.&rdquo;</em></p>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Footer -->
+    <!-- ============================================================ -->
+    <footer>
+        <p>Data: 26 NBA seasons (2000&ndash;2025) &middot; <a href="https://arxiv.org/html/2602.02487v1">COLA Paper</a> &middot; <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-bring-your">Substack Part 4</a> &middot; <a href="https://github.com/kvr06-ai/cola-manipulation-bound">GitHub</a></p>
+    </footer>
+
+</div>
+
+<script src="js/nav.js"></script>
+<script src="js/cola-engine.js"></script>
+<script src="js/process-app.js"></script>
+</body>
+</html>
