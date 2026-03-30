@@ -12,10 +12,10 @@ var RULE_COLORS = {
 };
 
 var RULE_LABELS = {
-  original_owner: 'Opt 1: Original Owner',
+  original_owner: 'Opt 1: Original Team',
   receiving_team: 'Opt 2: Receiving Team',
-  split: 'Opt 3: Split',
-  exclude: 'Opt 4: Exclude',
+  split: 'Opt 3: Shared',
+  exclude: 'Opt 4: Capped',
 };
 
 function createTrajectoryChart(canvasId) {
@@ -50,7 +50,7 @@ function createTrajectoryChart(canvasId) {
         y: {
           ticks: { color: textColor, font: { size: 10 } },
           grid: { color: gridColor },
-          title: { display: true, text: 'Classic COLA Index', color: textColor, font: { size: 11 } },
+          title: { display: true, text: 'Lottery Tickets', color: textColor, font: { size: 11 } },
         },
       },
     },

@@ -37,9 +37,11 @@
     <!-- ============================================================ -->
     <section>
         <h2>The Trade Problem</h2>
-        <p>Under COLA, when a team wins a top-4 draft pick, their lottery index is reduced. But what happens when the pick was <em>traded</em>? If the Clippers trade a pick to the Sixers and it becomes #1 overall, whose index should be reduced?</p>
-        <p>This is one of the key design decisions for any practical COLA implementation. <a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-bring-your">Prof. Highley's analysis</a> identifies four options, each with different trade-offs. This tool lets you see how each option would have played out across 26 seasons of real NBA history.</p>
-        <p>Across our dataset, <strong id="trade-count">63</strong> lottery picks (1-14) were traded before the draft, including <strong id="cola-trade-count">12</strong> in the top 4 that trigger COLA index diminishment.</p>
+        <p><strong><a href="https://arxiv.org/html/2602.02487v1">COLA (Carry-Over Lottery Allocation)</a></strong> is a proposed NBA draft reform that replaces single-season tank incentives with a multi-year system. Each non-playoff team accumulates "lottery tickets" over time. The longer you go without playoff success, the more tickets you hold &mdash; and the better your chances of landing a top draft pick. When you do win a top-4 pick, your ticket count is reduced, making room for other struggling teams.</p>
+
+        <p>This creates a design question around <strong>traded picks</strong>. If the Clippers trade a future pick to the Sixers and it becomes the #1 overall selection, whose ticket count should be reduced &mdash; the Clippers (who originally held the draft slot) or the Sixers (who benefited from the pick)?</p>
+
+        <p><a href="https://highleytj.substack.com/p/nba-tanking-is-solvable-bring-your">Prof. Highley&rsquo;s analysis</a> identifies four options, each with different trade-offs. This tool computes the effect of each option across <strong>26 seasons</strong> of real NBA history (<strong id="trade-count">63</strong> traded lottery picks, <strong id="cola-trade-count">12</strong> in the top 4 that trigger ticket reductions).</p>
     </section>
 
     <!-- ============================================================ -->
@@ -47,40 +49,40 @@
     <!-- ============================================================ -->
     <section>
         <h2>Four Trade-Handling Options</h2>
-        <p class="section-intro">Select an option to highlight it in the charts below, or use the checkboxes to compare multiple options.</p>
+        <p class="section-intro">Check one or more options to compare their effects in the charts below.</p>
         <div class="option-cards">
             <label class="option-card" data-rule="original_owner">
                 <input type="checkbox" name="trade-rule" value="original_owner">
                 <div class="option-card-inner">
-                    <h3><span class="option-color" style="background: var(--chart-simple)"></span> Option 1: Reduce Original Owner</h3>
-                    <p>The team that originally held the draft position has their index reduced, even though they traded it away and didn't benefit from the pick.</p>
-                    <p class="option-tradeoff">Violates "help the unlucky" — penalizes teams that didn't win anything.</p>
+                    <h3><span class="option-color" style="background: var(--chart-simple)"></span> Option 1: Priority Stays with Original Team</h3>
+                    <p>The original team&rsquo;s ticket count is reduced, even though they traded the pick away and didn&rsquo;t benefit. They lose the pick <em>and</em> get penalized.</p>
+                    <p class="option-tradeoff">Simple, but compounds the cost of trading &mdash; may discourage teams from dealing picks at all.</p>
                 </div>
             </label>
 
             <label class="option-card" data-rule="receiving_team">
                 <input type="checkbox" name="trade-rule" value="receiving_team" checked>
                 <div class="option-card-inner">
-                    <h3><span class="option-color" style="background: var(--accent)"></span> Option 2: Reduce Receiving Team <span class="badge">Recommended</span></h3>
-                    <p>The team that acquired and benefited from the pick has their index reduced. Combined with a strengthened Stepien Rule requiring teams to retain their own lottery pick every other season.</p>
-                    <p class="option-tradeoff">Highley's recommendation. Fair, but enables the strengthened Stepien Rule to prevent systematic avoidance.</p>
+                    <h3><span class="option-color" style="background: var(--accent)"></span> Option 2: Priority Transfers with Pick <span class="badge">Recommended</span></h3>
+                    <p>The receiving team inherits the reduction. Fair &mdash; whoever benefits from the pick pays the cost. Requires a <strong>strengthened Stepien Rule</strong> (teams must retain their own lottery pick every other season) to prevent high-priority teams from repeatedly trading picks without consequence.</p>
+                    <p class="option-tradeoff">Highley&rsquo;s recommendation. Balances fairness with exploit prevention.</p>
                 </div>
             </label>
 
             <label class="option-card" data-rule="split">
                 <input type="checkbox" name="trade-rule" value="split">
                 <div class="option-card-inner">
-                    <h3><span class="option-color" style="background: var(--chart-highlight)"></span> Option 3: Split Reduction</h3>
-                    <p>Both teams share the diminishment — half applied to each. Attempts to balance fairness across both parties.</p>
-                    <p class="option-tradeoff">More complex. Raises questions about why both teams are penalized.</p>
+                    <h3><span class="option-color" style="background: var(--chart-highlight)"></span> Option 3: Shared Reduction</h3>
+                    <p>Both teams split the reduction 50/50. Attempts to balance impact across both parties in the trade.</p>
+                    <p class="option-tradeoff">More complex. Harder to explain to fans and owners.</p>
                 </div>
             </label>
 
             <label class="option-card" data-rule="exclude">
                 <input type="checkbox" name="trade-rule" value="exclude">
                 <div class="option-card-inner">
-                    <h3><span class="option-color" style="background: var(--chart-option4)"></span> Option 4: Exclude from Lottery</h3>
-                    <p>Traded picks cannot win the lottery at all — they're slotted at position 5 or later. No diminishment is applied.</p>
+                    <h3><span class="option-color" style="background: var(--chart-option4)"></span> Option 4: Cap on Traded Picks</h3>
+                    <p>Traded picks are capped below the reduction threshold &mdash; they can never land high enough (picks 1&ndash;4) to trigger a ticket reduction. No penalty is applied to either team.</p>
                     <p class="option-tradeoff">Simplest rule, but reduces the trade value of draft picks significantly.</p>
                 </div>
             </label>
@@ -91,8 +93,8 @@
     <!-- SECTION 3: Index Trajectory Comparison -->
     <!-- ============================================================ -->
     <section>
-        <h2>Index Trajectory Comparison</h2>
-        <p>See how a team's Classic COLA index evolves differently under each trade rule across 26 seasons.</p>
+        <h2>Ticket Count Over Time</h2>
+        <p>Pick a team and see how their lottery ticket count evolves from 2000 to 2025 under each trade rule. Where the lines diverge, a traded pick caused different outcomes.</p>
         <div class="controls-row">
             <div class="control-group">
                 <label for="team-select">Team</label>
@@ -109,7 +111,7 @@
     <!-- ============================================================ -->
     <section>
         <h2>Season Snapshot</h2>
-        <p>Compare lottery team rankings under each trade rule for a single season. Traded picks are highlighted.</p>
+        <p>For any given season, see how lottery teams rank under each option. Rows highlighted in red involved a traded pick that year.</p>
         <div class="controls-row">
             <div class="control-group">
                 <label for="year-slider">Season</label>
