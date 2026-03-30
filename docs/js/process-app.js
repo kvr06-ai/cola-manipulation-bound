@@ -5,11 +5,15 @@
  */
 
 var PROCESS_PICKS = [
-  { year: 2014, pick: 3, player: 'Joel Embiid', note: 'Tickets cut 50%' },
-  { year: 2015, pick: 3, player: 'Jahlil Okafor', note: 'Cut 50% again' },
-  { year: 2016, pick: 1, player: 'Ben Simmons', note: 'Reset to 0' },
-  { year: 2017, pick: 1, player: 'Markelle Fultz', note: 'Reset to 0 again' },
+  { year: 2014, pick: 3, player: 'Embiid', label: '#3 Embiid', offsetY: -22 },
+  { year: 2015, pick: 3, player: 'Okafor', label: '#3 Okafor', offsetY: -40 },
+  { year: 2016, pick: 1, player: 'Simmons', label: '#1 Simmons', offsetY: -22 },
+  { year: 2017, pick: 1, player: 'Fultz', label: '#1 Fultz', offsetY: -40 },
 ];
+
+// Real NBA lottery odds for worst-record team by era
+// Pre-2019: 25.0%, Post-2019: 14.0%
+var REAL_NBA_WORST_ODDS = { pre2019: 25.0, post2019: 14.0 };
 
 var PROCESS_YEARS = [2013, 2014, 2015, 2016, 2017, 2018];
 var CHART_YEARS_START = 2010;
@@ -27,11 +31,28 @@ function createProcessChart(canvasId, colaResults, nbaData) {
   var years = [];
   for (var y = CHART_YEARS_START; y <= CHART_YEARS_END; y++) years.push(y);
 
-  // PHI index values
-  var phiValues = years.map(function (y) {
+  // PHI COLA index
+  var phiColaValues = years.map(function (y) {
     var r = colaResults[y];
     if (!r || !r.teams['PHI']) return null;
     return r.teams['PHI'].index;
+  });
+
+  // PHI real NBA draft position (inverted to show "higher = better position")
+  // We show the actual pick number on a secondary axis
+  var phiRealPicks = years.map(function (y) {
+    var season = null;
+    for (var i = 0; i < nbaData.seasons.length; i++) {
+      if (nbaData.seasons[i].year === y) { season = nbaData.seasons[i]; break; }
+    }
+    if (!season) return null;
+    for (var i = 0; i < season.teams.length; i++) {
+      if (season.teams[i].id === 'PHI') {
+        var pick = season.teams[i].draftPick;
+        return (pick && pick <= 14) ? pick : null;
+      }
+    }
+    return null;
   });
 
   // Top lottery team index (context line)
@@ -50,16 +71,19 @@ function createProcessChart(canvasId, colaResults, nbaData) {
   var pointRadii = years.map(function (y) { return pickYearSet[y] ? 7 : 2; });
   var pointColors = years.map(function (y) { return pickYearSet[y] ? '#ffd166' : '#e94560'; });
 
+  // Real pick markers — show for all lottery picks
+  var realPointRadii = years.map(function (y, i) { return phiRealPicks[i] ? 6 : 0; });
+
   processChart = new Chart(ctx, {
     type: 'line',
     data: {
       labels: years.map(String),
       datasets: [
         {
-          label: 'Philadelphia 76ers',
-          data: phiValues,
+          label: 'PHI Under COLA',
+          data: phiColaValues,
           borderColor: '#e94560',
-          backgroundColor: 'rgba(233, 69, 96, 0.15)',
+          backgroundColor: 'rgba(233, 69, 96, 0.12)',
           borderWidth: 2.5,
           pointRadius: pointRadii,
           pointBackgroundColor: pointColors,
@@ -67,6 +91,7 @@ function createProcessChart(canvasId, colaResults, nbaData) {
           pointHoverRadius: 8,
           tension: 0.1,
           fill: true,
+          yAxisID: 'y',
         },
         {
           label: 'Top Lottery Team',
@@ -78,6 +103,21 @@ function createProcessChart(canvasId, colaResults, nbaData) {
           pointHoverRadius: 4,
           tension: 0.1,
           fill: false,
+          yAxisID: 'y',
+        },
+        {
+          label: 'PHI Real Pick #',
+          data: phiRealPicks,
+          borderColor: '#53a8b6',
+          backgroundColor: '#53a8b6',
+          borderWidth: 0,
+          pointRadius: realPointRadii,
+          pointBackgroundColor: '#53a8b6',
+          pointBorderColor: '#53a8b6',
+          pointHoverRadius: 8,
+          pointStyle: 'rectRot',
+          showLine: false,
+          yAxisID: 'y2',
         },
       ],
     },
@@ -87,7 +127,7 @@ function createProcessChart(canvasId, colaResults, nbaData) {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: {
-          labels: { color: textColor, font: { size: 11 }, usePointStyle: true, pointStyle: 'circle' },
+          labels: { color: textColor, font: { size: 11 }, usePointStyle: true },
         },
         tooltip: {
           backgroundColor: 'rgba(22, 33, 62, 0.95)',
@@ -96,12 +136,18 @@ function createProcessChart(canvasId, colaResults, nbaData) {
           borderColor: '#2a2a4a',
           borderWidth: 1,
           callbacks: {
-            afterLabel: function (ctx) {
-              if (ctx.datasetIndex !== 0) return '';
-              var year = parseInt(ctx.label);
-              var pick = pickYearSet[year];
-              if (!pick) return '';
-              return '#' + pick.pick + ' ' + pick.player + ' — ' + pick.note;
+            label: function (ctx) {
+              if (ctx.datasetIndex === 2) {
+                return ctx.raw ? 'Real NBA: Pick #' + ctx.raw : '';
+              }
+              if (ctx.datasetIndex === 0) {
+                var year = parseInt(ctx.label);
+                var pick = pickYearSet[year];
+                var base = 'COLA Tickets: ' + Math.round(ctx.raw).toLocaleString();
+                if (pick) base += '  →  #' + pick.pick + ' ' + pick.player;
+                return base;
+              }
+              return 'Top Team: ' + Math.round(ctx.raw).toLocaleString();
             },
           },
         },
@@ -112,15 +158,31 @@ function createProcessChart(canvasId, colaResults, nbaData) {
           grid: { color: gridColor },
         },
         y: {
+          type: 'linear',
+          position: 'left',
           ticks: { color: textColor, font: { size: 10 } },
           grid: { color: gridColor },
           title: { display: true, text: 'Lottery Tickets', color: textColor, font: { size: 11 } },
           beginAtZero: true,
         },
+        y2: {
+          type: 'linear',
+          position: 'right',
+          reverse: true,
+          min: 1,
+          max: 30,
+          ticks: {
+            color: '#53a8b6',
+            font: { size: 10 },
+            stepSize: 5,
+            callback: function (val) { return '#' + val; },
+          },
+          grid: { display: false },
+          title: { display: true, text: 'Real NBA Pick', color: '#53a8b6', font: { size: 11 } },
+        },
       },
     },
     plugins: [{
-      // Custom plugin: draw pick annotations above the chart points
       id: 'pickAnnotations',
       afterDraw: function (chart) {
         var ctx = chart.ctx;
@@ -133,13 +195,22 @@ function createProcessChart(canvasId, colaResults, nbaData) {
           if (!point) continue;
 
           var x = point.x;
-          var y = point.y;
+          var y = point.y + pick.offsetY;
 
+          // Draw connecting line from label to point
           ctx.save();
+          ctx.strokeStyle = 'rgba(255, 209, 102, 0.4)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x, point.y - 8);
+          ctx.lineTo(x, y + 10);
+          ctx.stroke();
+
+          // Draw label
           ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, sans-serif';
           ctx.textAlign = 'center';
           ctx.fillStyle = '#ffd166';
-          ctx.fillText('#' + pick.pick + ' ' + pick.player, x, y - 14);
+          ctx.fillText(pick.label, x, y);
           ctx.restore();
         }
       },
@@ -162,7 +233,6 @@ function renderProcessTable(colaResults, nbaData) {
 
     var phi = r.teams['PHI'];
 
-    // Find PHI in the season data for W-L
     var season = null;
     for (var si = 0; si < nbaData.seasons.length; si++) {
       if (nbaData.seasons[si].year === y) { season = nbaData.seasons[si]; break; }
@@ -174,31 +244,28 @@ function renderProcessTable(colaResults, nbaData) {
       }
     }
 
-    var wl = phiSeason ? (phiSeason.wins + '-' + phiSeason.losses) : '—';
+    var wl = phiSeason ? (phiSeason.wins + '–' + phiSeason.losses) : '—';
     var realPick = phi.draftPick ? '#' + phi.draftPick : '—';
     var tickets = Math.round(phi.index).toLocaleString();
-    var rank = phi.colaPosition ? phi.colaPosition + ' of ' + r.draftOrder.length : '— (playoffs)';
+    var rank = phi.colaPosition ? phi.colaPosition + '/' + r.draftOrder.length : '—';
     var prob = phi.probability ? (phi.probability * 100).toFixed(1) + '%' : '—';
 
-    // Top team
     var topTeam = '—';
     if (r.draftOrder && r.draftOrder.length > 0) {
       var top = r.draftOrder[0];
       topTeam = top.id + ' (' + Math.round(top.index).toLocaleString() + ')';
     }
 
-    // Highlight Process years
     var isProcess = (y >= 2014 && y <= 2017);
-    var cls = isProcess ? ' class="traded-pick"' : '';
 
-    rows += '<tr' + cls + '>';
-    rows += '<td>' + (y - 1) + '-' + String(y).slice(2) + '</td>';
+    rows += '<tr' + (isProcess ? ' class="process-year"' : '') + '>';
+    rows += '<td class="season-col">' + (y - 1) + '–' + String(y).slice(2) + '</td>';
     rows += '<td>' + wl + '</td>';
-    rows += '<td>' + realPick + '</td>';
-    rows += '<td>' + tickets + '</td>';
-    rows += '<td>' + rank + '</td>';
-    rows += '<td>' + prob + '</td>';
-    rows += '<td>' + topTeam + '</td>';
+    rows += '<td class="pick-col">' + realPick + '</td>';
+    rows += '<td class="tickets-col">' + tickets + '</td>';
+    rows += '<td class="rank-col">' + rank + '</td>';
+    rows += '<td class="prob-col">' + prob + '</td>';
+    rows += '<td class="top-col">' + topTeam + '</td>';
     rows += '</tr>';
   }
 

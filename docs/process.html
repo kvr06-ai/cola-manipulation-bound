@@ -21,6 +21,28 @@
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/charts.css">
     <link rel="stylesheet" href="css/trade-simulator.css">
+    <style>
+      #process-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+      #process-table th {
+        background: var(--surface-alt); color: var(--text-secondary);
+        font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em;
+        padding: 0.6rem 0.8rem; text-align: center; border-bottom: 2px solid var(--border);
+        white-space: nowrap;
+      }
+      #process-table th:first-child { text-align: left; }
+      #process-table td {
+        padding: 0.6rem 0.8rem; text-align: center;
+        border-bottom: 1px solid var(--border);
+      }
+      #process-table td:first-child { text-align: left; font-weight: 600; }
+      #process-table .pick-col { font-weight: 700; color: var(--accent); }
+      #process-table .tickets-col { font-variant-numeric: tabular-nums; }
+      #process-table .rank-col { font-weight: 600; }
+      #process-table .prob-col { font-variant-numeric: tabular-nums; }
+      #process-table .top-col { color: var(--text-secondary); font-size: 0.8rem; }
+      #process-table tr.process-year { background: rgba(233, 69, 96, 0.06); }
+      #process-table tr.process-year .rank-col { color: var(--accent); }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -51,7 +73,7 @@
     <!-- ============================================================ -->
     <section>
         <h2>Lottery Ticket Count: 2010&ndash;2025</h2>
-        <p>The red line shows Philadelphia&rsquo;s lottery ticket count under COLA. The dashed gray line shows the top lottery team&rsquo;s tickets for comparison. Each draft pick is annotated &mdash; watch how the Sixers&rsquo; tickets crash after every top selection.</p>
+        <p>The <strong style="color:#e94560">red line</strong> shows Philadelphia&rsquo;s lottery tickets under COLA (left axis). The <strong style="color:#a0a0b0">dashed gray line</strong> shows the top lottery team for comparison. <strong style="color:#53a8b6">Teal diamonds</strong> (right axis) show Philadelphia&rsquo;s actual draft picks in the real NBA. Each Process-era pick is annotated &mdash; watch the tickets crash after every top selection.</p>
         <div class="chart-container" style="height: 400px;">
             <canvas id="process-chart"></canvas>
         </div>
