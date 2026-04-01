@@ -62,6 +62,13 @@ function createProcessChart(canvasId, colaResults, nbaData) {
     return r.draftOrder[0].index;
   });
 
+  // BOS COLA index (shows Fultz/Tatum trade impact landing on BOS, not PHI)
+  var bosValues = years.map(function (y) {
+    var r = colaResults[y];
+    if (!r || !r.teams['BOS']) return null;
+    return r.teams['BOS'].index;
+  });
+
   // Build point radii and colors — larger markers at pick years
   var pickYearSet = {};
   for (var i = 0; i < PROCESS_PICKS.length; i++) {
@@ -106,6 +113,19 @@ function createProcessChart(canvasId, colaResults, nbaData) {
           yAxisID: 'y',
         },
         {
+          label: 'BOS (held #1 on lottery day)',
+          data: bosValues,
+          borderColor: '#4ade80',
+          borderDash: [4, 3],
+          borderWidth: 1.8,
+          pointRadius: 1,
+          pointHoverRadius: 5,
+          pointBackgroundColor: '#4ade80',
+          tension: 0.1,
+          fill: false,
+          yAxisID: 'y',
+        },
+        {
           label: 'PHI Real Pick #',
           data: phiRealPicks,
           borderColor: '#53a8b6',
@@ -137,17 +157,23 @@ function createProcessChart(canvasId, colaResults, nbaData) {
           borderWidth: 1,
           callbacks: {
             label: function (ctx) {
-              if (ctx.datasetIndex === 2) {
+              if (ctx.datasetIndex === 3) {
                 return ctx.raw ? 'Real NBA: Pick #' + ctx.raw : '';
               }
               if (ctx.datasetIndex === 0) {
                 var year = parseInt(ctx.label);
                 var pick = pickYearSet[year];
-                var base = 'COLA Tickets: ' + Math.round(ctx.raw).toLocaleString();
+                var base = 'PHI Tickets: ' + Math.round(ctx.raw).toLocaleString();
                 if (pick) base += '  →  #' + pick.pick + ' ' + pick.player;
                 return base;
               }
-              return 'Top Team: ' + Math.round(ctx.raw).toLocaleString();
+              if (ctx.datasetIndex === 1) {
+                return 'Top Team: ' + Math.round(ctx.raw).toLocaleString();
+              }
+              if (ctx.datasetIndex === 2) {
+                return 'BOS Tickets: ' + Math.round(ctx.raw).toLocaleString();
+              }
+              return '';
             },
           },
         },
