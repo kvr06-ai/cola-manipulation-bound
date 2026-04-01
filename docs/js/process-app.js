@@ -8,7 +8,7 @@ var PROCESS_PICKS = [
   { year: 2014, pick: 3, player: 'Embiid', label: '#3 Embiid', offsetY: -22 },
   { year: 2015, pick: 3, player: 'Okafor', label: '#3 Okafor', offsetY: -40 },
   { year: 2016, pick: 1, player: 'Simmons', label: '#1 Simmons', offsetY: -22 },
-  { year: 2017, pick: 1, player: 'Fultz', label: '#1 Fultz', offsetY: -40 },
+  { year: 2017, pick: 3, player: '(lottery day)', label: '#3 (lottery day)', offsetY: -40 },
 ];
 
 // Real NBA lottery odds for worst-record team by era
