@@ -5,10 +5,10 @@
  */
 
 var PROCESS_PICKS = [
-  { year: 2014, pick: 3, label: '#3 pick (−50%)', offsetY: -22 },
-  { year: 2015, pick: 3, label: '#3 pick (−50%)', offsetY: -40 },
-  { year: 2016, pick: 1, label: '#1 pick (reset)', offsetY: -22 },
-  { year: 2017, pick: 3, label: '#3 pick (−50%)', offsetY: -40 },
+  { year: 2014, pick: 3 },
+  { year: 2015, pick: 3 },
+  { year: 2016, pick: 1 },
+  { year: 2017, pick: 3 },
 ];
 
 // Real NBA lottery odds for worst-record team by era
@@ -164,7 +164,7 @@ function createProcessChart(canvasId, colaResults, nbaData) {
                 var year = parseInt(ctx.label);
                 var pick = pickYearSet[year];
                 var base = 'PHI Tickets: ' + Math.round(ctx.raw).toLocaleString();
-                if (pick) base += '  →  ' + pick.label;
+                if (pick) base += '  →  Won #' + pick.pick + ' pick';
                 return base;
               }
               if (ctx.datasetIndex === 1) {
@@ -208,39 +208,7 @@ function createProcessChart(canvasId, colaResults, nbaData) {
         },
       },
     },
-    plugins: [{
-      id: 'pickAnnotations',
-      afterDraw: function (chart) {
-        var ctx = chart.ctx;
-        var meta = chart.getDatasetMeta(0);
-
-        for (var i = 0; i < PROCESS_PICKS.length; i++) {
-          var pick = PROCESS_PICKS[i];
-          var yearIndex = pick.year - CHART_YEARS_START;
-          var point = meta.data[yearIndex];
-          if (!point) continue;
-
-          var x = point.x;
-          var y = point.y + pick.offsetY;
-
-          // Draw connecting line from label to point
-          ctx.save();
-          ctx.strokeStyle = 'rgba(255, 209, 102, 0.4)';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(x, point.y - 8);
-          ctx.lineTo(x, y + 10);
-          ctx.stroke();
-
-          // Draw label
-          ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillStyle = '#ffd166';
-          ctx.fillText(pick.label, x, y);
-          ctx.restore();
-        }
-      },
-    }],
+    plugins: [],
   });
 }
 
