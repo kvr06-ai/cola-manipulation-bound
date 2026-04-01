@@ -5,10 +5,10 @@
  */
 
 var PROCESS_PICKS = [
-  { year: 2014, pick: 3, player: 'Embiid', label: '#3 Embiid', offsetY: -22 },
-  { year: 2015, pick: 3, player: 'Okafor', label: '#3 Okafor', offsetY: -40 },
-  { year: 2016, pick: 1, player: 'Simmons', label: '#1 Simmons', offsetY: -22 },
-  { year: 2017, pick: 3, player: '(lottery day)', label: '#3 (lottery day)', offsetY: -40 },
+  { year: 2014, pick: 3, label: '#3 pick (−50%)', offsetY: -22 },
+  { year: 2015, pick: 3, label: '#3 pick (−50%)', offsetY: -40 },
+  { year: 2016, pick: 1, label: '#1 pick (reset)', offsetY: -22 },
+  { year: 2017, pick: 3, label: '#3 pick (−50%)', offsetY: -40 },
 ];
 
 // Real NBA lottery odds for worst-record team by era
@@ -164,7 +164,7 @@ function createProcessChart(canvasId, colaResults, nbaData) {
                 var year = parseInt(ctx.label);
                 var pick = pickYearSet[year];
                 var base = 'PHI Tickets: ' + Math.round(ctx.raw).toLocaleString();
-                if (pick) base += '  →  #' + pick.pick + ' ' + pick.player;
+                if (pick) base += '  →  ' + pick.label;
                 return base;
               }
               if (ctx.datasetIndex === 1) {
