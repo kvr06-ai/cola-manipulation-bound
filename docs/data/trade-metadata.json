@@ -11,7 +11,8 @@
       "Team abbreviations normalized to canonical IDs matching nba-data.json: OKC (not SEA), MEM (not VAN), BKN (not NJN/BRK), NOP (not NOH/NOK), CHA (not CHO), PHX (not PHO).",
       "draftNight=true means the trade was executed on draft night (player selected by one team, rights immediately traded).",
       "Some picks involved multi-team or multi-step trades; intermediary teams are noted where relevant.",
-      "Draft-night PLAYER swaps (where both teams used their own picks and traded the selected players) are excluded. Only pre-draft PICK RIGHTS trades are included."
+      "Draft-night PLAYER swaps (where both teams used their own picks and traded the selected players) are excluded. Only pre-draft PICK RIGHTS trades are included.",
+      "2026-03-31: Corrected for lottery-day attribution. Removed 8 post-lottery swaps. Fixed 2017 #1/#3 receivedBy to reflect lottery-day holder (BOS/PHI), not draft-day selector."
     ]
   },
   "trades": [
@@ -85,34 +86,6 @@
       "receivedBy": "OKC",
       "draftNight": false,
       "notes": "Original agent data said MIL->SEA; normalized SEA to OKC per canonical IDs."
-    },
-    {
-      "year": 2004,
-      "pick": 2,
-      "originalOwner": "LAC",
-      "receivedBy": "CHA",
-      "draftNight": false
-    },
-    {
-      "year": 2004,
-      "pick": 4,
-      "originalOwner": "CHA",
-      "receivedBy": "LAC",
-      "draftNight": false
-    },
-    {
-      "year": 2005,
-      "pick": 3,
-      "originalOwner": "POR",
-      "receivedBy": "UTA",
-      "draftNight": false
-    },
-    {
-      "year": 2005,
-      "pick": 6,
-      "originalOwner": "UTA",
-      "receivedBy": "POR",
-      "draftNight": false
     },
     {
       "year": 2005,
@@ -213,13 +186,6 @@
     },
     {
       "year": 2013,
-      "pick": 9,
-      "originalOwner": "UTA",
-      "receivedBy": "MIN",
-      "draftNight": false
-    },
-    {
-      "year": 2013,
       "pick": 12,
       "originalOwner": "TOR",
       "receivedBy": "OKC",
@@ -231,13 +197,6 @@
       "pick": 13,
       "originalOwner": "BOS",
       "receivedBy": "DAL",
-      "draftNight": false
-    },
-    {
-      "year": 2013,
-      "pick": 14,
-      "originalOwner": "MIN",
-      "receivedBy": "UTA",
       "draftNight": false
     },
     {
@@ -288,7 +247,7 @@
       "year": 2017,
       "pick": 1,
       "originalOwner": "BKN",
-      "receivedBy": "PHI",
+      "receivedBy": "BOS",
       "draftNight": false,
       "notes": "BKN pick held by BOS (from Billy King trade), then swapped to PHI. Original agent data said BRK; normalized to BKN."
     },
@@ -296,7 +255,7 @@
       "year": 2017,
       "pick": 3,
       "originalOwner": "SAC",
-      "receivedBy": "BOS",
+      "receivedBy": "PHI",
       "draftNight": false,
       "notes": "Routed via PHI."
     },
@@ -352,21 +311,6 @@
       "receivedBy": "LAC",
       "draftNight": true,
       "notes": "Routed via LAC. (receivedBy corrected to LAC)"
-    },
-    {
-      "year": 2019,
-      "pick": 4,
-      "originalOwner": "LAL",
-      "receivedBy": "ATL",
-      "draftNight": true,
-      "notes": "Routed via NOP."
-    },
-    {
-      "year": 2019,
-      "pick": 8,
-      "originalOwner": "ATL",
-      "receivedBy": "NOP",
-      "draftNight": true
     },
     {
       "year": 2019,

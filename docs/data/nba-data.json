@@ -1742,7 +1742,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": 6
+          "draftPick": 3
         },
         {
           "id": "UTA",
@@ -1752,7 +1752,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": 3
+          "draftPick": 6
         },
         {
           "id": "NOP",
@@ -5194,7 +5194,7 @@
           "madePlayoffs": true,
           "playoffResult": "conf_finals",
           "seriesWon": 2,
-          "draftPick": 3
+          "draftPick": 1
         },
         {
           "id": "LAC",
@@ -5424,7 +5424,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": 1
+          "draftPick": 3
         },
         {
           "id": "LAL",
@@ -5966,7 +5966,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": null
+          "draftPick": 4
         },
         {
           "id": "MIN",
@@ -6026,7 +6026,7 @@
           "madePlayoffs": false,
           "playoffResult": null,
           "seriesWon": 0,
-          "draftPick": 4
+          "draftPick": 8
         },
         {
           "id": "CHI",
