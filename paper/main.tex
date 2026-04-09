@@ -1,0 +1,63 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{natbib}
+\usepackage[margin=1in]{geometry}
+\usepackage{xcolor}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% --- Theorem environments ---
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+
+% --- Macros ---
+\newcommand{\cola}{\textsc{Cola}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+
+% --- Title ---
+\title{Incentive Compatibility of Carry-Over Lottery Allocation:\\
+A Manipulation Bound and Historical Comparison of Four Variants}
+
+\author{
+  Kaushik Rajan\thanks{Independent researcher. \texttt{kaushi@alumni.ncsu.edu}}
+  \and
+  Timothy Highley\thanks{La Salle University. \texttt{highley@lasalle.edu}}
+}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+% TODO: Write after all sections are drafted.
+\end{abstract}
+
+% --- Sections ---
+\input{sections/01-introduction}
+\input{sections/02-background}
+\input{sections/03-cola-family}
+\input{sections/04-manipulation-bound}
+\input{sections/05-backtesting}
+\input{sections/06-comparison}
+\input{sections/07-discussion}
+
+% --- Bibliography ---
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

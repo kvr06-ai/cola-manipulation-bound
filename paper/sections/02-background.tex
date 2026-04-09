@@ -1,0 +1,43 @@
+\section{Background and Related Work}
+\label{sec:background}
+
+% Lead: Rajan. Highley to review for accuracy.
+%
+% Structure:
+% - NBA draft lottery history (coin flip -> weighted lottery -> 2019 reform)
+% - Munro & Banchio impossibility (effort manipulation)
+% - Coreno & Balbuzanov impossibility (preference manipulation)
+% - Prior reform proposals (T-IC, uniform lottery)
+% - Why multi-year memory escapes the impossibility
+
+\subsection{The NBA Draft Lottery}
+
+% TODO: Brief history. Coin flip (pre-1985) -> weighted lottery (1985) -> envelope reform (1990s)
+% -> 2019 flattened odds. Each reform reduced but never eliminated tanking incentives.
+
+\subsection{Impossibility Results}
+
+\subsubsection{Effort Manipulation}
+
+\citet{munro2020notanking} formalize the tanking problem as an impossibility. They define a \emph{No-Tanking Condition} (NTC): a mechanism satisfies NTC if no team can improve its expected draft position by losing a game it could win. Their main result shows that any mechanism mapping end-of-season records to draft probabilities that gives worse teams strictly better odds must violate NTC.
+
+The proof constructs a minimal counterexample: two teams, both eliminated, identical records, final game against each other. The loser finishes with a worse record and therefore receives better draft odds. Both teams prefer to lose. Only a uniform lottery (equal odds for all non-playoff teams) satisfies NTC, but this abandons the goal of helping the weakest teams.
+
+Their proposed alternative, \emph{T-IC} (Truncated Incentive Compatibility), tracks each team's conditional probability of finishing last and freezes allocations at the moment IC would first be violated. This is optimal in theory but computationally expensive, opaque to fans, and limited to single-season scope.
+
+\subsubsection{Preference Manipulation}
+
+\citet{coreno2022axiomatic} address a complementary manipulation vector: teams misreporting which players they prefer. They prove that no allocation rule simultaneously satisfies:
+\begin{itemize}
+    \item \textbf{Respect for Priority (RP):} higher-priority teams receive weakly better allocations~\citep{svensson1994allocation};
+    \item \textbf{Envy-Free up to One Object (EF1):} no team envies another's allocation after removing one item~\citep{lipton2004approximately,budish2011combinatorial};
+    \item \textbf{Strategy-Proofness (SP):} no team benefits from misreporting preferences.
+\end{itemize}
+
+% TODO: Discuss how these axioms may or may not map onto COLA.
+% Pending Highley's review of the RP/EF1 mapping (expected ~Apr 12).
+
+\subsection{Prior Reform Proposals}
+
+% TODO: Brief survey of alternatives considered by the NBA and in the literature.
+% Wheel proposals, auction mechanisms, etc.

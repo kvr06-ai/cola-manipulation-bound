@@ -1,0 +1,48 @@
+\section{Comparative Analysis}
+\label{sec:comparison}
+
+% Lead: Rajan. Code: docs/js/ (all variant engines), docs/trade-simulator.html, docs/process.html.
+% Figures: generate from backtester data.
+
+This section presents a cross-variant comparative analysis using the 26-season historical backtest, examining how each \cola{} variant ranks teams differently under identical historical data.
+
+\subsection{Case Study: Sacramento Kings (Maximum Drought)}
+
+% TODO: Kings hold the highest Classic COLA index across the dataset.
+% Compare their ranking and draft probabilities across all four variants.
+% Classic COLA rewards sustained mediocrity most strongly;
+% Simple COLA and Countdown COLA also rank them highly but through
+% different mechanisms (drought years vs. McCarty number).
+
+\subsection{Case Study: Philadelphia 76ers (Tanking Circumvention)}
+
+% TODO: The Process (2013-2019) under COLA.
+% Process counterfactual shows PHI drops from rank 8 to dead last (14/14)
+% by 2017 under Classic COLA. SAC holds top spot throughout.
+% Key insight: COLA's graduated diminishment means a team that receives
+% a top pick sees its index fall sharply, making sustained tanking
+% (deliberately accumulating multiple high picks) self-defeating.
+% Data from docs/process.html.
+
+\subsection{Case Study: Milwaukee Bucks (Countdown COLA)}
+
+% TODO: Bucks' McCarty number of 144 produces E[pick] ~ 7.2 under
+% Countdown COLA despite being the top-ranked team in their pool.
+% Illustrates the variance introduced by the elimination pool structure.
+
+\subsection{Trade Handling}
+
+% TODO: Highley's Part 4 identifies four options for handling traded picks
+% under COLA. Our trade simulator (docs/trade-simulator.html) computes
+% Classic COLA indices under all four options across 26 seasons.
+% Key example: BKN 2017 index ranges from ~2,300 to ~4,600 depending on
+% the option chosen.
+% 63 verified pre-draft pick trades, 12 in top-4 diminishment range.
+
+\subsection{Cross-Variant Summary}
+
+% TODO: Summary table showing how variants differ in:
+% (1) Which teams benefit most
+% (2) Variance in draft position
+% (3) Sensitivity to drought length vs. win count
+% (4) Ease of explanation to fans/owners

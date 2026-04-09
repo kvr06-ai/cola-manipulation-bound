@@ -1,0 +1,24 @@
+\section{Introduction}
+\label{sec:introduction}
+
+% Lead: Rajan. Joint revision with Highley.
+%
+% Structure:
+% - NBA tanking problem: misaligned incentives in the current draft lottery
+% - Why the current system fails (Silver's 2026 acknowledgment)
+% - Impossibility results: Munro & Banchio (2020), Coreno & Balbuzanov (2022)
+% - COLA as a proposed solution family (Highley, Duncan & Volkov, 2026)
+% - Contributions of this paper:
+%   (1) Formal manipulation bound with conditioned estimate (~4.0%)
+%   (2) First systematic cross-variant historical backtest (26 seasons, 775+ records)
+% - Paper organization
+
+The National Basketball Association's draft lottery creates a well-documented incentive misalignment: teams eliminated from playoff contention can improve their expected draft position by losing additional games. This \emph{tanking} problem has persisted through multiple reform attempts, most recently prompting NBA Commissioner Adam Silver to acknowledge ``misaligned incentives'' at the 2026 All-Star Weekend press conference~\citep{silver2026allstar}.
+
+The problem is not merely practical---it is theoretically fundamental. \citet{munro2020notanking} prove that no draft mechanism based solely on end-of-season records can simultaneously reward poor performance and eliminate tanking incentives. Their impossibility result requires only a single pathological scenario: two eliminated teams with tied records facing each other in their final game. \citet{coreno2022axiomatic} complement this with an impossibility on the preference-manipulation side, showing that no allocation rule satisfies Respect for Priority, Envy-Free up to One Object, and Strategy-Proofness simultaneously.
+
+Carry-Over Lottery Allocation (\cola{}) sidesteps these impossibility results by replacing single-season records with multi-year playoff track records as the basis for draft priority~\citep{highley2026cola}. Under \cola{}, a team's lottery index accumulates across seasons of missed playoffs and diminishes upon playoff success, decoupling draft odds from within-season effort. The original paper establishes incentive compatibility (IC) under five assumptions, four of which hold by construction. The fifth---that pool manipulation gains are negligible---is supported by simulation but lacks a formal bound.
+
+This paper makes two contributions. First, we derive an analytic upper bound on the maximum probability gain achievable through pool manipulation (\cref{sec:bound}), showing it is at most ${\sim}4.0\%$ under empirically calibrated parameters and confirming that the simulation-based estimate of ${\sim}3.0\%$ is not an artifact of insufficient sampling. Second, we present the first systematic historical backtest of four \cola{} variants across 26 NBA seasons (1999--2025), providing a comparative empirical analysis that complements the original paper's synthetic simulations (\cref{sec:backtesting,sec:comparison}).
+
+The remainder of this paper is organized as follows. \Cref{sec:background} reviews the impossibility results and prior reform proposals. \Cref{sec:cola-family} formally defines the \cola{} mechanism family and its four principal variants. \Cref{sec:bound} derives the manipulation bound. \Cref{sec:backtesting} describes the backtesting methodology. \Cref{sec:comparison} presents the cross-variant comparative analysis. \Cref{sec:discussion} discusses implications for NBA adoption and future work.

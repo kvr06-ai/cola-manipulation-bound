@@ -1,0 +1,53 @@
+\section{Backtesting Methodology}
+\label{sec:backtesting}
+
+% Lead: Rajan. Code: docs/js/cola-engine.js, docs/data/nba-data.json.
+
+We present the first systematic historical backtest of multiple \cola{} variants using real NBA data, complementing the synthetic Bradley-Terry simulations in \citet{highley2026cola}.
+
+\subsection{Data}
+
+Our dataset covers 26 NBA seasons (1999--2000 through 2024--25), comprising:
+\begin{itemize}
+    \item 775+ team-season records from Basketball Reference, including win-loss records, playoff results (series wins/losses at each round), and draft outcomes;
+    \item 776 first-round draft picks (picks 1--30, all 26 seasons);
+    \item 55 pre-draft pick trades verified against lottery-day attribution (see \cref{sec:lottery-day}).
+\end{itemize}
+
+\subsection{Engine Design}
+
+The \cola{} backtesting engine operates in two phases per season:
+
+\begin{description}
+    \item[Phase A (Pre-Draft):] Compute each team's lottery index entering the draft, based on accumulated carry-over and the current season's playoff results. This is the state displayed to users and used for draft probability calculations.
+    \item[Phase B (Post-Draft):] Apply diminishment rules based on draft lottery outcomes (picks 1--4 reduce the index according to the variant's diminishment schedule). The resulting index carries forward to the next season.
+\end{description}
+
+This two-phase design resolves an off-by-one error identified by Highley in the initial implementation: without it, diminishment from the current draft would retroactively affect the probabilities used to determine that draft's outcome.
+
+\subsubsection{Lottery-Day Attribution}
+\label{sec:lottery-day}
+
+Draft picks are frequently traded. The critical question for \cola{} index computation is: who holds the pick on \emph{lottery day} (when probabilities are determined), not on \emph{draft day} (when selections are made)?
+
+We audited all 364 lottery picks ($14 \times 26$ seasons) and identified 8 instances where the draft-day holder differed from the lottery-day holder. The most notable: Boston held the \#1 pick on lottery day in 2017 (Philadelphia held \#3); the Fultz--Tatum swap was a post-lottery trade. Under \cola{}, Boston's index absorbs the \#1 diminishment, while Philadelphia's takes only the 50\% reduction for \#3.
+
+\subsection{Cold Start}
+
+\cola{} is a multi-year mechanism. Backtesting from 1999--2000 means the first several seasons have truncated drought histories. We initialize all teams with zero tickets and allow indices to build naturally. Results stabilize by approximately season 5 (2003--04). We present all 26 seasons but note the cold-start limitation.
+
+\subsection{Variant-Specific Implementation}
+
+\paragraph{Simple \cola{}.} 22-team eligible pool: all teams with zero playoff series wins in the current season (14 non-playoff teams + 8 first-round losers). Deterministic ordering by drought length; tiebreak by most wins.
+
+\paragraph{Simple Lottery \cola{}.} Same drought state and 22-team pool as Simple. Pre-2019 NBA lottery odds (25.0\% down to 0.5\%) applied to the top 14 teams by drought.
+
+\paragraph{Classic \cola{}.} Full lottery index computation per \cref{sec:cola-family}. Weighted lottery for picks 1--4; remaining picks by index rank.
+
+\paragraph{Countdown \cola{}.} McCarty number (drought $\times$ wins) determines ranking. 5-team elimination pools with 6/5/4/3/2 tickets. Bottom-up sequential draws (21 draws total for a 22-team pool). Probabilities computed via 10{,}000-trial Monte Carlo simulation per season rather than closed-form, due to the compounding effect of sequential draws.
+
+\subsection{Limitations}
+
+This is a \emph{static} backtest: \cola{} rules are applied to actual historical outcomes. Under a real \cola{} regime, draft outcomes would differ, which would change future drought lengths and indices. For example, the Sacramento Kings would not maintain the highest Classic \cola{} index for 6 consecutive seasons if they received the \#1 pick early in that streak. We present results with this caveat prominently noted.
+
+Picks 15--30 reflect original holders; draft-night trades for non-lottery picks are not corrected, as these do not affect \cola{} index computation.

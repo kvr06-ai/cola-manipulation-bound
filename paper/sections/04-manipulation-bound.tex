@@ -1,0 +1,97 @@
+\section{Pool Manipulation Bound}
+\label{sec:bound}
+
+% Lead: Rajan. Code: cola/bound.py, cola/simulate.py.
+% Figures: figures/gain_vs_delta.pdf, bound_sensitivity.pdf, bound_vs_sim.pdf.
+
+The incentive compatibility of Classic \cola{} rests on five assumptions, four of which hold by construction. The fifth---\emph{pool manipulation gains are negligible}---is supported in the original paper by simulation over 1{,}000 synthetic seasons \citep{highley2026cola}. In this section, we derive an analytic bound that confirms and extends this simulation result.
+
+\subsection{Setup and Notation}
+
+Let $P = \sum_{i=1}^{n} L_i$ denote the total lottery pool, where $L_i$ is team $i$'s lottery index and $n$ is the number of lottery-eligible teams. Under Classic \cola{}, each non-playoff team receives $\alpha = 1{,}000$ tickets per season, and tickets carry over across seasons. A team's probability of winning the first pick is $p_i = L_i / P$.
+
+The \emph{pool manipulation} loophole works as follows: team $i$ deliberately loses to a high-index opponent $h$ near the playoff boundary, causing $h$ to make the playoffs. Team $h$ (with index $L_h$) exits the lottery pool and is replaced by a lower-index team $\ell$ (with index $L_\ell < L_h$). The pool shrinks by $\Delta = L_h - L_\ell > 0$.
+
+\subsection{Exact Gain Formula}
+
+\begin{proposition}[Manipulation Gain]
+\label{prop:gain}
+The probability gain for team $i$ from a pool swap of size $\Delta = L_h - L_\ell$ is:
+\begin{equation}
+\label{eq:gain}
+G_i = \frac{L_i \cdot \Delta}{P \cdot (P - \Delta)}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Before manipulation, $p_i = L_i / P$. After the swap, the new pool is $P' = P - \Delta$, and $p_i' = L_i / P'$. The gain is $G_i = p_i' - p_i = L_i \left(\frac{1}{P - \Delta} - \frac{1}{P}\right) = \frac{L_i \cdot \Delta}{P(P - \Delta)}$.
+\end{proof}
+
+\begin{remark}[First-Order Approximation]
+When $\Delta \ll P$ (typically $\Delta/P \approx 4\%$), the gain simplifies to:
+\begin{equation}
+\label{eq:approx}
+G_i \approx p_i \cdot \frac{\Delta}{P}
+\end{equation}
+This factors the gain into two independent ratios: the manipulator's pool share ($p_i$) and the fractional pool change ($\Delta/P$). Both have structural ceilings, which we exploit below.
+\end{remark}
+
+\subsection{Conditioned Upper Bound}
+
+We now bound $G_{\max}$ under two empirically calibrated conditions on the index distribution.
+
+\begin{definition}[Structural Anti-Correlation]
+\label{def:anticorr}
+Let $T_{\max}$ denote the maximum consecutive non-playoff years for any team, and $T_{\text{boundary}}$ the maximum consecutive non-playoff years for a team near the playoff boundary (i.e., a team that could plausibly be pushed into the playoffs by a single loss). We say the index distribution exhibits \emph{structural anti-correlation} when $T_{\text{boundary}} \ll T_{\max}$: teams with the highest indices (longest droughts) are far from the playoff boundary and thus cannot be the target of pool manipulation.
+\end{definition}
+
+\begin{theorem}[Conditioned Manipulation Bound]
+\label{thm:bound}
+Under structural anti-correlation with parameters $T_{\max}$, $T_{\text{boundary}}$, and average index multiplier $\bar{k}$ (where $\bar{k} = \bar{L} / \alpha$), the maximum manipulation gain satisfies:
+\begin{equation}
+\label{eq:bound}
+G_{\max} \leq \frac{T_{\max} \cdot (T_{\text{boundary}} - 1)}{(T_{\max} + n - 1) \cdot n \cdot \bar{k}}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+The gain is maximized when $L_i$ is maximized and $\Delta / P$ is maximized.
+
+\textbf{Bounding $p_{\max}$:} The highest-index team has $L_{\max} = T_{\max} \cdot \alpha$. The minimum pool size occurs when one team has $T_{\max}$ years of accumulation and the remaining $n-1$ teams each have the minimum $\alpha$: $P_{\min} = T_{\max} \cdot \alpha + (n-1) \cdot \alpha = (T_{\max} + n - 1) \cdot \alpha$. Thus $p_{\max} \leq T_{\max} / (T_{\max} + n - 1)$.
+
+\textbf{Bounding $\Delta / P$:} The team being pushed out has at most $T_{\text{boundary}} \cdot \alpha$ tickets, and the team replacing it has at least $\alpha$. So $\Delta_{\max} = (T_{\text{boundary}} - 1) \cdot \alpha$. In steady state, $P \approx n \cdot \bar{k} \cdot \alpha$. Thus $\Delta_{\max} / P \leq (T_{\text{boundary}} - 1) / (n \cdot \bar{k})$.
+
+Combining via the approximation in \cref{eq:approx}: $G_{\max} \leq p_{\max} \cdot (\Delta_{\max}/P)$, yielding \cref{eq:bound}.
+\end{proof}
+
+\subsection{Empirical Calibration}
+
+Using simulation-calibrated parameters from \citet{highley2026cola}: $T_{\max} = 10$, $T_{\text{boundary}} = 5$, $n = 14$, $\bar{k} = 3.1$:
+
+\begin{equation}
+G_{\max} \leq \frac{10 \cdot 4}{23 \cdot 14 \cdot 3.1} \approx 4.0\%
+\end{equation}
+
+This contains the simulation-observed maximum of $3.0\%$ across 1{,}000 seasons with approximately $1.3\times$ headroom. Our independent 200-season Bradley-Terry simulation confirms the bound, with observed maximum gain of $1.70\%$ (\cref{fig:bound_vs_sim}).
+
+\subsection{Sensitivity Analysis}
+
+\Cref{fig:bound_sensitivity} shows the bound as a function of $T_{\max}$ and $T_{\text{boundary}}$. The bound is most sensitive to $T_{\text{boundary}}$: even under pessimistic assumptions ($T_{\text{boundary}} = 7$), the bound remains below $7\%$. Under realistic conditions ($T_{\text{boundary}} \leq 5$), the bound stays below $5\%$.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.48\textwidth]{../figures/bound_sensitivity.pdf}
+    \hfill
+    \includegraphics[width=0.48\textwidth]{../figures/bound_vs_sim.pdf}
+    \caption{\textbf{Left:} Manipulation bound as a function of $T_{\max}$ and $T_{\text{boundary}}$. \textbf{Right:} Analytic bound vs.\ simulation distribution across 200 Bradley-Terry seasons.}
+    \label{fig:bound_sensitivity}
+    \label{fig:bound_vs_sim}
+\end{figure}
+
+\subsection{Second Source of Unboundedness}
+
+The bound above addresses the \emph{probability} term of the manipulation incentive. However, the \emph{value} term---the pick value gap $d_k - d_{k+1}$ between adjacent draft positions---has no formal ceiling. A generational prospect could make even a small probability shift worth pursuing. Fully closing Assumption~5 would also require bounding pick value gaps, which are bounded for any realistic draft class but lack a formal argument. We leave this to future work.
+
+\subsection{Coalitional Manipulation}
+
+For completeness, we note that coalitional manipulation (two or more teams coordinating to shrink the pool) does not amplify individual gains. The joint gain for a coalition $\{A, B\}$ is $(L_A + L_B) \cdot \Delta / (P(P - \Delta))$. Even if two teams hold 30\% of the pool, the gain remains ${\leq}1.3\%$. Per-member gain cannot exceed the highest-index individual's gain, and coordination costs (detection risk, trust problems, sequential uncertainty) make exploitation implausible. Under McCarty \cola{}, a prisoner's dilemma arises: each conspirator prefers to defect and win the game rather than cooperate to lose.
