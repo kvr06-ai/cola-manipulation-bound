@@ -1,30 +1,67 @@
 \section{Discussion}
 \label{sec:discussion}
 
-% Lead: Joint (Rajan + Highley).
+% Lead: Joint (Rajan + Highley). Rajan first draft; Highley to revise and extend.
 
 \subsection{Implications for NBA Adoption}
+\label{sec:adoption}
 
-% TODO: COLA's modular design as a negotiation framework for 30 owners.
-% Simple COLA = easy sell (no lottery complexity).
-% Countdown = best mechanism (bounded displacement, McCarty incentive alignment).
-% Classic = minimal change from status quo.
-% Transition considerations: cold start, grandfathering existing droughts.
+The results in \cref{sec:comparison} argue for treating \cola{} as a \emph{family} of mechanisms rather than a single design. Each variant occupies a distinct position on the explainability--robustness frontier, and adoption decisions are better framed as a choice within the family than as a binary accept/reject on any individual variant.
+
+\begin{description}
+    \item[Simple \cola{}] is the minimal-departure option: no lottery, fully deterministic ordering by drought years. Its transparency makes it the easiest to communicate to fans and owners, but the absence of randomization leaves the mechanism exposed at the ranking boundary. A team tied with another on drought years and wins can have a strong incentive to lose the tiebreaker game.
+    \item[Simple Lottery \cola{}] retains Simple \cola{}'s drought-based state but layers pre-2019 NBA odds on the top 14 teams by drought. This resolves the boundary issue at the cost of reintroducing the weighted-lottery complexity that the current system's critics object to.
+    \item[Classic \cola{}] is the variant around which the original incentive-compatibility analysis is developed \citep{highley2026cola}. It preserves a weighted lottery over a ticket pool, with graduated diminishment on playoff and draft outcomes. This is the natural baseline for comparison with the status quo and the variant our manipulation bound (\cref{sec:bound}) directly analyzes.
+    \item[Countdown \cola{}] satisfies the bounded-displacement property ($\pm 4$ ranks) by construction, at the cost of probability distributions that require Monte Carlo simulation to reason about. It is the strongest design on theoretical grounds but the hardest to explain.
+\end{description}
+
+Our reading is that \textbf{Classic \cola{} and Countdown \cola{} are the two serious adoption candidates}. Simple \cola{} and Simple Lottery \cola{} are useful as boundary cases and as starting points for incremental adoption, but neither is well-suited to the adversarial equilibrium the mechanism must survive.
+
+\paragraph{Transition.} Any \cola{} regime inherits the historical droughts of incumbent teams at transition. Three approaches are consistent with the backtester's results:
+\begin{enumerate}
+    \item \textbf{Cold start.} Initialize all teams with zero tickets. Our backtester results converge by approximately season 5; a real-world transition would require 4--5 seasons before the mechanism reaches its designed equilibrium. During this period, short-drought incumbent teams are disadvantaged relative to a steady-state baseline.
+    \item \textbf{Grandfathered state.} Initialize each team's index using its actual recent playoff history (e.g., the previous 10 seasons). This eliminates the cold-start period but creates a regime where the first season's lottery is dominated by incumbent droughts that the incumbent owners did not consent to under \cola{}'s rules.
+    \item \textbf{Phased transition.} Run \cola{} in parallel with the existing lottery for 2--3 seasons, weighting \cola{}'s contribution to final odds linearly from zero to one. This preserves stakeholder buy-in at the cost of implementation complexity.
+\end{enumerate}
+We do not take a position on which transition is preferable; the backtester makes all three tractable to simulate.
+
+\paragraph{Trade handling.} \Cref{sec:trade-handling} quantifies the index variance introduced by the four options in \citet{highley2026solvable4}. Our results are consistent with Highley's recommendation of Option 2 (penalize the original owner) paired with a strengthened Stepien Rule: the combination preserves the tanking--diminishment linkage where it is relevant and caps the frequency of the over-penalization failure mode.
+
+\paragraph{Lottery-day attribution.} The audit in \cref{sec:lottery-day} identified 8 lottery picks across 26 seasons where the draft-day holder differed from the lottery-day holder. Under \cola{}, lottery-day attribution is the correct policy: it aligns the diminishment signal with the team whose record determined the lottery position. League-office implementation should lock index updates to the lottery draw, not the draft selection.
+
+\subsection{Manipulation Resilience}
+\label{sec:resilience}
+
+The bound in \cref{sec:bound} establishes that the worst-case probability gain from pool manipulation is at most ${\sim}4.0\%$ under empirically calibrated parameters. Combined with the backtester results in \cref{sec:comparison}, we can make a stronger claim: under realistic historical conditions, the \emph{combination} of manipulation channels available to a strategic team is bounded.
+
+Specifically, three manipulation channels exist under Classic \cola{}:
+\begin{enumerate}
+    \item \textbf{Single-season tanking}, which moves a team down in wins but does not directly affect the ticket ordering (the flat $\alpha$ increment equalizes within-season loss differences). Classic \cola{} is designed to be robust to this channel by construction.
+    \item \textbf{Pool manipulation}, bounded at ${\sim}4.0\%$ by \cref{thm:bound}.
+    \item \textbf{Multi-year strategic tanking} (the Process-style circumvention), bounded empirically by the diminishment schedule: \cref{sec:case-phi} shows that a team receiving four top-3 picks across four seasons falls to last in lottery priority, reversing rather than extending the intended advantage.
+\end{enumerate}
+All three channels exhibit diminishing returns in the \cola{} setting, in contrast to the status-quo lottery where repeat tanking has memoryless returns. The joint resilience is the main design property that distinguishes \cola{} from the weighted-lottery family.
 
 \subsection{Limitations and Future Work}
+\label{sec:limitations}
 
-% TODO:
-% 1. Tighten the manipulation bound: formal proof of structural anti-correlation
-%    (currently calibrated from simulation). Open components from Section 5 of
-%    the tracking doc: T_boundary bound, boundary-shift probability, expected gain.
-% 2. Pick value gap (d_k - d_{k+1}): the probability bound is necessary but not
-%    sufficient; a generational prospect could make small probability shifts
-%    worth pursuing. Capping this requires a separate argument.
-% 3. Counterfactual backtesting: agent-based simulation where draft outcomes
-%    feed back into future team strength and drought lengths.
-% 4. Axiomatic connection: whether Coreno & Balbuzanov's RP/EF1 framework
-%    maps onto COLA properties (pending Highley's review).
+Four limitations in the current work point to concrete follow-on directions:
+
+\paragraph{Tighter manipulation bound.} \Cref{thm:bound} rests on structural anti-correlation (\cref{def:anticorr}) as a calibrated assumption. A formal proof that $T_{\text{boundary}} < T_{\max}$ under the stationary distribution of team indices would convert the bound from empirically calibrated to fully closed. The open components enumerated in \cref{sec:bound} (bound on $T_{\text{boundary}}$, probability that manipulation shifts the boundary, expected gain integrated over the season distribution) remain available as follow-on short-paper targets.
+
+\paragraph{Pick value gap.} The bound addresses the probability term of the manipulation incentive. The value term---the gap $d_k - d_{k+1}$ between adjacent picks' expected career value---has no formal ceiling, though it is bounded for any realistic draft class. A separate argument capping $d_k - d_{k+1}$ via the distribution of draft-eligible prospect quality would complete the closure of Assumption~5.
+
+\paragraph{Counterfactual backtesting.} Our backtest is \emph{static}: it applies \cola{} rules to actual historical outcomes. Under a real \cola{} regime, draft outcomes would differ, which would change team strength, future drought lengths, and subsequent lottery states. An agent-based simulation that feeds \cola{} draft outcomes into a team-strength model (e.g., Bradley--Terry with drafted-player value updates) would produce counterfactual trajectories. The Philadelphia case in \cref{sec:case-phi} is a natural test: the claim that the Process self-destructs under \cola{} is stronger if confirmed in a dynamic counterfactual than in the static backtest.
+
+\paragraph{Axiomatic connection.} \citet{coreno2022axiomatic} establish an impossibility result for draft rules satisfying Respect for Priority, Envy-Free up to One Object, and Strategy-Proofness. Whether \cola{}'s multi-year priority ordering maps onto their RP axiom---and whether the graduated diminishment schedule can be characterized as an EF1-preserving transformation---is an open question that, if resolved affirmatively, would embed \cola{} in the existing axiomatic literature on assignment mechanisms.
 
 \subsection{Conclusion}
+\label{sec:conclusion}
 
-% TODO: Write after all sections are finalized.
+The NBA tanking problem has a long history as an ``unsolvable'' mechanism-design puzzle. Impossibility results from \citet{munro2020notanking} and \citet{coreno2022axiomatic} have reinforced the view that the goals of rewarding weak teams and eliminating manipulation incentives are fundamentally in tension. Carry-Over Lottery Allocation sidesteps these impossibilities by replacing single-season records with multi-year playoff history as the basis for draft priority \citep{highley2026cola}.
+
+This paper has contributed two results to the \cola{} literature. First, we derived an analytic upper bound on pool manipulation gains (\cref{thm:bound}), confirming that the only incentive-compatibility assumption supported by simulation rather than proof is bounded at approximately $4.0\%$ under empirically calibrated parameters. Second, we presented the first systematic historical backtest of four \cola{} variants across 26 NBA seasons, providing the comparative empirical analysis that complements the original paper's synthetic Bradley--Terry simulations.
+
+Together, these results support a stronger claim than either analysis can make alone: under the joint constraints of formal manipulation bound and historical trajectory, \cola{} produces the reward structure its designers intend. Sustained drought is rewarded; repeat tanking is not. The mechanism's design space is rich enough to support multiple adoption trajectories---from the fully transparent Simple \cola{} to the displacement-bounded Countdown \cola{}---without abandoning incentive compatibility.
+
+Tanking is a soluble problem. The remaining work is adoption: selecting a variant, managing the transition, and handling the edge cases---traded picks, lottery-day attribution, and bad draft classes---that the impossibility results never addressed.

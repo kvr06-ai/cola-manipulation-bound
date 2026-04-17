@@ -4,45 +4,140 @@
 % Lead: Rajan. Code: docs/js/ (all variant engines), docs/trade-simulator.html, docs/process.html.
 % Figures: generate from backtester data.
 
-This section presents a cross-variant comparative analysis using the 26-season historical backtest, examining how each \cola{} variant ranks teams differently under identical historical data.
+This section presents a cross-variant comparative analysis using the 26-season historical backtest, examining how each \cola{} variant ranks teams differently under identical historical data. We focus on three team-season case studies that isolate distinct properties of the mechanism family (sustained drought, circumvention via repeat tanking, and elimination-pool variance), then turn to the handling of traded picks---the largest source of implementation ambiguity identified in \citet{highley2026solvable4}.
 
 \subsection{Case Study: Sacramento Kings (Maximum Drought)}
+\label{sec:case-sac}
 
-% TODO: Kings hold the highest Classic COLA index across the dataset.
-% Compare their ranking and draft probabilities across all four variants.
-% Classic COLA rewards sustained mediocrity most strongly;
-% Simple COLA and Countdown COLA also rank them highly but through
-% different mechanisms (drought years vs. McCarty number).
+The Sacramento Kings accumulate the highest Classic \cola{} index in the dataset, driven by a 16-season non-playoff drought (2006--07 through 2021--22) interrupted only by a single first-round appearance in 2022--23. The Kings' Classic index reaches a peak of $11{,}250$ tickets in 2017--18 before diminishment from their \#2 pick that year partially resets the accumulation; they held the top-ranked Classic \cola{} lottery position for six consecutive seasons (2012--13 through 2017--18) and regained rank~1 in 2024--25 after the 2022--23 playoff interruption.
+
+The three \cola{} variants reward this history through different channels:
+\begin{itemize}
+    \item \textbf{Classic \cola{}:} The flat $\alpha = 1{,}000$ annual increment compounds across missed-playoff seasons; the Kings' index grows monotonically until diminishment events (pick \#4 in 2021--22, pick \#2 in 2017--18) partially reset it. Ranking is driven almost entirely by accumulated carry-over.
+    \item \textbf{Simple \cola{}:} Deterministic ranking by drought years places the Kings near the top of the 22-team eligible pool in most years, with win-tiebreak ordering shifting them to rank~2 in seasons where another non-playoff team has a slightly longer drought.
+    \item \textbf{Countdown \cola{}:} McCarty number = drought $\times$ wins. Because the Kings typically won 25--33 games during their drought, their McCarty number is lower than the Classic \cola{} index would suggest; in 2024--25 they rank second overall (McCarty~280) behind Chicago (McCarty~390).
+\end{itemize}
+
+The Kings illustrate the core design philosophy of \cola{}: teams whose losing is \emph{organic} (genuine non-competitiveness across multiple seasons) receive the strongest reward. This is the case the mechanism is optimized for.
 
 \subsection{Case Study: Philadelphia 76ers (Tanking Circumvention)}
+\label{sec:case-phi}
 
-% TODO: The Process (2013-2019) under COLA.
-% Process counterfactual shows PHI drops from rank 8 to dead last (14/14)
-% by 2017 under Classic COLA. SAC holds top spot throughout.
-% Key insight: COLA's graduated diminishment means a team that receives
-% a top pick sees its index fall sharply, making sustained tanking
-% (deliberately accumulating multiple high picks) self-defeating.
-% Data from docs/process.html.
+The 2013--14 through 2016--17 Philadelphia 76ers (the ``Process'') represent the canonical strategic-tanking sequence in the modern NBA: four consecutive top-3 lottery outcomes (picks \#3, \#3, \#1, \#3) acquired through deliberate multi-season non-competitiveness. Under the current weighted lottery, each tanked season yielded a top-tier pick; under \cola{}, graduated diminishment makes the same sequence self-defeating.
 
-\subsection{Case Study: Milwaukee Bucks (Countdown COLA)}
+\Cref{tab:phi-process} shows Philadelphia's Classic \cola{} trajectory under static backtest:
 
-% TODO: Bucks' McCarty number of 144 produces E[pick] ~ 7.2 under
-% Countdown COLA despite being the top-ranked team in their pool.
-% Illustrates the variance introduced by the elimination pool structure.
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+Season & W--L & Real Pick & \cola{} Tickets & \cola{} Rank & Top Team (Tickets) \\
+\midrule
+2013--14 & 19--63 & \#3 & 2{,}750 & 8 / 14 & SAC (7{,}250) \\
+2014--15 & 18--64 & \#3 & 2{,}375 & 9 / 14 & SAC (8{,}250) \\
+2015--16 & 10--72 & \#1 & 2{,}188 & 10 / 14 & SAC (9{,}250) \\
+2016--17 & 28--54 & \#3 & 1{,}000 & 14 / 14 & SAC (10{,}250) \\
+2017--18 & 52--30 & --- & 375 & --- & SAC (11{,}250) \\
+\bottomrule
+\end{tabular}
+\caption{Philadelphia 76ers under Classic \cola{} during ``The Process.'' Each top-3 pick triggers graduated diminishment (\#1: full reset; \#3: 50\% reduction), leaving Philadelphia dead last in lottery priority by the fourth tanking season despite a 10--72 record. The 2017--18 residual of 375 reflects a 25\% second-round playoff reduction applied to the post-draft 500 ticket balance (50\% of 1{,}000) after Philadelphia's second-round playoff appearance. Sacramento's monotonic climb in the right-hand column is the counterfactual the mechanism is designed to produce: organic non-competitiveness is rewarded cumulatively while the Process extracts diminishing returns.}
+\label{tab:phi-process}
+\end{table}
+
+Two properties emerge:
+
+\begin{enumerate}
+    \item \textbf{Diminishing returns to repeat tanking.} The Classic \cola{} diminishment schedule ($\{1.0, 0.75, 0.5, 0.25\}$ fractional reductions for picks \#1--4) dominates the $\alpha = 1{,}000$ annual accumulation. A team that receives a top-3 pick in year $t$ cannot re-enter the top of the lottery in year $t+1$ through tanking alone; recovery requires several non-playoff seasons with no diminishment event.
+    \item \textbf{Lottery-day attribution matters.} Philadelphia's 2017--18 index of 375 assumes Philadelphia absorbs the \#3 diminishment. Because Boston held the \#1 pick on lottery day (the Fultz--Tatum swap was post-lottery), Philadelphia is charged only for \#3, not \#1. Under draft-day attribution, Philadelphia would reset to zero, Boston would retain its full index, and the mechanism's reward structure would be inverted. \Cref{sec:lottery-day} documents the audit that established this correction for all 364 lottery picks in the dataset.
+\end{enumerate}
+
+\subsection{Case Study: Milwaukee Bucks (Elimination-Pool Variance)}
+\label{sec:case-mil}
+
+Countdown \cola{} produces probability distributions that diverge sharply from both Classic \cola{} and the status-quo weighted lottery. The Milwaukee Bucks in the 2024--25 backtest provide a compact illustration.
+
+Milwaukee's McCarty number (drought $\times$ wins) is~144, placing them seventh overall in the 22-team Countdown pool---second in the second five-team pool, behind Memphis (also McCarty~144, tiebroken by wins) and trailing pool~1 leaders Chicago (McCarty~390), Sacramento (280), Los Angeles Clippers (200), Detroit (176), and Toronto (150). A naive reading of Milwaukee's position might anticipate a meaningful \#1-pick probability: they are in the top half of the pool, and share a McCarty number with the top-ranked team of their pool.
+
+Monte Carlo simulation (10{,}000 trials) yields $\Prob[\text{pick } \#1 \mid \text{Milwaukee}] \approx 3.7\%$ and $\E[\text{pick} \mid \text{Milwaukee}] \approx 7.22$. For comparison, Chicago (the overall pool leader) has $\Prob[\text{pick } \#1] \approx 29.7\%$ and $\E[\text{pick}] \approx 2.52$, and Memphis (Milwaukee's pool-adjacent counterpart with the same McCarty) has $\Prob[\text{pick } \#1] \approx 5.1\%$ and $\E[\text{pick}] \approx 6.28$. Countdown \cola{} runs 21 sequential bottom-up draws across nested five-team pools, and the compounding of elimination probabilities concentrates \#1-pick mass heavily on pool-1 leaders while spreading the remainder across pool-2 teams in a pattern that amplifies the effect of intra-pool ticket differences. Analytic derivation of these probabilities requires tracking $2^{21}$ branch paths; the Monte Carlo approach (applied uniformly across all 26 seasons of the backtest) is the tractable alternative.
+
+This case highlights a tradeoff: Countdown \cola{} satisfies Highley's ``no team falls more than 4 spots'' bounded-displacement property by design, but the same elimination structure introduces probability variance that weakens the correspondence between \cola{} index rank and expected draft position. The tradeoff is material for adoption: teams and owners evaluating the mechanism in advance cannot easily reason about expected outcomes without simulation.
 
 \subsection{Trade Handling}
+\label{sec:trade-handling}
 
-% TODO: Highley's Part 4 identifies four options for handling traded picks
-% under COLA. Our trade simulator (docs/trade-simulator.html) computes
-% Classic COLA indices under all four options across 26 seasons.
-% Key example: BKN 2017 index ranges from ~2,300 to ~4,600 depending on
-% the option chosen.
-% 63 verified pre-draft pick trades, 12 in top-4 diminishment range.
+\citet{highley2026solvable4} identifies four options for handling traded picks under \cola{}:
+
+\begin{description}
+    \item[Option 1 (Exclude):] Traded picks do not affect either team's \cola{} index.
+    \item[Option 2 (Original Owner):] Diminishment applies to the team that originally held the pick (i.e., the team whose record determined the lottery position).
+    \item[Option 3 (Receiving Team):] Diminishment applies to the team that ultimately receives the pick via trade.
+    \item[Option 4 (Split):] Diminishment is divided between the original owner and receiving team.
+\end{description}
+
+Our dataset contains 55 verified pre-draft pick trades across 26 seasons, of which 8 fall in the top-3 diminishment range where the choice of rule materially affects the index (pick~4 trades did not occur in our window). The BKN~2017 \#1 pick (traded to BOS via the 2013 Billy King mega-trade) illustrates the rule-dependent index trajectory most sharply: \cref{tab:trade-options} reports BKN's Classic \cola{} index both \emph{before} the 2017 lottery (which captures the cumulative effect of 2016's BKN $\to$ BOS \#3 trade under each rule) and \emph{after} 2017's \#1 diminishment fires.
+
+\begin{table}[t]
+\centering
+\footnotesize
+\begin{tabular}{lrrrr}
+\toprule
+Rule & BKN pre-2017 & BKN post-2017 & BOS pre-2017 & BOS post-2017 \\
+\midrule
+Opt.\ 1 (Exclude)         & 4{,}635 & 4{,}635 & 500 & 500 \\
+Opt.\ 2 (Original owner)  & 2{,}346 &     0   & 500 & 500 \\
+Opt.\ 3 (Receiving team)  & 4{,}635 & 4{,}635 & 250 &   0 \\
+Opt.\ 4 (Split)           & 3{,}373 & 1{,}687 & 375 & 188 \\
+\bottomrule
+\end{tabular}
+\caption{BKN $\to$ BOS \#1 pick in 2017 under each trade rule. ``Pre-2017'' shows the entering lottery-day index under the cumulative application of each rule through prior seasons (the $\approx\!2{,}300$ spread across rules is driven by 2016's BKN $\to$ BOS \#3 trade). ``Post-2017'' shows the post-draft index after 2017's \#1 diminishment. The pre-index range (2{,}346 to 4{,}635) matches \citet{highley2026solvable4}'s qualitative claim that pick-tracking choice materially shifts the manipulator's carried-forward state. Values computed by \texttt{scripts/audit\_paper\_numbers.js} against the 26-season backtest.}
+\label{tab:trade-options}
+\end{table}
+
+The two failure modes are visible in the data:
+
+\begin{itemize}
+    \item \textbf{Over-penalization under Option 2.} The 2011 LAC $\to$ CLE \#1 pick (the Baron Davis trade, which sent an unprotected LAC first-rounder to Cleveland years before the 2010--11 season) penalizes LAC's carried-forward index for a pick they had traded away with no expectation it would be \#1---under Option 2, LAC's index drops to zero after the 2011 draft despite their 2010--11 record having no tanking intent tied to the pick outcome. LAC's tanking incentive is severed from the pick outcome.
+    \item \textbf{Rewarding the wrong actor under Option 3.} The 2016 BKN $\to$ BOS \#3 case (from the same 2013 Billy King mega-trade) illustrates the converse: BKN tanked (though arguably due to organizational dysfunction rather than strategic intent) and BOS received the \#3 pick. Under Option~3, BOS's index is reduced for a pick they did not earn through their own record ($1{,}000 \to 500$), while BKN's large accumulated index ($3{,}635$) is unaffected.
+\end{itemize}
+
+Option 4 (split) distributes diminishment evenly but compounds the underlying attribution problem: neither the manipulator nor the beneficiary absorbs the full signal.
+
+Option 1 (exclude) is the simplest but eliminates the diminishment mechanism's effect on any traded pick, reintroducing a manipulation channel (trade the pick, then tank).
+
+\citet{highley2026solvable4} recommends Option 2 paired with a strengthened Stepien Rule (cap on the number of future firsts a team can trade), which limits the frequency with which Option 2's over-penalization can occur while preserving the linkage between manipulation incentive and diminishment.
 
 \subsection{Cross-Variant Summary}
+\label{sec:cross-variant}
 
-% TODO: Summary table showing how variants differ in:
-% (1) Which teams benefit most
-% (2) Variance in draft position
-% (3) Sensitivity to drought length vs. win count
-% (4) Ease of explanation to fans/owners
+\Cref{tab:cross-variant} summarizes how the four variants treat the three case-study teams and the primary trade-handling concern:
+
+\begin{table}[t]
+\centering
+\footnotesize
+\begin{tabular}{lllll}
+\toprule
+Property & Simple & Simple Lot. & Classic & Countdown \\
+\midrule
+Top team 2024--25 & CHI & CHI & SAC & CHI \\
+Top team $P[\#1]$ & N/A (det.) & $25.0\%$ & $14.3\%$ & $29.7\%$ \\
+PHI 2016--17 rank & 21/22 & 21/22 & 14/14 & 21/22 \\
+Lottery component & None & Pre-2019 odds & Weighted & Elim.\ pools (MC) \\
+Bounded displacement & 0 (det.) & $\pm 13$ & $\pm 13$ & $\pm 4$ (design) \\
+Clean trade handling & N/A & N/A & Option-dep. & Option-dep. \\
+Fan explainability & High & High & Medium & Low \\
+\bottomrule
+\end{tabular}
+\caption{Cross-variant comparison. Numeric entries are drawn from the 2024--25 backtest; PHI 2016--17 rank is shown relative to the eligible pool size for each variant (14 for Classic, 22 for the others). ``Bounded displacement'' refers to the maximum rank-vs-pick gap the mechanism admits; Countdown \cola{} enforces $\pm 4$ by design via the five-team elimination-pool structure. SAC leads Classic \cola{} but CHI leads the three other variants: Classic's cumulative carry-over rewards Sacramento's 16-season drought, while drought-based ranking in the other variants puts Chicago's uninterrupted recent stretch first.}
+\label{tab:cross-variant}
+\end{table}
+
+Three observations follow:
+
+\begin{enumerate}
+    \item \textbf{Rank agreement at the bottom, disagreement at the top.} All four variants agree that Philadelphia should receive near-lowest lottery priority during the tail of the Process (rank $\geq 14/14$ or $21/22$). At the top of the 2024--25 pool, however, the variants disagree: drought-based ranking (Simple, Simple Lottery, Countdown) puts Chicago first, while Classic \cola{}'s cumulative ticket carry-over puts Sacramento first. The disagreement reflects which component of team history---total drought time vs.\ total accumulated ticket mass---each variant prioritizes.
+    \item \textbf{Lottery structure drives probability variance.} $\Prob[\#1]$ for the top-ranked team ranges from $14.3\%$ (Classic, diffuse weighted lottery) to $29.7\%$ (Countdown, concentrated pool-1 leader) on the same 2024--25 data. Simple \cola{} is deterministic; Simple Lottery applies fixed 25\% worst-team odds regardless of pool state. Owners evaluating the mechanism in advance cannot treat ``top rank'' as equivalent to ``high \#1 probability'' across variants.
+    \item \textbf{Complexity--robustness tradeoff.} Countdown \cola{} bounds displacement tightly but requires Monte Carlo simulation to reason about probabilities. Simple \cola{} is fully transparent but loses the randomization that protects against degenerate strategic behavior at the ranking boundary. Classic \cola{} occupies the middle and is therefore the most common basis for comparison with the status quo.
+\end{enumerate}
+
+These tradeoffs frame the adoption discussion in \cref{sec:discussion}: no single variant dominates the others on all axes, which is itself an argument for presenting \cola{} as a family of mechanisms rather than a single design.
