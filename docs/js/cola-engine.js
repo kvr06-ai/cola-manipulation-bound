@@ -469,6 +469,226 @@ function computeCountdownCOLA(seasonsData) {
 }
 
 // =============================================================================
+// Capped COLA (Highley, April 2026 — NBA-driven variant)
+// =============================================================================
+// Wins-based increment for play-in-and-below teams, capped stockpile,
+// 6-step gradual playoff diminishment, 5-step draft diminishment, drought
+// >= 2 eligibility, 22-team pool (in principle), top-5 raffled.
+//
+// Timing sequence (per Highley, 2026-04-19):
+//   1. End of regular season: apply wins increment for play-in-and-below
+//      teams; clamp to MAX (continuous cap enforcement).
+//   2. Playoff R1 ends: apply -20% to R1 losers; snap drought for R1
+//      winners. (For simplicity we apply all playoff diminishments up
+//      front since only-reducing ops commute with cap.)
+//   3. Lottery draw: eligible pool = teams with drought >= 2 at lottery
+//      time. Top 5 picks raffled; tickets = stockpile. Picks 6+ ordered
+//      by stockpile DESC (tiebreak by wins DESC per Highley 2026-04-19).
+//   4. After lottery: apply draft diminishment for picks 1-5.
+//
+// Play-in era handling:
+//   - Pre-play-in seasons (year <= 2019, plus 2020 teams not in the
+//     bubble play-in): no play-in tournament existed. The 6-step ladder
+//     collapses to 5 steps for those seasons (no -10% play-in-winner or
+//     0% play-in-loser categories), and all first_round losers take -20%.
+//   - Post-play-in seasons (year >= 2021, and the 2020 bubble
+//     participants MEM/POR): the playInParticipant/playInAdvanced flags
+//     populated by scripts/enrich_playin.js resolve ambiguity. A
+//     first_round loser who advanced via play-in is classified as a
+//     play-in winner (-10% instead of -20%); a non-playoff team that
+//     entered the play-in but lost is 0% (same as never-in-postseason).
+//   - Wins increment for play-in-and-below teams:
+//     * Play-in participants who advance to playoffs: still eligible
+//       for wins increment (they qualified for the play-in, which is
+//       "play-in-and-below" under Highley's spec).
+//     * Direct playoff qualifiers (top 6 seeds): no wins increment.
+//     * Non-playoff teams (including play-in losers): wins increment
+//       applies.
+
+const CAPPED_PLAYOFF_DIMINISH_DIRECT = {
+  champion: 1.0,
+  finals: 0.8,
+  conf_finals: 0.6,
+  second_round: 0.4,
+  first_round: 0.2,
+};
+
+// Play-in advancer who then lost R1: -10% (half of direct R1 loser).
+const CAPPED_PLAYIN_R1_FRAC = 0.1;
+
+const CAPPED_DRAFT_DIMINISH = {
+  1: 1.0,
+  2: 0.8,
+  3: 0.6,
+  4: 0.4,
+  5: 0.2,
+};
+
+const CAPPED_DEFAULT_MAX = 125;
+const CAPPED_DROUGHT_MIN = 2;
+
+function computeCappedCOLA(seasonsData, maxStockpile) {
+  if (maxStockpile === undefined) maxStockpile = CAPPED_DEFAULT_MAX;
+  const results = {};
+  const index = {};    // team -> stockpile
+  const drought = {};  // team -> consecutive years without a snap
+
+  const clamp = (v) => Math.max(0, Math.min(maxStockpile, v));
+
+  for (const season of seasonsData) {
+    const year = season.year;
+
+    for (const team of season.teams) {
+      if (!(team.id in index)) index[team.id] = 0;
+      if (!(team.id in drought)) drought[team.id] = 0;
+    }
+
+    // Capture pre-playoff stockpile for the playoff-tanking metric.
+    const preTournament = {};
+    for (const team of season.teams) preTournament[team.id] = index[team.id];
+
+    // Step 1: Wins increment for play-in-and-below teams. A team is
+    // "play-in or below" if either (a) it did not make the playoffs, or
+    // (b) it participated in the play-in tournament (advancing or not).
+    // Direct playoff qualifiers (top 6 seeds, !playInParticipant &&
+    // madePlayoffs) do not receive the increment.
+    for (const team of season.teams) {
+      const isPlayInOrBelow = !team.madePlayoffs || team.playInParticipant === true;
+      if (isPlayInOrBelow) {
+        index[team.id] = clamp(index[team.id] + team.wins);
+      }
+    }
+
+    // Record pre-playoff state (post-increment) for the lottery-eligibility
+    // snapshot so "index at lottery time" reflects what a team would
+    // present at the draw.
+    const preLotteryIndex = {};
+    for (const team of season.teams) preLotteryIndex[team.id] = index[team.id];
+
+    // Step 2: Playoff diminishment. Direct R1 losers take -20% per the
+    // CAPPED_PLAYOFF_DIMINISH_DIRECT schedule. Play-in R1 losers (teams
+    // that advanced via the play-in and then lost in R1) take only -10%.
+    // Only-reducing operations, so ordering with the cap clamp is safe.
+    for (const team of season.teams) {
+      if (!team.playoffResult) continue;
+      if (!(team.playoffResult in CAPPED_PLAYOFF_DIMINISH_DIRECT)) continue;
+      const isPlayInAdvancerR1Loser =
+        team.playoffResult === 'first_round' && team.playInAdvanced === true;
+      const frac = isPlayInAdvancerR1Loser
+        ? CAPPED_PLAYIN_R1_FRAC
+        : CAPPED_PLAYOFF_DIMINISH_DIRECT[team.playoffResult];
+      index[team.id] = index[team.id] * (1 - frac);
+    }
+
+    // Step 3: Determine lottery eligibility. A team is eligible if its
+    // effective drought at lottery time >= CAPPED_DROUGHT_MIN.
+    // Effective drought = drought (end of prev year) + (1 if no snap
+    // this year, else 0). Snap = won a playoff series.
+    const snapsThisYear = new Set();
+    for (const team of season.teams) {
+      if (team.seriesWon >= 1) snapsThisYear.add(team.id);
+    }
+
+    const eligibleTeams = [];
+    for (const team of season.teams) {
+      const snapped = snapsThisYear.has(team.id);
+      // If team snapped this year (won a playoff series), drought resets
+      // to 0 at lottery time regardless of prior drought state.
+      // Otherwise, effective drought = prior + 1 (this year counts since
+      // no snap yet through R1).
+      const effectiveDrought = snapped ? 0 : drought[team.id] + 1;
+      if (effectiveDrought >= CAPPED_DROUGHT_MIN) {
+        eligibleTeams.push({
+          id: team.id,
+          name: team.name,
+          index: preLotteryIndex[team.id],
+          wins: team.wins,
+          losses: team.losses,
+          draftPick: team.draftPick,
+          drought: effectiveDrought,
+        });
+      }
+    }
+
+    // Step 4: Compute draft order.
+    // Top 5 picks: raffled with tickets = stockpile (reported probability
+    // is the #1-pick marginal, matching Classic COLA's probability semantics).
+    // Picks 6+: ordered by stockpile DESC, tiebreak by wins DESC.
+    const totalPool = eligibleTeams.reduce((sum, t) => sum + t.index, 0);
+    const probabilities = {};
+    for (const t of eligibleTeams) {
+      probabilities[t.id] = totalPool > 0 ? t.index / totalPool : 0;
+    }
+
+    const sorted = [...eligibleTeams].sort((a, b) => {
+      if (b.index !== a.index) return b.index - a.index;
+      return b.wins - a.wins;
+    });
+
+    const draftOrder = sorted.map((t, i) => ({
+      ...t,
+      probability: probabilities[t.id],
+      colaPosition: i + 1,
+    }));
+
+    // Build team states (all teams, pre-lottery stockpile snapshot).
+    const teamStates = {};
+    for (const team of season.teams) {
+      const snapped = snapsThisYear.has(team.id);
+      teamStates[team.id] = {
+        index: preLotteryIndex[team.id],
+        preTournamentIndex: preTournament[team.id],
+        postPlayoffIndex: index[team.id],
+        drought: snapped ? 0 : drought[team.id] + 1,
+        madePlayoffs: team.madePlayoffs,
+        playoffResult: team.playoffResult,
+        seriesWon: team.seriesWon,
+        wins: team.wins,
+        losses: team.losses,
+        draftPick: team.draftPick,
+        probability: probabilities[team.id] || null,
+        colaPosition: null,
+        eligibleForLottery: false,
+      };
+    }
+    for (const d of draftOrder) {
+      teamStates[d.id].colaPosition = d.colaPosition;
+      teamStates[d.id].eligibleForLottery = true;
+    }
+
+    results[year] = {
+      teams: teamStates,
+      draftOrder: draftOrder,
+      totalPool: totalPool,
+      maxStockpile: maxStockpile,
+    };
+
+    // Step 5: Apply draft diminishment for lottery picks 1-5.
+    for (const team of season.teams) {
+      if (team.draftPick != null && team.draftPick in CAPPED_DRAFT_DIMINISH) {
+        const frac = CAPPED_DRAFT_DIMINISH[team.draftPick];
+        index[team.id] = index[team.id] * (1 - frac);
+      }
+    }
+
+    // Step 6: Update drought for next year. Snap on playoff series win
+    // OR top-5 lottery pick.
+    for (const team of season.teams) {
+      const wonSeries = team.seriesWon >= 1;
+      const wonTop5 = team.draftPick != null && team.draftPick <= 5;
+      drought[team.id] = (wonSeries || wonTop5) ? 0 : drought[team.id] + 1;
+    }
+
+    // Round to avoid float drift.
+    for (const id in index) {
+      index[id] = Math.round(index[id] * 100) / 100;
+    }
+  }
+
+  return results;
+}
+
+// =============================================================================
 // Trade-Rule-Aware Classic COLA
 // =============================================================================
 // Same as computeClassicCOLA but Phase B (draft pick diminishment) varies by
@@ -677,5 +897,5 @@ function computeAllVariants(seasonsData) {
 
 // Export for use in app.js (and for Node.js testing)
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { computeSimpleCOLA, computeSimpleLotteryCOLA, computeCountdownCOLA, computeClassicCOLA, computeAllVariants, TRADE_RULES, buildTradeLookup, computeClassicCOLAWithTradeRule, computeAllTradeRules, ALPHA, PLAYOFF_DIMINISH, DRAFT_DIMINISH, PRE_2019_ODDS, COUNTDOWN_POOL_TICKETS };
+  module.exports = { computeSimpleCOLA, computeSimpleLotteryCOLA, computeCountdownCOLA, computeClassicCOLA, computeCappedCOLA, computeAllVariants, TRADE_RULES, buildTradeLookup, computeClassicCOLAWithTradeRule, computeAllTradeRules, ALPHA, PLAYOFF_DIMINISH, DRAFT_DIMINISH, PRE_2019_ODDS, COUNTDOWN_POOL_TICKETS, CAPPED_PLAYOFF_DIMINISH_DIRECT, CAPPED_PLAYIN_R1_FRAC, CAPPED_DRAFT_DIMINISH, CAPPED_DEFAULT_MAX, CAPPED_DROUGHT_MIN };
 }

@@ -1,0 +1,324 @@
+{
+  "meta": {
+    "generatedAt": "2026-04-19T06:24:19.683Z",
+    "seasons": {
+      "first": 2000,
+      "last": 2025,
+      "count": 26
+    },
+    "coldStartExcluded": {
+      "from": 2000,
+      "through": 2004
+    },
+    "capValues": [
+      75,
+      100,
+      125,
+      150,
+      175,
+      200
+    ],
+    "stableFromYear": 2005
+  },
+  "aggregates": [
+    {
+      "cap": 75,
+      "n": 21,
+      "meanTeamsAtCap": 6.714285714285714,
+      "maxTeamsAtCap": 9,
+      "meanSeparation": 0.2857142857142857,
+      "minSeparation": 0,
+      "meanTankingIncentive": 23.605428571428575,
+      "maxTankingIncentive": 45
+    },
+    {
+      "cap": 100,
+      "n": 21,
+      "meanTeamsAtCap": 4.333333333333333,
+      "maxTeamsAtCap": 8,
+      "meanSeparation": 6.287142857142856,
+      "minSeparation": 0,
+      "meanTankingIncentive": 26.939428571428575,
+      "maxTankingIncentive": 53.73600000000002
+    },
+    {
+      "cap": 125,
+      "n": 21,
+      "meanTeamsAtCap": 2.857142857142857,
+      "maxTeamsAtCap": 4,
+      "meanSeparation": 25.176190476190477,
+      "minSeparation": 8.939999999999998,
+      "meanTankingIncentive": 29.184380952380955,
+      "maxTankingIncentive": 53.73600000000002
+    },
+    {
+      "cap": 150,
+      "n": 21,
+      "meanTeamsAtCap": 1.619047619047619,
+      "maxTeamsAtCap": 3,
+      "meanSeparation": 46.200476190476195,
+      "minSeparation": 28.49000000000001,
+      "meanTankingIncentive": 30.52876190476191,
+      "maxTankingIncentive": 57.6
+    },
+    {
+      "cap": 175,
+      "n": 21,
+      "meanTeamsAtCap": 0.9523809523809523,
+      "maxTeamsAtCap": 2,
+      "meanSeparation": 62.91952380952381,
+      "minSeparation": 28.49000000000001,
+      "meanTankingIncentive": 31.462095238095248,
+      "maxTankingIncentive": 67.2
+    },
+    {
+      "cap": 200,
+      "n": 21,
+      "meanTeamsAtCap": 0.5238095238095238,
+      "maxTeamsAtCap": 2,
+      "meanSeparation": 75.25000000000001,
+      "minSeparation": 28.49000000000001,
+      "meanTankingIncentive": 32.272761904761914,
+      "maxTankingIncentive": 76.80000000000001
+    }
+  ],
+  "perSeasonDetail": {
+    "cap": 125,
+    "seasons": [
+      {
+        "year": 2000,
+        "teamsAtCap": 0,
+        "rank1": 0,
+        "rank5": 0,
+        "separation": 0,
+        "maxTankingIncentive": 0,
+        "eligibleCount": 0
+      },
+      {
+        "year": 2001,
+        "teamsAtCap": 0,
+        "rank1": 79,
+        "rank5": 53,
+        "separation": 26,
+        "maxTankingIncentive": 8,
+        "eligibleCount": 10
+      },
+      {
+        "year": 2002,
+        "teamsAtCap": 0,
+        "rank1": 107,
+        "rank5": 44,
+        "separation": 63,
+        "maxTankingIncentive": 28.400000000000002,
+        "eligibleCount": 13
+      },
+      {
+        "year": 2003,
+        "teamsAtCap": 0,
+        "rank1": 108,
+        "rank5": 73.4,
+        "separation": 34.599999999999994,
+        "maxTankingIncentive": 7.68,
+        "eligibleCount": 15
+      },
+      {
+        "year": 2004,
+        "teamsAtCap": 0,
+        "rank1": 117.2,
+        "rank5": 94.92,
+        "separation": 22.28,
+        "maxTankingIncentive": 9.760000000000002,
+        "eligibleCount": 15
+      },
+      {
+        "year": 2005,
+        "teamsAtCap": 2,
+        "rank1": 125,
+        "rank5": 77,
+        "separation": 48,
+        "maxTankingIncentive": 23.12,
+        "eligibleCount": 14
+      },
+      {
+        "year": 2006,
+        "teamsAtCap": 1,
+        "rank1": 125,
+        "rank5": 77,
+        "separation": 48,
+        "maxTankingIncentive": 19.568000000000005,
+        "eligibleCount": 14
+      },
+      {
+        "year": 2007,
+        "teamsAtCap": 2,
+        "rank1": 125,
+        "rank5": 87.8,
+        "separation": 37.2,
+        "maxTankingIncentive": 43.6,
+        "eligibleCount": 15
+      },
+      {
+        "year": 2008,
+        "teamsAtCap": 2,
+        "rank1": 125,
+        "rank5": 81.16,
+        "separation": 43.84,
+        "maxTankingIncentive": 43.456,
+        "eligibleCount": 14
+      },
+      {
+        "year": 2009,
+        "teamsAtCap": 3,
+        "rank1": 125,
+        "rank5": 107,
+        "separation": 18,
+        "maxTankingIncentive": 20.736000000000004,
+        "eligibleCount": 13
+      },
+      {
+        "year": 2010,
+        "teamsAtCap": 3,
+        "rank1": 125,
+        "rank5": 90.62,
+        "separation": 34.379999999999995,
+        "maxTankingIncentive": 20.176000000000002,
+        "eligibleCount": 14
+      },
+      {
+        "year": 2011,
+        "teamsAtCap": 4,
+        "rank1": 125,
+        "rank5": 108.63,
+        "separation": 16.370000000000005,
+        "maxTankingIncentive": 10.658000000000008,
+        "eligibleCount": 12
+      },
+      {
+        "year": 2012,
+        "teamsAtCap": 4,
+        "rank1": 125,
+        "rank5": 108.24,
+        "separation": 16.760000000000005,
+        "maxTankingIncentive": 20,
+        "eligibleCount": 14
+      },
+      {
+        "year": 2013,
+        "teamsAtCap": 3,
+        "rank1": 125,
+        "rank5": 111,
+        "separation": 14,
+        "maxTankingIncentive": 25,
+        "eligibleCount": 13
+      },
+      {
+        "year": 2014,
+        "teamsAtCap": 3,
+        "rank1": 125,
+        "rank5": 109.3,
+        "separation": 15.700000000000003,
+        "maxTankingIncentive": 16.398000000000003,
+        "eligibleCount": 14
+      },
+      {
+        "year": 2015,
+        "teamsAtCap": 4,
+        "rank1": 125,
+        "rank5": 102,
+        "separation": 23,
+        "maxTankingIncentive": 48,
+        "eligibleCount": 12
+      },
+      {
+        "year": 2016,
+        "teamsAtCap": 4,
+        "rank1": 125,
+        "rank5": 101.12,
+        "separation": 23.879999999999995,
+        "maxTankingIncentive": 32,
+        "eligibleCount": 12
+      },
+      {
+        "year": 2017,
+        "teamsAtCap": 3,
+        "rank1": 125,
+        "rank5": 112.8,
+        "separation": 12.200000000000003,
+        "maxTankingIncentive": 25,
+        "eligibleCount": 14
+      },
+      {
+        "year": 2018,
+        "teamsAtCap": 3,
+        "rank1": 125,
+        "rank5": 116.06,
+        "separation": 8.939999999999998,
+        "maxTankingIncentive": 22.560000000000016,
+        "eligibleCount": 17
+      },
+      {
+        "year": 2019,
+        "teamsAtCap": 3,
+        "rank1": 125,
+        "rank5": 98.98,
+        "separation": 26.019999999999996,
+        "maxTankingIncentive": 25,
+        "eligibleCount": 14
+      },
+      {
+        "year": 2020,
+        "teamsAtCap": 1,
+        "rank1": 125,
+        "rank5": 97.7,
+        "separation": 27.299999999999997,
+        "maxTankingIncentive": 53.73600000000002,
+        "eligibleCount": 15
+      },
+      {
+        "year": 2021,
+        "teamsAtCap": 2,
+        "rank1": 125,
+        "rank5": 81.62,
+        "separation": 43.379999999999995,
+        "maxTankingIncentive": 31.800000000000008,
+        "eligibleCount": 12
+      },
+      {
+        "year": 2022,
+        "teamsAtCap": 3,
+        "rank1": 125,
+        "rank5": 97,
+        "separation": 28,
+        "maxTankingIncentive": 33.6,
+        "eligibleCount": 12
+      },
+      {
+        "year": 2023,
+        "teamsAtCap": 3,
+        "rank1": 125,
+        "rank5": 115.01,
+        "separation": 9.989999999999995,
+        "maxTankingIncentive": 28.32,
+        "eligibleCount": 14
+      },
+      {
+        "year": 2024,
+        "teamsAtCap": 4,
+        "rank1": 125,
+        "rank5": 106,
+        "separation": 19,
+        "maxTankingIncentive": 43.84,
+        "eligibleCount": 12
+      },
+      {
+        "year": 2025,
+        "teamsAtCap": 3,
+        "rank1": 125,
+        "rank5": 110.25999999999999,
+        "separation": 14.740000000000009,
+        "maxTankingIncentive": 26.304000000000002,
+        "eligibleCount": 16
+      }
+    ]
+  }
+}

@@ -1,0 +1,90 @@
+\documentclass[10pt,letterpaper]{article}
+
+\usepackage[margin=0.6in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[table]{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{array}
+
+\definecolor{linkblue}{HTML}{0066CC}
+\definecolor{accent}{HTML}{B8280C}
+\hypersetup{colorlinks=true, urlcolor=linkblue, linkcolor=linkblue}
+
+\titleformat{\section}{\normalsize\bfseries\color{accent}}{}{0pt}{}
+\titlespacing*{\section}{0pt}{0.55em}{0.15em}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.25em}
+\renewcommand{\arraystretch}{1.1}
+
+\pagestyle{empty}
+
+\begin{document}
+
+\begin{center}
+{\LARGE\textbf{Capped COLA: Max Stockpile Calibration}}\\[0.25em]
+{\small \textit{To:} Prof.\ Timothy Highley \quad $\cdot$ \quad \textit{From:} Kaushik Rajan \quad $\cdot$ \quad 2026-04-19}
+\end{center}
+
+\vspace{-0.2em}
+
+{\small Backtest: 26 NBA seasons (1999--2000 through 2024--25); cold-start 2000--2004 excluded from aggregates. Reproducible via \href{../scripts/capped_cola_sweep.js}{\texttt{scripts/capped\_cola\_sweep.js}}.}
+
+% =====================================================================
+\section*{Recommendation}
+
+\textbf{MAX = 125.} Matches your ``no more than 3--4 teams at cap'' target (mean 2.86, max 4 across 21 stable seasons), preserves meaningful separation (mean gap between rank~1 and rank~5 $\approx$ 25 tickets), and bounds the worst-case playoff-tanking incentive at $\approx$ 54 tickets---roughly 1.5 seasons of accumulation for a 30-win team.
+
+% =====================================================================
+\section*{Sensitivity Sweep}
+
+\begin{center}
+\begin{tabular}{r|rr|rr|rr}
+\toprule
+\textbf{MAX} & \textbf{Mean @cap} & \textbf{Max @cap} & \textbf{Mean Sep} & \textbf{Min Sep} & \textbf{Mean Tank\$} & \textbf{Max Tank\$} \\
+\midrule
+ 75 & 6.71 & 9 &  0.3 &  0.0 & 23.6 & 45.0 \\
+100 & 4.33 & 8 &  6.3 &  0.0 & 26.9 & 53.7 \\
+\rowcolor{yellow!18}
+\textbf{125} & \textbf{2.86} & \textbf{4} & \textbf{25.2} & \textbf{8.9} & \textbf{29.2} & \textbf{53.7} \\
+150 & 1.62 & 3 & 46.2 & 28.5 & 30.5 & 57.6 \\
+175 & 0.95 & 2 & 62.9 & 28.5 & 31.5 & 67.2 \\
+200 & 0.52 & 2 & 75.3 & 28.5 & 32.3 & 76.8 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+{\small
+\textbf{@cap:} teams sitting at the cap per season (number). \textbf{Sep:} gap between rank 1 and rank 5 stockpile (tickets). \textbf{Tank\$:} absolute stockpile a team could preserve by tanking round 1 instead of advancing, max across teams per season---the ``fear of winning'' metric.
+}
+
+% =====================================================================
+\section*{Interpretation}
+
+\textbf{MAX = 100} is too tight: cap hits 4.3 teams on average (max 8); separation collapses to $\approx$ 6 tickets; tanking gain is only marginally lower than at 125.
+
+\textbf{MAX = 150} gives cleaner separation (46 vs.\ 25) with the cap still binding enough to bound fear (max 58 tickets). Worth considering if you prefer stronger separation at the cost of slightly higher playoff-tanking exposure.
+
+\textbf{MAX = 175 or 200} makes the cap decorative (mean 0.5--0.95 teams); a team going deep from a large stockpile loses 60--77 tickets (2+ seasons of accumulation).
+
+% =====================================================================
+\section*{Pre- vs.\ Post-Play-In Era}
+
+The NBA play-in tournament was introduced in the 2019--20 bubble (one West game between MEM and POR) and standardized from 2020--21 onward (seeds 7--10 in each conference, 8 participants per season, 4 advance). The backtester handles the two eras distinctly, with play-in status derived from conference rank and \texttt{madePlayoffs} flags via \href{../scripts/enrich_playin.js}{\texttt{scripts/enrich\_playin.js}}.
+
+\textbf{Pre-play-in (year $\leq$ 2020 excluding bubble participants):} the 6-step ladder collapses to 5 steps---no $-10\%$ play-in-advancer or $0\%$ play-in-loser category exists, so all first-round losers take $-20\%$ and all non-playoff teams receive the wins increment. This is structurally equivalent to the standardized ladder with the two play-in rungs unpopulated.
+
+\textbf{Post-play-in (year $\geq$ 2021, plus MEM/POR in 2020):} the full 6-step ladder applies. Play-in advancers who lose in R1 take $-10\%$ instead of $-20\%$; play-in losers who miss the playoffs take $0\%$. Wins increment extends to all play-in-or-below teams (seeds 7--15 in each conference, regardless of whether they advance via play-in), so a 7-seed that wins the play-in and then loses in R1 still earns their regular-season wins.
+
+The pre/post distinction does not change the cap calibration: all 26 seasons feed into the sweep and the aggregate metrics converge consistently. The post-play-in era simply has a cleaner mapping between game outcomes and diminishment levels.
+
+% =====================================================================
+\section*{Worst Case at MAX = 125}
+
+All worst-case playoff-tanking scenarios are Process-style rebuild-into-contention arcs: 2020 MIA (Finals from pre-tournament stockpile $\approx$ 90, incentive 53.7), 2015 GSW, and 2024 similar profiles. The 54-ticket bound on this fear matches the design target of $\approx$ 1.5 seasons of 30-win accumulation.
+
+\end{document}
