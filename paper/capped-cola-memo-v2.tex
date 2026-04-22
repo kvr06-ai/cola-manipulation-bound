@@ -1,0 +1,109 @@
+\documentclass[10pt,letterpaper]{article}
+
+\usepackage[margin=0.5in,top=0.45in,bottom=0.45in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[table]{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{amsmath}
+
+\definecolor{linkblue}{HTML}{0066CC}
+\definecolor{accent}{HTML}{B8280C}
+\hypersetup{colorlinks=true, urlcolor=linkblue, linkcolor=linkblue}
+
+\titleformat{\section}{\normalsize\bfseries\color{accent}}{}{0pt}{}
+\titlespacing*{\section}{0pt}{0.35em}{0.05em}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.15em}
+\renewcommand{\arraystretch}{1.0}
+
+\pagestyle{empty}
+
+\begin{document}
+
+\begin{center}
+{\LARGE\textbf{Capped COLA: Max Stockpile Calibration (v2)}}\\[0.2em]
+{\small \textit{To:} Prof.\ Timothy Highley \quad $\cdot$ \quad \textit{From:} Kaushik Rajan \quad $\cdot$ \quad 2026-04-22}
+\end{center}
+
+{\small Revises the 2026-04-19 memo to use the per-series (marginal) framing, consistent with your Substack draft. Backtest: 26 NBA seasons (1999--2025); 2000--2004 excluded from aggregates. Reproducible via \href{../scripts/capped_cola_sweep.js}{\texttt{scripts/capped\_cola\_sweep.js}}.}
+
+% =====================================================================
+\section*{Recommendation}
+
+\textbf{MAX = 150.} Matches your ``no more than 3 teams at cap at once, on average fewer than 2'' target (mean 1.62, max 3 across 21 stable seasons), preserves meaningful separation (mean rank-1 vs.\ rank-5 gap $\approx$ 46 tickets), and bounds the max marginal cost of winning any single playoff series at 45 tickets ($= 0.3 \times \text{MAX}$, the play-in R1 winner edge case)---roughly 1.5 seasons of accumulation for a 30-win team. All other series transitions cost 30 tickets ($= 0.2 \times \text{MAX}$).
+
+% =====================================================================
+\section*{Sensitivity Sweep}
+
+\begin{center}
+\begin{tabular}{r|rr|rr|rr}
+\toprule
+\textbf{MAX} & \textbf{Mean @cap} & \textbf{Max @cap} & \textbf{Mean Sep} & \textbf{Min Sep} & \textbf{Max cost / series} & \textbf{Typ.\ cost / series} \\
+\midrule
+ 75 & 6.71 & 9 &  0.3 &  0.0 & 22.5 & 15.0 \\
+100 & 4.33 & 8 &  6.3 &  0.0 & 30.0 & 20.0 \\
+125 & 2.86 & 4 & 25.2 &  8.9 & 37.5 & 25.0 \\
+\rowcolor{yellow!18}
+\textbf{150} & \textbf{1.62} & \textbf{3} & \textbf{46.2} & \textbf{28.5} & \textbf{45.0} & \textbf{30.0} \\
+175 & 0.95 & 2 & 62.9 & 28.5 & 52.5 & 35.0 \\
+200 & 0.52 & 2 & 75.3 & 28.5 & 60.0 & 40.0 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+{\footnotesize
+Column definitions: \textbf{Mean @cap, Max @cap} are the mean and maximum number of teams sitting at the stockpile cap per season. \textbf{Mean Sep, Min Sep} (separation) are the mean and minimum rank-1 minus rank-5 stockpile gap in tickets. \textbf{Max cost / series} is the worst-case marginal ticket cost of winning one playoff series, $= 0.3 \times \text{MAX}$ (play-in R1 edge case, see Per-Series Derivation below). \textbf{Typical cost / series} is the marginal ticket cost for every other single-series transition, $= 0.2 \times \text{MAX}$. All values are in lottery tickets.
+}
+
+% =====================================================================
+\section*{Interpretation}
+
+\textbf{MAX $\leq$ 100} is too tight: 4--7 teams at cap on average, separation $\leq$ 6 tickets, marginal bound $\leq$ 30 tickets (less than one season of accumulation). The cap starts rewarding tanking-down because maxed-out teams stop earning.
+
+\textbf{MAX = 125} hits the bound ($0.3 \times 125 = 37.5$) but sits 3 teams at cap on average (max 4)---slightly above your ``no more than 3--4'' target. Separation only 25 tickets.
+
+\textbf{MAX = 150} is the sweet spot: 1.62 teams at cap, max 3; separation 46; per-series bound 45 tickets.
+
+\textbf{MAX $\geq$ 175} makes the cap nearly decorative (mean 0.5--0.95 teams); per-series cost climbs to 52--60 tickets, above the 1.5-season heuristic.
+
+% =====================================================================
+\section*{Per-Series Derivation}
+
+Each playoff series transition has a fixed percentage cost on pre-tournament stockpile $P$:
+
+\begin{center}
+\small
+\begin{tabular}{l|c|c}
+\toprule
+\textbf{Transition} & \textbf{Marg. \% of $P$} & \textbf{At MAX = 150} \\
+\midrule
+Miss playoffs / lose play-in $\to$ win play-in, lose R1 & $10\%$ & 15 \\
+\rowcolor{yellow!18}
+Play-in R1 loser $\to$ R2 loser (win R1 via play-in) & $\mathbf{30\%}$ & $\mathbf{45}$ \\
+Top-6 R1 loser $\to$ R2 loser (win R1 as direct seed) & $20\%$ & 30 \\
+R2 loser $\to$ CF loser (win R2) & $20\%$ & 30 \\
+CF loser $\to$ Finals loser (win CF) & $20\%$ & 30 \\
+Finals loser $\to$ Champion (win Finals) & $20\%$ & 30 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+{\footnotesize The play-in R1 winner is the only transition outside the uniform $20\%$ step (play-in R1 loser starts at $-10\%$ rather than $-20\%$), and the only series whose marginal cost reaches $0.3 \times \text{MAX}$. Bound is structural (depends only on the ladder and MAX), not empirical.}
+
+% =====================================================================
+\section*{Pre- vs.\ Post-Play-In Era}
+
+The NBA play-in was introduced in the 2019--20 bubble (MEM/POR) and standardized from 2020--21 onward. The backtester handles both eras via \href{../scripts/enrich_playin.js}{\texttt{scripts/enrich\_playin.js}}. Pre-play-in seasons use a 5-step ladder (all R1 losers $-20\%$; 45-ticket edge case does not arise, max marginal is $0.2 \times \text{MAX}$ = 30). Post-play-in seasons use the full 6-step ladder; the 45-ticket edge case applies. MAX calibration is unchanged by the split; aggregate metrics converge across all 26 seasons.
+
+% =====================================================================
+\section*{Cumulative Regret (v1 framing, retained as diagnostic)}
+
+Cumulative-regret at MAX = 150: empirical worst case 57.6 tickets (2020 Finals team, pre $\approx$ 90; gap $= 0.6 \times 90$); theoretical ceiling $0.8 \times \text{MAX}$ = 120 (champion with pre at cap)---matches your ``at most about a 4 year build up of draft priority'' phrasing. Per-series framing above is tighter; cumulative retained as secondary for the paper's methodology section.
+
+\end{document}

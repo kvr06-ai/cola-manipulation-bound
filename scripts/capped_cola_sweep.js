@@ -4,21 +4,22 @@
  *
  * Runs computeCappedCOLA across a range of max-stockpile values
  * {75, 100, 125, 150, 175, 200} on the 26-season backtest and
- * reports three metrics per value:
+ * reports four metrics per value:
  *
  *   1. Teams-at-cap count per season (mean, max) — checks Highley's
  *      "no more than 3 or 4 at once" target.
  *   2. Separation gap (rank 1 index minus rank 5 index) — confirms
  *      the cap preserves meaningful ordering among eligible teams.
- *   3. Playoff-tanking incentive — max stockpile a team could preserve
- *      by tanking the first round instead of advancing (computed as
- *      0.8 * pre-tournament stockpile for each team that advanced past
- *      R1, taken as max across all teams and all seasons).
- *
- * The ~0.8 factor comes from the 6-step playoff diminishment ladder:
- * a champion loses 100% of pre-tournament stockpile; a first-round
- * loser loses 20%; the gap (80%) is what a team could preserve by
- * deliberately losing in round 1.
+ *   3. MARGINAL per-series bound (Highley's Substack framing, Apr 2026):
+ *      theoretical max cost of winning one more playoff series.
+ *        - Max marginal = 0.3 × MAX (play-in R1 winner edge case,
+ *          going from -10% to -40% diminishment = +30% incremental).
+ *        - Typical marginal = 0.2 × MAX (all other series transitions).
+ *      At MAX=150: max 45 tickets, typical 30 tickets.
+ *   4. CUMULATIVE regret (secondary; kept for appendix reference):
+ *      max stockpile a team could preserve by tanking R1 and losing
+ *      immediately instead of advancing to realized playoff depth.
+ *      For a team realized at depth d, gap = (0.8 - (1 - d)) × pre.
  */
 
 const path = require('path');
@@ -86,7 +87,7 @@ function summarise(results, cap) {
   return perSeasonStats;
 }
 
-function aggregate(stats, fromYear) {
+function aggregate(stats, fromYear, cap) {
   const filtered = stats.filter(s => s.year >= fromYear);
   if (filtered.length === 0) return {};
   const mean = (arr, f) => arr.reduce((s, x) => s + f(x), 0) / arr.length;
@@ -97,8 +98,14 @@ function aggregate(stats, fromYear) {
     maxTeamsAtCap: max(filtered, s => s.teamsAtCap),
     meanSeparation: mean(filtered, s => s.separation),
     minSeparation: filtered.reduce((m, s) => Math.min(m, s.separation), Infinity),
-    meanTankingIncentive: mean(filtered, s => s.maxTankingIncentive),
-    maxTankingIncentive: max(filtered, s => s.maxTankingIncentive),
+    // Marginal per-series bounds (Highley's Substack framing).
+    // These are theoretical (depend only on MAX), not empirical, but included
+    // here so each MAX row carries its full bound set.
+    marginalMaxPerSeries: 0.3 * cap,
+    marginalTypicalPerSeries: 0.2 * cap,
+    // Cumulative regret (secondary metric, retained for appendix).
+    meanCumulativeRegret: mean(filtered, s => s.maxTankingIncentive),
+    maxCumulativeRegret: max(filtered, s => s.maxTankingIncentive),
   };
 }
 
@@ -117,12 +124,14 @@ const rows = [];
 for (const cap of CAP_VALUES) {
   const results = computeCappedCOLA(seasons, cap);
   const stats = summarise(results, cap);
-  const agg = aggregate(stats, stableYear);
+  const agg = aggregate(stats, stableYear, cap);
   rows.push({ cap, agg });
 }
 
-console.log('\n' + 'MAX'.padEnd(6) + 'Mean@cap'.padEnd(11) + 'Max@cap'.padEnd(11) +
-  'Mean Sep'.padEnd(11) + 'Min Sep'.padEnd(11) + 'Mean Tank$'.padEnd(13) + 'Max Tank$');
+console.log('\nPrimary table: per-series marginal bound (Substack framing)');
+console.log('='.repeat(92));
+console.log('MAX'.padEnd(6) + 'Mean@cap'.padEnd(11) + 'Max@cap'.padEnd(11) +
+  'Mean Sep'.padEnd(11) + 'Min Sep'.padEnd(11) + 'Max $/series'.padEnd(15) + 'Typ $/series');
 console.log('-'.repeat(74));
 for (const { cap, agg } of rows) {
   console.log(
@@ -131,21 +140,38 @@ for (const { cap, agg } of rows) {
     String(agg.maxTeamsAtCap).padEnd(11) +
     agg.meanSeparation.toFixed(1).padEnd(11) +
     agg.minSeparation.toFixed(1).padEnd(11) +
-    agg.meanTankingIncentive.toFixed(1).padEnd(13) +
-    agg.maxTankingIncentive.toFixed(1)
+    agg.marginalMaxPerSeries.toFixed(1).padEnd(15) +
+    agg.marginalTypicalPerSeries.toFixed(1)
   );
 }
 
 console.log('\nLegend:');
-console.log('  MAX           Maximum stockpile cap');
-console.log('  Mean@cap      Average number of teams sitting at the cap per season');
-console.log('  Max@cap       Maximum number of teams sitting at the cap in any single season');
-console.log('  Mean/Min Sep  Separation gap (rank 1 stockpile minus rank 5 stockpile)');
-console.log('  Mean/Max Tank$  Playoff-tanking incentive (max stockpile a team could preserve');
-console.log('                  by tanking round 1 instead of advancing deeper)');
+console.log('  MAX            Maximum stockpile cap');
+console.log('  Mean@cap       Average number of teams sitting at the cap per season (2005+)');
+console.log('  Max@cap        Maximum number of teams at cap in any single season');
+console.log('  Mean/Min Sep   Separation gap (rank 1 stockpile minus rank 5 stockpile)');
+console.log('  Max $/series   Marginal max cost of winning one more playoff series = 0.3 × MAX');
+console.log('                 (play-in R1 winner: -10% to -40% diminishment = +30% incremental)');
+console.log('  Typ $/series   Typical marginal cost = 0.2 × MAX (all non-edge-case transitions)');
 
-// Per-season detail for the recommended cap (middle of range)
-const detailCap = 125;
+console.log('\nSecondary (appendix): cumulative regret across full playoff run');
+console.log('='.repeat(92));
+console.log('MAX'.padEnd(6) + 'Mean Cumul$'.padEnd(15) + 'Max Cumul$'.padEnd(15) + 'Ceiling (0.8 × MAX)');
+console.log('-'.repeat(74));
+for (const { cap, agg } of rows) {
+  console.log(
+    String(cap).padEnd(6) +
+    agg.meanCumulativeRegret.toFixed(1).padEnd(15) +
+    agg.maxCumulativeRegret.toFixed(1).padEnd(15) +
+    (0.8 * cap).toFixed(1)
+  );
+}
+console.log('\n  Mean/Max Cumul$  Empirical regret: (0.8 × pre) - ((1 - d) × pre), where d is realized');
+console.log('                   diminishment and pre is pre-tournament stockpile (bounded by MAX).');
+console.log('                   Theoretical ceiling is 0.8 × MAX (champion at cap).');
+
+// Per-season detail for Highley's chosen cap (Substack default: MAX=150)
+const detailCap = 150;
 const detailResults = computeCappedCOLA(seasons, detailCap);
 const detailStats = summarise(detailResults, detailCap);
 console.log('\n' + '='.repeat(92));

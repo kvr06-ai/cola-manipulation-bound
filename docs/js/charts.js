@@ -6,6 +6,7 @@
 const CHART_COLORS = {
   simple: '#53a8b6',
   classic: '#e94560',
+  capped: '#c792ea',
   actual: '#a0a0b0',
   grid: '#2a2a4a',
   text: '#a0a0b0',
@@ -107,6 +108,20 @@ function updateLotteryChart(draftOrder, variant) {
     lotteryChart.data.datasets[0].tooltipData = tooltips;
     lotteryChart.options.scales.x.title.text = 'Odds of getting the #1 pick (pre-2019 lottery)';
     lotteryChart.options.scales.x.ticks.callback = (v) => v.toFixed(0) + '%';
+  } else if (variant === 'capped') {
+    // Capped COLA: top-5 raffle probabilities (stockpile / pool)
+    const labels = draftOrder.map((t) => '#' + t.colaPosition + ' ' + t.id);
+    const data = draftOrder.map((t) => (t.probability || 0) * 100);
+    const tooltips = draftOrder.map(
+      (t) => (t.probability * 100).toFixed(1) + '% chance (Stockpile: ' + Math.round(t.index) + ', Drought: ' + t.drought + ' yrs)'
+    );
+
+    lotteryChart.data.labels = labels;
+    lotteryChart.data.datasets[0].data = data;
+    lotteryChart.data.datasets[0].backgroundColor = labels.map(() => CHART_COLORS.capped);
+    lotteryChart.data.datasets[0].tooltipData = tooltips;
+    lotteryChart.options.scales.x.title.text = 'Top-5 raffle odds (stockpile / pool)';
+    lotteryChart.options.scales.x.ticks.callback = (v) => v.toFixed(0) + '%';
   } else {
     // Classic COLA: show probabilities
     const labels = draftOrder.map((t) => '#' + t.colaPosition + ' ' + t.id);
@@ -202,7 +217,9 @@ function updateTimelineChart(teamId, variantData, variant, seasonsData) {
       ? teamState.drought
       : variant === 'countdown'
         ? (teamState.mccarty || 0)
-        : teamState.index;
+        : variant === 'capped'
+          ? (teamState.index || 0)
+          : teamState.index;
     data.push(value);
 
     // Color by playoff status
@@ -220,6 +237,8 @@ function updateTimelineChart(teamId, variantData, variant, seasonsData) {
       parts.push('Drought: ' + teamState.drought + ' yrs');
     } else if (variant === 'countdown') {
       parts.push('McCarty: ' + (teamState.mccarty || 0) + ' (drought ' + teamState.drought + ' × ' + teamState.wins + ' wins)');
+    } else if (variant === 'capped') {
+      parts.push('Stockpile: ' + Math.round(teamState.index || 0) + ' (drought ' + teamState.drought + ' yrs)');
     } else {
       parts.push('Tickets: ' + Math.round(teamState.index).toLocaleString());
     }
@@ -237,6 +256,7 @@ function updateTimelineChart(teamId, variantData, variant, seasonsData) {
 
   const color = variant === 'classic' ? CHART_COLORS.classic
     : variant === 'countdown' ? CHART_COLORS.highlight
+    : variant === 'capped' ? CHART_COLORS.capped
     : CHART_COLORS.simple;
 
   timelineChart.data.labels = labels;
@@ -251,7 +271,9 @@ function updateTimelineChart(teamId, variantData, variant, seasonsData) {
       ? 'Years without playoff series win or top-3 pick'
       : variant === 'countdown'
         ? 'McCarty number (drought × wins)'
-        : 'Lottery tickets (accumulated over years)',
+        : variant === 'capped'
+          ? 'Capped stockpile (tickets, capped at MAX)'
+          : 'Lottery tickets (accumulated over years)',
     color: CHART_COLORS.text,
   };
 

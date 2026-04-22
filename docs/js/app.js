@@ -8,14 +8,15 @@ let colaResults = null;
 let currentYear = 2025;
 let currentVariant = 'classic';
 let currentTeam = 'SAC';
+let cappedMax = 150;
 
 async function init() {
   // Load NBA data
   const resp = await fetch('data/nba-data.json');
   nbaData = await resp.json();
 
-  // Compute COLA variants
-  colaResults = computeAllVariants(nbaData.seasons);
+  // Compute COLA variants (capped uses current cappedMax)
+  colaResults = computeAllVariants(nbaData.seasons, cappedMax);
 
   // Populate year slider
   const slider = document.getElementById('year-slider');
@@ -52,6 +53,7 @@ async function init() {
       document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
       tab.classList.add('active');
       currentVariant = tab.dataset.variant;
+      updateCappedControlsVisibility();
       render();
     });
   });
@@ -61,8 +63,37 @@ async function init() {
     renderTimeline();
   });
 
+  // Capped MAX slider
+  const capSlider = document.getElementById('capped-max-slider');
+  const capDisplay = document.getElementById('capped-max-display');
+  const capDisplay1 = document.getElementById('cap-display-1');
+  const capMaxSeries = document.getElementById('cap-max-series');
+  const capTypicalSeries = document.getElementById('cap-typical-series');
+  if (capSlider) {
+    capSlider.addEventListener('input', () => {
+      cappedMax = Number(capSlider.value);
+      if (capDisplay) capDisplay.textContent = cappedMax;
+      if (capDisplay1) capDisplay1.textContent = cappedMax;
+      if (capMaxSeries) capMaxSeries.textContent = Math.round(0.3 * cappedMax);
+      if (capTypicalSeries) capTypicalSeries.textContent = Math.round(0.2 * cappedMax);
+      // Recompute capped variant with new MAX
+      colaResults.capped = computeCappedCOLA(nbaData.seasons, cappedMax);
+      render();
+    });
+  }
+
+  updateCappedControlsVisibility();
+
   // Initial render
   render();
+}
+
+function updateCappedControlsVisibility() {
+  const cappedControls = document.getElementById('capped-controls');
+  const cappedSidePanel = document.getElementById('capped-side-panel');
+  const display = currentVariant === 'capped' ? '' : 'none';
+  if (cappedControls) cappedControls.style.display = display;
+  if (cappedSidePanel) cappedSidePanel.style.display = display;
 }
 
 function updateYearDisplay() {
@@ -102,6 +133,8 @@ function renderDraftTable() {
       tdValue.textContent = team.drought + ' yrs';
     } else if (currentVariant === 'countdown') {
       tdValue.textContent = team.mccarty.toLocaleString();
+    } else if (currentVariant === 'capped') {
+      tdValue.textContent = Math.round(team.index).toLocaleString();
     } else {
       tdValue.textContent = Math.round(team.index).toLocaleString();
     }
@@ -121,7 +154,7 @@ function renderDraftTable() {
     tr.appendChild(tdRank);
     tr.appendChild(tdTeam);
     tr.appendChild(tdValue);
-    if (currentVariant === 'classic' || currentVariant === 'simpleLottery' || currentVariant === 'countdown') {
+    if (currentVariant === 'classic' || currentVariant === 'simpleLottery' || currentVariant === 'countdown' || currentVariant === 'capped') {
       const tdProb = document.createElement('td');
       if (currentVariant === 'countdown') {
         // Monte Carlo probabilities: show 1 decimal, <1% for tiny values
@@ -139,6 +172,9 @@ function renderDraftTable() {
       } else if (currentVariant === 'simpleLottery' && !team.inLottery) {
         tdProb.textContent = '—';
         tdProb.title = 'Not in lottery (ranked 15-22 by drought)';
+      } else if (currentVariant === 'capped') {
+        tdProb.textContent = (team.probability * 100).toFixed(1) + '%';
+        tdProb.title = 'Top-5 raffle odds: stockpile / pool. Drought: ' + team.drought + ' yrs.';
       } else {
         tdProb.textContent = (team.probability * 100).toFixed(1) + '%';
       }
@@ -147,6 +183,12 @@ function renderDraftTable() {
     tr.appendChild(tdActual);
     tr.appendChild(tdWins);
     tbody.appendChild(tr);
+  }
+
+  // Capped COLA side panel: update eligible count for current season
+  if (currentVariant === 'capped') {
+    const eligEl = document.getElementById('cap-eligible-count');
+    if (eligEl) eligEl.textContent = draftOrder.length;
   }
 
   // Update column headers based on variant
@@ -168,6 +210,12 @@ function renderDraftTable() {
     probHeader.style.display = '';
     probHeader.textContent = 'Odds of #1 Pick';
     probHeader.title = 'Monte Carlo simulation (10,000 trials) of survivor-style bottom-up elimination lottery';
+  } else if (currentVariant === 'capped') {
+    valueHeader.textContent = 'Stockpile';
+    valueHeader.title = 'Capped stockpile at lottery time (max = ' + cappedMax + '). Wins increment for play-in-or-below teams at season end; playoff diminishment applied before draw.';
+    probHeader.style.display = '';
+    probHeader.textContent = 'Odds of #1 Pick';
+    probHeader.title = 'Capped COLA top-5 raffle odds: stockpile / total pool';
   } else {
     valueHeader.textContent = 'Tickets';
     valueHeader.title = 'Accumulated lottery tickets (more = better odds of a high pick)';
@@ -204,15 +252,27 @@ function renderComparison() {
   const simpleLottery = colaResults.simpleLottery[currentYear];
   const countdown = colaResults.countdown[currentYear];
   const classic = colaResults.classic[currentYear];
-  if (!simple || !simpleLottery || !countdown || !classic) return;
+  const capped = colaResults.capped[currentYear];
+  if (!simple || !simpleLottery || !countdown || !classic || !capped) return;
 
   const tbody = document.getElementById('comparison-tbody');
   tbody.innerHTML = '';
 
-  // Simple/Simple Lottery use 22-team pool (seriesWon === 0), Classic uses 14 (non-playoff).
-  // Show the union so all variants are represented.
+  // Union of all variant pools: Simple/Simple Lottery/Countdown use 22-team pool
+  // (seriesWon === 0), Classic uses 14 (non-playoff), Capped uses drought-≥2
+  // eligibility (may include some first-round losers, may exclude some non-playoff
+  // teams that won a top-5 pick last year or a playoff series). We union all
+  // teams that appear in any variant's draft order so nothing is hidden.
   const season = nbaData.seasons.find((s) => s.year === currentYear);
-  const lotteryTeams = season.teams.filter((t) => !t.madePlayoffs || t.seriesWon === 0);
+  const unionIds = new Set();
+  [simple, simpleLottery, countdown, classic, capped].forEach((v) => {
+    v.draftOrder.forEach((t) => unionIds.add(t.id));
+  });
+  // Also include any non-playoff or series-losing teams not already in the union
+  season.teams.forEach((t) => {
+    if (!t.madePlayoffs || t.seriesWon === 0) unionIds.add(t.id);
+  });
+  const lotteryTeams = season.teams.filter((t) => unionIds.has(t.id));
 
   // Build lookup maps
   const simpleMap = {};
@@ -223,6 +283,8 @@ function renderComparison() {
   countdown.draftOrder.forEach((t) => { cdMap[t.id] = t; });
   const classicMap = {};
   classic.draftOrder.forEach((t) => { classicMap[t.id] = t; });
+  const cappedMap = {};
+  capped.draftOrder.forEach((t) => { cappedMap[t.id] = t; });
 
   // Sort by Simple COLA position
   const sorted = lotteryTeams
@@ -237,6 +299,9 @@ function renderComparison() {
       cdOdds: cdMap[t.id] && cdMap[t.id].probability >= 0.005 ? (cdMap[t.id].probability * 100).toFixed(1) + '%' : cdMap[t.id] && cdMap[t.id].probability > 0 ? '<1%' : '—',
       classicPos: classicMap[t.id] ? classicMap[t.id].colaPosition : '—',
       classicProb: classicMap[t.id] ? (classicMap[t.id].probability * 100).toFixed(1) + '%' : '—',
+      cappedPos: cappedMap[t.id] ? cappedMap[t.id].colaPosition : '—',
+      cappedStockpile: cappedMap[t.id] ? Math.round(cappedMap[t.id].index) : '—',
+      cappedOdds: cappedMap[t.id] && cappedMap[t.id].probability > 0 ? (cappedMap[t.id].probability * 100).toFixed(1) + '%' : '—',
       actualPick: t.draftPick ? '#' + t.draftPick : '—',
       wins: t.wins,
     }))
@@ -258,6 +323,9 @@ function renderComparison() {
       '<td>' + t.cdOdds + '</td>' +
       '<td>' + t.classicPos + '</td>' +
       '<td>' + t.classicProb + '</td>' +
+      '<td>' + t.cappedPos + '</td>' +
+      '<td>' + t.cappedStockpile + '</td>' +
+      '<td>' + t.cappedOdds + '</td>' +
       '<td>' + t.actualPick + '</td>' +
       '<td>' + t.wins + '</td>';
     tbody.appendChild(tr);

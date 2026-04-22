@@ -524,8 +524,18 @@ const CAPPED_DRAFT_DIMINISH = {
   5: 0.2,
 };
 
-const CAPPED_DEFAULT_MAX = 125;
+// MAX = 150 per Highley's Capped COLA Substack (April 2026). The 150-ticket
+// cap is calibrated against two constraints: (a) no more than 3 teams sit
+// at the cap simultaneously in any historical season (mean 1.62 at MAX=150),
+// and (b) the max marginal cost of winning one more playoff series is
+// bounded at 30% of MAX = 45 tickets (play-in R1 winner edge case).
+const CAPPED_DEFAULT_MAX = 150;
 const CAPPED_DROUGHT_MIN = 2;
+
+// Marginal per-series cost bounds (Highley's Substack framing).
+// Reported in Capped COLA side panel and paper Sec 4.
+const CAPPED_MARGINAL_MAX_FRAC = 0.3; // play-in R1 winner: -10% -> -40%
+const CAPPED_MARGINAL_TYPICAL_FRAC = 0.2; // any series transition outside play-in edge case
 
 function computeCappedCOLA(seasonsData, maxStockpile) {
   if (maxStockpile === undefined) maxStockpile = CAPPED_DEFAULT_MAX;
@@ -886,16 +896,17 @@ function computeAllTradeRules(seasonsData, tradeMetadata) {
   };
 }
 
-function computeAllVariants(seasonsData) {
+function computeAllVariants(seasonsData, cappedMax) {
   return {
     simple: computeSimpleCOLA(seasonsData),
     simpleLottery: computeSimpleLotteryCOLA(seasonsData),
     countdown: computeCountdownCOLA(seasonsData),
     classic: computeClassicCOLA(seasonsData),
+    capped: computeCappedCOLA(seasonsData, cappedMax),
   };
 }
 
 // Export for use in app.js (and for Node.js testing)
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { computeSimpleCOLA, computeSimpleLotteryCOLA, computeCountdownCOLA, computeClassicCOLA, computeCappedCOLA, computeAllVariants, TRADE_RULES, buildTradeLookup, computeClassicCOLAWithTradeRule, computeAllTradeRules, ALPHA, PLAYOFF_DIMINISH, DRAFT_DIMINISH, PRE_2019_ODDS, COUNTDOWN_POOL_TICKETS, CAPPED_PLAYOFF_DIMINISH_DIRECT, CAPPED_PLAYIN_R1_FRAC, CAPPED_DRAFT_DIMINISH, CAPPED_DEFAULT_MAX, CAPPED_DROUGHT_MIN };
+  module.exports = { computeSimpleCOLA, computeSimpleLotteryCOLA, computeCountdownCOLA, computeClassicCOLA, computeCappedCOLA, computeAllVariants, TRADE_RULES, buildTradeLookup, computeClassicCOLAWithTradeRule, computeAllTradeRules, ALPHA, PLAYOFF_DIMINISH, DRAFT_DIMINISH, PRE_2019_ODDS, COUNTDOWN_POOL_TICKETS, CAPPED_PLAYOFF_DIMINISH_DIRECT, CAPPED_PLAYIN_R1_FRAC, CAPPED_DRAFT_DIMINISH, CAPPED_DEFAULT_MAX, CAPPED_DROUGHT_MIN, CAPPED_MARGINAL_MAX_FRAC, CAPPED_MARGINAL_TYPICAL_FRAC };
 }
