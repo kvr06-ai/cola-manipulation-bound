@@ -80,7 +80,7 @@
             </div>
             <div class="info-card" style="border-left: 3px solid var(--accent);">
                 <h3>Capped COLA <span style="color: var(--accent); font-size: 0.75rem; font-weight: normal; letter-spacing: 0.05em;">NEW &middot; NBA-DRIVEN</span></h3>
-                <p><strong>How it works:</strong> Each team has a stockpile of lottery tickets capped at a maximum (default 150). Play-in teams and below earn wins-based increments at season's end. Playoff success reduces stockpiles in 20% steps: 1st-round loser $-20\%$, 2nd-round $-40\%$, conf. finals $-60\%$, finals $-80\%$, champion $-100\%$. Play-in advancer who loses R1 only loses $-10\%$. Top 5 picks raffled by stockpile; picks 6+ by stockpile order. Eligibility requires drought $\geq 2$.</p>
+                <p><strong>How it works:</strong> Each team has a stockpile of lottery tickets capped at a maximum (default 150). Play-in teams and below earn wins-based increments at season's end. Playoff success reduces stockpiles in 20% steps: 1st-round loser &minus;20%, 2nd-round &minus;40%, conf. finals &minus;60%, finals &minus;80%, champion &minus;100%. Play-in advancer who loses R1 only loses &minus;10%. Top 5 picks raffled by stockpile; picks 6+ by stockpile order. Eligibility requires drought &ge; 2.</p>
                 <p><strong>Key property:</strong> No cliff, no runaway stockpile. The max cost of winning <em>any</em> single playoff series is bounded at 45 tickets (30% of MAX=150), with each additional series costing 30 tickets (20% of MAX). This defuses playoff-tanking at the mechanism level, not just empirically.</p>
                 <a href="https://highleytj.substack.com">Highley's Substack &rarr;</a>
             </div>
@@ -117,7 +117,7 @@
     <section>
         <h2>Season View</h2>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.8rem;">
-            Pick a season and a COLA variant. Classic COLA ranks the 14 non-playoff teams. Simple, Simple Lottery, and Countdown COLA rank all 22 teams that failed to win a playoff series (14 non-playoff + 8 first-round losers). Capped COLA ranks teams with drought $\geq 2$ (typically 9&ndash;17 teams after eligibility filters).
+            Pick a season and a COLA variant. Classic COLA ranks the 14 non-playoff teams. Simple, Simple Lottery, and Countdown COLA rank all 22 teams that failed to win a playoff series (14 non-playoff + 8 first-round losers). Capped COLA ranks teams with drought &ge; 2 (typically 9&ndash;17 teams after eligibility filters).
         </p>
 
         <div class="controls">
@@ -146,7 +146,7 @@
         <div id="capped-side-panel" style="display: none; margin-top: 0.6rem; padding: 0.8rem 1rem; background: var(--surface); border-radius: 4px; font-size: 0.85rem; line-height: 1.6;">
             <strong style="color: var(--accent);">Per-series tanking bound at MAX=<span id="cap-display-1">150</span>:</strong>
             <ul style="margin: 0.4rem 0 0 1.2rem; padding: 0; color: var(--text);">
-                <li><strong>Max</strong> per-series cost: <strong id="cap-max-series">45</strong> tickets (30% of MAX). Play-in team winning R1 goes from $-10\%$ to $-40\%$ diminishment $= +30\%$ incremental.</li>
+                <li><strong>Max</strong> per-series cost: <strong id="cap-max-series">45</strong> tickets (30% of MAX). Play-in team winning R1 goes from &minus;10% to &minus;40% diminishment = +30% incremental.</li>
                 <li><strong>Typical</strong> per-series cost: <strong id="cap-typical-series">30</strong> tickets (20% of MAX). Every transition R1&rarr;R2, R2&rarr;CF, CF&rarr;Finals, Finals&rarr;Champion for a non-play-in team.</li>
                 <li><strong>Teams at cap</strong> across 2005&ndash;2025 (21 stable seasons): <span id="cap-teams-stat">mean 1.62, max 3</span>.</li>
                 <li><strong>Eligible pool</strong> this season: <span id="cap-eligible-count">&mdash;</span> teams.</li>
@@ -212,7 +212,7 @@
     <section>
         <h2>Side-by-Side Comparison</h2>
         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.8rem;">
-            For the selected season: how do all five variants rank the same teams? Simple, Simple Lottery, and Countdown COLA include 22 teams (all that failed to win a playoff series); Classic includes the 14 non-playoff teams; Capped includes drought-$\geq 2$ eligible teams. <strong>SL</strong> = Simple Lottery odds. <strong>CD</strong> = Countdown (McCarty number). <strong>Cl.</strong> = Classic odds. <strong>Cap</strong> = Capped COLA stockpile. <strong>Cap Odds</strong> = Capped top-5 raffle odds.
+            For the selected season: how do all five variants rank the same teams? Simple, Simple Lottery, and Countdown COLA include 22 teams (all that failed to win a playoff series); Classic includes the 14 non-playoff teams; Capped includes drought-&ge;-2 eligible teams. <strong>SL</strong> = Simple Lottery odds. <strong>CD</strong> = Countdown (McCarty number). <strong>Cl.</strong> = Classic odds. <strong>Cap</strong> = Capped COLA stockpile. <strong>Cap Odds</strong> = Capped top-5 raffle odds.
         </p>
         <table class="comparison-table">
             <thead>
@@ -258,8 +258,8 @@
             </div>
             <div class="info-card" style="border-left: 3px solid var(--accent);">
                 <h3>Capped COLA: Diminishment Rules</h3>
-                <p>Playoff ladder: Champion $-100\%$, Finals $-80\%$, Conf. Finals $-60\%$, 2nd-round $-40\%$, direct R1 loser $-20\%$, play-in R1 winner who loses R1 $-10\%$, play-in loser $0\%$.</p>
-                <p>Draft pick ladder: #1 $-100\%$, #2 $-80\%$, #3 $-60\%$, #4 $-40\%$, #5 $-20\%$.</p>
+                <p>Playoff ladder: Champion &minus;100%, Finals &minus;80%, Conf. Finals &minus;60%, 2nd-round &minus;40%, direct R1 loser &minus;20%, play-in R1 winner who loses R1 &minus;10%, play-in loser 0%.</p>
+                <p>Draft pick ladder: #1 &minus;100%, #2 &minus;80%, #3 &minus;60%, #4 &minus;40%, #5 &minus;20%.</p>
                 <p>Wins increment (end of regular season): for any team that is play-in-or-below (seeds 7+), stockpile += season wins, then clamp to MAX.</p>
                 <p>Per-series tanking bound: max 45 tickets (30% of MAX=150), typical 30 tickets (20% of MAX). No cliff, no runaway stockpile.</p>
             </div>
