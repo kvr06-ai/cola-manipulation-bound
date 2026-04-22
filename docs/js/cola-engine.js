@@ -569,24 +569,45 @@ function computeCappedCOLA(seasonsData, maxStockpile) {
       }
     }
 
-    // Record pre-playoff state (post-increment) for the lottery-eligibility
-    // snapshot so "index at lottery time" reflects what a team would
-    // present at the draw.
+    // Capture end-of-regular-season stockpile (post-increment, pre any
+    // playoff diminishment). This is the moment the cap is binding, so
+    // it is the right reference for @cap counting.
     const preLotteryIndex = {};
     for (const team of season.teams) preLotteryIndex[team.id] = index[team.id];
 
-    // Step 2: Playoff diminishment. Direct R1 losers take -20% per the
-    // CAPPED_PLAYOFF_DIMINISH_DIRECT schedule. Play-in R1 losers (teams
-    // that advanced via the play-in and then lost in R1) take only -10%.
-    // Only-reducing operations, so ordering with the cap clamp is safe.
+    // Step 2a: R1 diminishment BEFORE the lottery (per Highley's spec:
+    // "the lottery must occur after the end of the first round of the
+    // playoffs" and "playoff-based reductions occur when a team's playoff
+    // run ends"). Direct R1 losers take -20%; play-in advancers who lose
+    // R1 take -10%. Their playoff runs have ended before lottery time,
+    // so the reduction is applied before the lottery draw.
     for (const team of season.teams) {
-      if (!team.playoffResult) continue;
-      if (!(team.playoffResult in CAPPED_PLAYOFF_DIMINISH_DIRECT)) continue;
-      const isPlayInAdvancerR1Loser =
-        team.playoffResult === 'first_round' && team.playInAdvanced === true;
+      if (team.playoffResult !== 'first_round') continue;
+      const isPlayInAdvancerR1Loser = team.playInAdvanced === true;
       const frac = isPlayInAdvancerR1Loser
         ? CAPPED_PLAYIN_R1_FRAC
-        : CAPPED_PLAYOFF_DIMINISH_DIRECT[team.playoffResult];
+        : CAPPED_PLAYOFF_DIMINISH_DIRECT.first_round;
+      index[team.id] = index[team.id] * (1 - frac);
+    }
+
+    // Capture lottery-time stockpile: post R1 diminishment, pre deeper-run
+    // diminishment. R1 losers reflect their -10%/-20% reduction; everyone
+    // else equals preLotteryIndex.
+    const lotteryIndex = {};
+    for (const team of season.teams) lotteryIndex[team.id] = index[team.id];
+
+    // Step 2b: Deeper-run diminishment AFTER the lottery (R2 loser -40%,
+    // CF loser -60%, Finals loser -80%, Champion -100%). These outcomes
+    // are only resolved after the lottery has drawn. Teams with these
+    // outcomes won at least one playoff series and are therefore not
+    // lottery-eligible anyway (drought rule), so this does not affect
+    // current-year probabilities. Applied here so the carry-forward
+    // `index` is correct for next year's processing.
+    for (const team of season.teams) {
+      if (!team.playoffResult) continue;
+      if (team.playoffResult === 'first_round') continue;
+      if (!(team.playoffResult in CAPPED_PLAYOFF_DIMINISH_DIRECT)) continue;
+      const frac = CAPPED_PLAYOFF_DIMINISH_DIRECT[team.playoffResult];
       index[team.id] = index[team.id] * (1 - frac);
     }
 
@@ -611,7 +632,7 @@ function computeCappedCOLA(seasonsData, maxStockpile) {
         eligibleTeams.push({
           id: team.id,
           name: team.name,
-          index: preLotteryIndex[team.id],
+          index: lotteryIndex[team.id],
           wins: team.wins,
           losses: team.losses,
           draftPick: team.draftPick,
@@ -646,8 +667,9 @@ function computeCappedCOLA(seasonsData, maxStockpile) {
     for (const team of season.teams) {
       const snapped = snapsThisYear.has(team.id);
       teamStates[team.id] = {
-        index: preLotteryIndex[team.id],
+        index: lotteryIndex[team.id],
         preTournamentIndex: preTournament[team.id],
+        preLotteryIndex: preLotteryIndex[team.id],
         postPlayoffIndex: index[team.id],
         drought: snapped ? 0 : drought[team.id] + 1,
         madePlayoffs: team.madePlayoffs,

@@ -47,7 +47,20 @@ function summarise(results, cap) {
     const r = results[season.year];
     if (!r) continue;
     const ord = r.draftOrder || [];
-    const teamsAtCap = ord.filter(t => t.index >= cap - TOL).length;
+    // "Teams at cap" is measured among lottery-eligible teams at end of
+    // regular season (post-wins-increment, pre any playoff diminishment)
+    // — the moment the cap is binding. This matches Highley's Substack
+    // claim "no more than three teams at a time, on average fewer than 2,
+    // have a stockpile at the maximum of 150." Non-eligible teams (top 6
+    // seeds who won a playoff series) are excluded even if they carry a
+    // maxed-out stockpile into the lottery period, since the mechanism's
+    // cap-binding question is about the lottery pool.
+    let teamsAtCap = 0;
+    for (const t of ord) {
+      const st = r.teams[t.id];
+      if (!st) continue;
+      if (st.preLotteryIndex >= cap - TOL) teamsAtCap += 1;
+    }
     const rank1 = ord[0] ? ord[0].index : 0;
     const rank5 = ord[4] ? ord[4].index : 0;
     const separation = rank1 - rank5;

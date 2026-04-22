@@ -36,7 +36,7 @@
 % =====================================================================
 \section*{Recommendation}
 
-\textbf{MAX = 150.} Matches your ``no more than 3 teams at cap at once, on average fewer than 2'' target (mean 1.62, max 3 across 21 stable seasons), preserves meaningful separation (mean rank-1 vs.\ rank-5 gap $\approx$ 46 tickets), and bounds the max marginal cost of winning any single playoff series at 45 tickets ($= 0.3 \times \text{MAX}$, the play-in R1 winner edge case)---roughly 1.5 seasons of accumulation for a 30-win team. All other series transitions cost 30 tickets ($= 0.2 \times \text{MAX}$).
+\textbf{MAX = 150.} Matches your ``no more than 3 teams at cap at once, on average fewer than 2'' target (mean 1.62, max 3 across 21 stable seasons), preserves meaningful separation (mean rank-1 vs.\ rank-5 gap $\approx$ 48 tickets), and bounds the max marginal cost of winning any single playoff series at 45 tickets ($= 0.3 \times \text{MAX}$, the play-in R1 winner edge case)---roughly 1.5 seasons of accumulation for a 30-win team. All other series transitions cost 30 tickets ($= 0.2 \times \text{MAX}$).
 
 % =====================================================================
 \section*{Sensitivity Sweep}
@@ -46,13 +46,13 @@
 \toprule
 \textbf{MAX} & \textbf{Mean @cap} & \textbf{Max @cap} & \textbf{Mean Sep} & \textbf{Min Sep} & \textbf{Max cost / series} & \textbf{Typ.\ cost / series} \\
 \midrule
- 75 & 6.71 & 9 &  0.3 &  0.0 & 22.5 & 15.0 \\
-100 & 4.33 & 8 &  6.3 &  0.0 & 30.0 & 20.0 \\
-125 & 2.86 & 4 & 25.2 &  8.9 & 37.5 & 25.0 \\
+ 75 & 6.71 & 9 &  0.9 &  0.0 & 22.5 & 15.0 \\
+100 & 4.33 & 8 & 11.7 &  0.0 & 30.0 & 20.0 \\
+125 & 2.86 & 4 & 27.9 &  8.9 & 37.5 & 25.0 \\
 \rowcolor{yellow!18}
-\textbf{150} & \textbf{1.62} & \textbf{3} & \textbf{46.2} & \textbf{28.5} & \textbf{45.0} & \textbf{30.0} \\
-175 & 0.95 & 2 & 62.9 & 28.5 & 52.5 & 35.0 \\
-200 & 0.52 & 2 & 75.3 & 28.5 & 60.0 & 40.0 \\
+\textbf{150} & \textbf{1.62} & \textbf{3} & \textbf{47.7} & \textbf{23.9} & \textbf{45.0} & \textbf{30.0} \\
+175 & 1.05 & 3 & 65.4 & 23.9 & 52.5 & 35.0 \\
+200 & 0.57 & 2 & 76.4 & 23.9 & 60.0 & 40.0 \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -68,9 +68,9 @@ Column definitions: \textbf{Mean @cap, Max @cap} are the mean and maximum number
 
 \textbf{MAX = 125} hits the bound ($0.3 \times 125 = 37.5$) but sits 3 teams at cap on average (max 4)---slightly above your ``no more than 3--4'' target. Separation only 25 tickets.
 
-\textbf{MAX = 150} is the sweet spot: 1.62 teams at cap, max 3; separation 46; per-series bound 45 tickets.
+\textbf{MAX = 150} is the sweet spot: 1.62 teams at cap, max 3; separation 48; per-series bound 45 tickets.
 
-\textbf{MAX $\geq$ 175} makes the cap nearly decorative (mean 0.5--0.95 teams); per-series cost climbs to 52--60 tickets, above the 1.5-season heuristic.
+\textbf{MAX $\geq$ 175} makes the cap nearly decorative (mean 0.6--1.0 teams); per-series cost climbs to 52--60 tickets, above the 1.5-season heuristic.
 
 % =====================================================================
 \section*{Per-Series Derivation}
