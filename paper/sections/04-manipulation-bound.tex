@@ -106,19 +106,19 @@ For completeness, we note that coalitional manipulation (two or more teams coord
 \subsection{Per-Series Tanking Bound under Capped \cola{}}
 \label{sec:capped-bound}
 
-The Capped \cola{} variant (Definition~\ref{def:capped-cola}) was designed in part to bound the cost a team incurs by advancing in the playoffs, defusing the playoff-tanking incentive that the league flagged in conversations with \citet{highley2026solvable5}. The cap on the lottery index converts the playoff-diminishment schedule from a fraction-of-current-stockpile cost (unbounded above when the stockpile grows large) to a fraction-of-$\textsc{Max}$ cost (bounded by construction). This subsection states the resulting per-series bound as a lemma.
+The Capped \cola{} variant (Definition~\ref{def:capped-cola}) was designed in part to bound the cost a team incurs by advancing in the playoffs, defusing the playoff-tanking incentive that the league flagged in conversations with \citet{highley2026solvable5}. The cap on the lottery index converts the playoff-diminishment schedule from a fraction-of-current-stockpile cost (unbounded above when the stockpile grows large) to a fraction-of-$\Max$ cost (bounded by construction). This subsection states the resulting per-series bound as a lemma.
 
 \begin{lemma}[Per-Series Tanking Cost under Capped \cola{}]
 \label{lem:capped-series-bound}
-Let $\textsc{Max}$ be the Capped \cola{} stockpile cap (Definition~\ref{def:capped-cola}). For any team $i$ entering the playoffs with lottery index $L_i \leq \textsc{Max}$, the maximum reduction in $L_i$ attributable to winning (rather than losing) any single playoff series is bounded by:
+Let $\Max$ be the Capped \cola{} stockpile cap (Definition~\ref{def:capped-cola}). For any team $i$ entering the playoffs with lottery index $L_i \leq \Max$, the maximum reduction in $L_i$ attributable to winning (rather than losing) any single playoff series is bounded by:
 \begin{equation}
 \label{eq:capped-bound}
 \Delta L_{\text{series}}^{\max} = \begin{cases}
-0.3 \cdot \textsc{Max} & \text{play-in advancers in round 1 (round 1 win vs.\ loss),} \\
-0.2 \cdot \textsc{Max} & \text{any other series advancement.}
+0.3 \cdot \Max & \text{play-in advancers in round 1 (round 1 win vs.\ loss),} \\
+0.2 \cdot \Max & \text{any other series advancement.}
 \end{cases}
 \end{equation}
-At $\textsc{Max} = 150$, the bound is 45 tickets for the play-in case and 30 tickets for each subsequent series.
+At $\Max = 150$, the bound is 45 tickets for the play-in case and 30 tickets for each subsequent series.
 \end{lemma}
 
 \begin{proof}
@@ -132,16 +132,16 @@ Reading off Definition~\ref{def:capped-cola}, the per-series $\Delta\rho_s$ valu
     \item Conference finals to NBA finals: $\Delta\rho = 0.8 - 0.6 = 0.2$.
     \item NBA finals to championship: $\Delta\rho = 1.0 - 0.8 = 0.2$.
 \end{itemize}
-The maximum is $\Delta\rho = 0.3$ in the play-in-advancer round 1 case; all other transitions yield $\Delta\rho = 0.2$. Multiplying by $L_i^{\text{pre}} \leq \textsc{Max}$ (continuous cap enforcement, Definition~\ref{def:capped-cola}) yields the bounds in \eqref{eq:capped-bound}.
+The maximum is $\Delta\rho = 0.3$ in the play-in-advancer round 1 case; all other transitions yield $\Delta\rho = 0.2$. Multiplying by $L_i^{\text{pre}} \leq \Max$ (continuous cap enforcement, Definition~\ref{def:capped-cola}) yields the bounds in \eqref{eq:capped-bound}.
 \end{proof}
 
-\highley{Lemma~\ref{lem:capped-series-bound} is our restatement of the per-series claim from \citet{highley2026solvable5}. Two specific items to verify. First, the play-in transition: we have read the schedule as a single $\rho = 0.1$ tier for ``play-in winners losing in round 1'' so that the marginal cost from play-in-loser ($\rho = 0$) to play-in-winner-round-1-loser ($\rho = 0.1$) is $0.1 \cdot \textsc{Max}$ and the further marginal from there to round-2-loser ($\rho = 0.4$, since play-in advancers who win round 1 then enter the standard schedule) is $0.3 \cdot \textsc{Max}$. The Substack one-liner ``no playoff series win ever costs a team more than 45 lottery tickets'' is consistent with the play-in case being 45 = $0.3 \cdot 150$. If your derivation has the play-in marginal as $0.3 \cdot \textsc{Max}$ at a different transition point, please flag and we will adjust. Second, our proof relies on $L_i^{\text{pre-tournament}} \leq \textsc{Max}$, which follows from the continuous cap enforcement. If the cap is enforced only at end-of-regular-season (not after each diminishment event), the bound holds with the same constants but the proof requires a different argument; the Apr 19 thread settled on continuous, but flag if you would prefer the lemma stated under discrete enforcement.}
+\highley{Lemma~\ref{lem:capped-series-bound} is our restatement of the per-series claim from \citet{highley2026solvable5}. Two specific items to verify. First, the play-in transition: we have read the schedule as a single $\rho = 0.1$ tier for ``play-in winners losing in round 1'' so that the marginal cost from play-in-loser ($\rho = 0$) to play-in-winner-round-1-loser ($\rho = 0.1$) is $0.1 \cdot \Max$ and the further marginal from there to round-2-loser ($\rho = 0.4$, since play-in advancers who win round 1 then enter the standard schedule) is $0.3 \cdot \Max$. The Substack one-liner ``no playoff series win ever costs a team more than 45 lottery tickets'' is consistent with the play-in case being 45 = $0.3 \cdot 150$. If your derivation has the play-in marginal as $0.3 \cdot \Max$ at a different transition point, please flag and we will adjust. Second, our proof relies on $L_i^{\text{pre-tournament}} \leq \Max$, which follows from the continuous cap enforcement. If the cap is enforced only at end-of-regular-season (not after each diminishment event), the bound holds with the same constants but the proof requires a different argument; the Apr 19 thread settled on continuous, but flag if you would prefer the lemma stated under discrete enforcement.}
 
 \begin{corollary}[Cumulative Run Cost]
 \label{cor:capped-cumulative}
-The maximum cumulative reduction in $L_i$ from a full playoff run that ends in a championship, applied to a team entering the lottery round at the cap with $L_i = \textsc{Max}$, is the cap itself: $\textsc{Max}$ tickets, with $L_i^{\text{post}} = 0$.
+The maximum cumulative reduction in $L_i$ from a full playoff run that ends in a championship, applied to a team entering the lottery round at the cap with $L_i = \Max$, is the cap itself: $\Max$ tickets, with $L_i^{\text{post}} = 0$.
 \end{corollary}
 
-The corollary is immediate: champion diminishment is $\rho = 1.0$ (full reset), so the final state is zero regardless of starting position. Intermediate playoff exits read off Definition~\ref{def:capped-cola} directly: the cumulative reduction at each exit point equals the corresponding $\rho$ value times the entering index, capped at $\textsc{Max}$. A finals-losing team at the cap therefore loses at most $0.8 \cdot \textsc{Max} = 120$ tickets, a conference-finals losing team $0.6 \cdot \textsc{Max} = 90$ tickets, and so on.
+The corollary is immediate: champion diminishment is $\rho = 1.0$ (full reset), so the final state is zero regardless of starting position. Intermediate playoff exits read off Definition~\ref{def:capped-cola} directly: the cumulative reduction at each exit point equals the corresponding $\rho$ value times the entering index, capped at $\Max$. A finals-losing team at the cap therefore loses at most $0.8 \cdot \Max = 120$ tickets, a conference-finals losing team $0.6 \cdot \Max = 90$ tickets, and so on.
 
-The per-series formulation in Lemma~\ref{lem:capped-series-bound} aligns with the public-facing framing of \citet{highley2026solvable5}, which leads with the marginal cost of each series rather than the cumulative regret across a full playoff run. The marginal framing makes the playoff-tanking incentive at the league level transparent: at $\textsc{Max} = 150$, no single series win ever costs a team more than 45 lottery tickets, which is approximately a year-and-a-half of accumulation for a team near the wins-increment ceiling. Section~\ref{sec:resilience} returns to the joint resilience picture across pool manipulation (\cref{thm:bound}), per-series exposure (\cref{lem:capped-series-bound}), and multi-year strategic tanking (Section~\ref{sec:case-phi}).
+The per-series formulation in Lemma~\ref{lem:capped-series-bound} aligns with the public-facing framing of \citet{highley2026solvable5}, which leads with the marginal cost of each series rather than the cumulative regret across a full playoff run. The marginal framing makes the playoff-tanking incentive at the league level transparent: at $\Max = 150$, no single series win ever costs a team more than 45 lottery tickets, which is approximately a year-and-a-half of accumulation for a team near the wins-increment ceiling. Section~\ref{sec:resilience} returns to the joint resilience picture across pool manipulation (\cref{thm:bound}), per-series exposure (\cref{lem:capped-series-bound}), and multi-year strategic tanking (Section~\ref{sec:case-phi}).

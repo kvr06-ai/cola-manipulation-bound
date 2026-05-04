@@ -66,16 +66,16 @@ This case highlights a tradeoff: Countdown \cola{} satisfies Highley's ``no team
 \subsection{Capped \cola{} Cap Calibration}
 \label{sec:case-cap-sweep}
 
-Capped \cola{} (Definition~\ref{def:capped-cola}) is parameterised by a single tunable constant: the stockpile cap $\textsc{Max}$. The cap controls the trade-off between (i) ordering resolution at the top of the lottery (a higher cap permits more separation between the highest-stockpile teams) and (ii) the per-series tanking exposure given by Lemma~\ref{lem:capped-series-bound} (a higher cap raises the maximum cost a team incurs by advancing past round~1). The empirical question is whether a value of $\textsc{Max}$ exists that produces both ``no more than 3--4 teams at the cap simultaneously'' (preserves separation between teams in active rebuild) and ``per-series cost of advancing in the playoffs is small relative to a typical team's annual accumulation'' (defuses the playoff-tanking incentive the league flagged).
+Capped \cola{} (Definition~\ref{def:capped-cola}) is parameterised by a single tunable constant: the stockpile cap $\Max$. The cap controls the trade-off between (i) ordering resolution at the top of the lottery (a higher cap permits more separation between the highest-stockpile teams) and (ii) the per-series tanking exposure given by Lemma~\ref{lem:capped-series-bound} (a higher cap raises the maximum cost a team incurs by advancing past round~1). The empirical question is whether a value of $\Max$ exists that produces both ``no more than 3--4 teams at the cap simultaneously'' (preserves separation between teams in active rebuild) and ``per-series cost of advancing in the playoffs is small relative to a typical team's annual accumulation'' (defuses the playoff-tanking incentive the league flagged).
 
-\Cref{tab:cap-sweep} reports the 21-stable-season aggregates from the sweep over $\textsc{Max} \in \{75, 100, 125, 150, 175, 200\}$, excluding the cold-start window 2000--2004 (Section~\ref{sec:backtesting}).
+\Cref{tab:cap-sweep} reports the 21-stable-season aggregates from the sweep over $\Max \in \{75, 100, 125, 150, 175, 200\}$, excluding the cold-start window 2000--2004 (Section~\ref{sec:backtesting}).
 
 \begin{table}[t]
 \centering
 \footnotesize
 \begin{tabular}{rrrrrrr}
 \toprule
-$\textsc{Max}$ & Teams at cap (mean / max) & Sep.\ R1--R5 (mean) & Per-series max & Per-series typical & Cum.\ regret (max) \\
+$\Max$ & Teams at cap (mean / max) & Sep.\ R1--R5 (mean) & Per-series max & Per-series typical & Cum.\ regret (max) \\
 \midrule
 75  & 6.71 / 9 &  0.9 & 22.5 & 15 & 45.0 \\
 100 & 4.33 / 8 & 11.7 & 30.0 & 20 & 53.7 \\
@@ -85,19 +85,19 @@ $\textsc{Max}$ & Teams at cap (mean / max) & Sep.\ R1--R5 (mean) & Per-series ma
 200 & 0.52 / 2 & 76.4 & 60.0 & 40 & 76.8 \\
 \bottomrule
 \end{tabular}
-\caption{Sensitivity of Capped \cola{} aggregates to the cap value, computed across 21 stable seasons (2005--2025) of the 26-season backtest. Per-series ``max'' = $0.3 \cdot \textsc{Max}$ (the play-in advancer round~1 case from Lemma~\ref{lem:capped-series-bound}); per-series ``typical'' = $0.2 \cdot \textsc{Max}$ (any other series). Cumulative regret max is the worst empirical observation across the 21 seasons. The MAX = 150 row (bold) is the variant's published default per \citet{highley2026solvable5}.}
+\caption{Sensitivity of Capped \cola{} aggregates to the cap value, computed across 21 stable seasons (2005--2025) of the 26-season backtest. Per-series ``max'' = $0.3 \cdot \Max$ (the play-in advancer round~1 case from Lemma~\ref{lem:capped-series-bound}); per-series ``typical'' = $0.2 \cdot \Max$ (any other series). Cumulative regret max is the worst empirical observation across the 21 seasons. The MAX = 150 row (bold) is the variant's published default per \citet{highley2026solvable5}.}
 \label{tab:cap-sweep}
 \end{table}
 
 Three patterns emerge from the sweep:
 
 \begin{enumerate}
-    \item \textbf{Sub-100 caps over-compress the lottery.} At $\textsc{Max} = 75$, more than six teams sit at the cap on average and the separation between the rank-1 and rank-5 stockpile drops to under 1 ticket. The mechanism's ordering signal is destroyed: teams with materially different long-run records are treated as interchangeable, defeating the priority-ordering property the variant inherits from the broader \cola{} family.
-    \item \textbf{Caps above 175 erase the cap's purpose.} At $\textsc{Max} \geq 175$, fewer than one team sits at the cap on average, meaning the cap rarely binds and the variant's per-series exposure converges to a fraction of an unbounded stockpile. The playoff-tanking-incentive argument the cap was introduced to make becomes uninformative.
-    \item \textbf{$\textsc{Max} = 150$ is on the frontier.} The cap-150 row produces the largest separation (47.7 tickets) compatible with the ``no more than 3--4 teams at cap'' target, while keeping the per-series max at 45 tickets (approximately a year and a half of accumulation for a team near the wins-increment ceiling). The closest alternative, $\textsc{Max} = 125$, produces tighter exposure (37.5 ticket max per series) at the cost of compressing separation to 27.9 tickets and pushing the typical teams-at-cap count to 2.9. Our memo-stage recommendation was $\textsc{Max} = 125$ \citep{rajan2026memo}; \citet{highley2026solvable5} selects $\textsc{Max} = 150$ on the rationale that the wider separation is worth the additional 7.5 tickets of per-series exposure.
+    \item \textbf{Sub-100 caps over-compress the lottery.} At $\Max = 75$, more than six teams sit at the cap on average and the separation between the rank-1 and rank-5 stockpile drops to under 1 ticket. The mechanism's ordering signal is destroyed: teams with materially different long-run records are treated as interchangeable, defeating the priority-ordering property the variant inherits from the broader \cola{} family.
+    \item \textbf{Caps above 175 erase the cap's purpose.} At $\Max \geq 175$, fewer than one team sits at the cap on average, meaning the cap rarely binds and the variant's per-series exposure converges to a fraction of an unbounded stockpile. The playoff-tanking-incentive argument the cap was introduced to make becomes uninformative.
+    \item \textbf{$\Max = 150$ is on the frontier.} The cap-150 row produces the largest separation (47.7 tickets) compatible with the ``no more than 3--4 teams at cap'' target, while keeping the per-series max at 45 tickets (approximately a year and a half of accumulation for a team near the wins-increment ceiling). The closest alternative, $\Max = 125$, produces tighter exposure (37.5 ticket max per series) at the cost of compressing separation to 27.9 tickets and pushing the typical teams-at-cap count to 2.9. Our memo-stage recommendation was $\Max = 125$ \citep{rajan2026memo}; \citet{highley2026solvable5} selects $\Max = 150$ on the rationale that the wider separation is worth the additional 7.5 tickets of per-series exposure.
 \end{enumerate}
 
-The published $\textsc{Max} = 150$ choice produces fewer than two teams at the cap in 19 of 21 stable seasons, and at most three in any single season. The cap binds primarily in the late 2010s, when accumulated wins for the league's longest-rebuilding franchises (Sacramento, Detroit, Charlotte) approach the cap simultaneously. \highley{We have read the $\textsc{Max} = 150$ choice as a published default in \citet{highley2026solvable5}; the Substack post phrases it as the calibration that supports the headline ``no playoff series win ever costs a team more than 45 lottery tickets.'' If you would prefer the paper present $\textsc{Max}$ as a free parameter and report results across the sweep without privileging 150, we can demote the bold row in Table~\ref{tab:cap-sweep} and reframe the section as a calibration exercise. Our recommendation is to keep 150 as the default and present 125 as the closest credible alternative, mirroring the memo.}
+The published $\Max = 150$ choice produces fewer than two teams at the cap in 19 of 21 stable seasons, and at most three in any single season. The cap binds primarily in the late 2010s, when accumulated wins for the league's longest-rebuilding franchises (Sacramento, Detroit, Charlotte) approach the cap simultaneously. \highley{We have read the $\Max = 150$ choice as a published default in \citet{highley2026solvable5}; the Substack post phrases it as the calibration that supports the headline ``no playoff series win ever costs a team more than 45 lottery tickets.'' If you would prefer the paper present $\Max$ as a free parameter and report results across the sweep without privileging 150, we can demote the bold row in Table~\ref{tab:cap-sweep} and reframe the section as a calibration exercise. Our recommendation is to keep 150 as the default and present 125 as the closest credible alternative, mirroring the memo.}
 
 \subsection{Trade Handling}
 \label{sec:trade-handling}
@@ -160,12 +160,12 @@ Top team $\Prob[\#1]$ & N/A (det.) & $25.0\%$ & $14.3\%$ & $29.7\%$ & raffle by 
 PHI 2016--17 rank & 21/22 & 21/22 & 14/14 & 21/22 & ineligible (drought $<2$) \\
 Lottery component & None & Pre-2019 odds & Weighted & Elim.\ pools (MC) & Top-5 raffle, then by rank \\
 Bounded displacement & 0 (det.) & $\pm 13$ & $\pm 13$ & $\pm 4$ (design) & by stockpile rank \\
-Per-series tanking cost & 1 drought yr & 1 drought yr & 0--$\rho \cdot L_i$ & McCarty-dep. & $\leq 0.3 \cdot \textsc{Max}$ \\
+Per-series tanking cost & 1 drought yr & 1 drought yr & 0--$\rho \cdot L_i$ & McCarty-dep. & $\leq 0.3 \cdot \Max$ \\
 Clean trade handling & N/A & N/A & Option-dep. & Option-dep. & Option 2 + Stepien \\
 Fan explainability & High & High & Medium & Low & Medium-low \\
 \bottomrule
 \end{tabular}
-\caption{Cross-variant comparison. Numeric entries are drawn from the 2024--25 backtest; PHI 2016--17 rank is shown relative to the eligible pool size for each variant (14 for Classic, 22 for Simple/Simple Lottery/Countdown; ineligible under Capped \cola{} because the 2016--17 76ers had received a top-5 lottery pick the prior season). ``Bounded displacement'' = the maximum rank-vs-pick gap the mechanism admits; Countdown \cola{} enforces $\pm 4$ by design via the five-team elimination-pool structure. ``Per-series tanking cost'' = the maximum reduction in priority a team incurs from advancing one playoff series; Capped \cola{}'s bound is from Lemma~\ref{lem:capped-series-bound}. SAC leads Classic \cola{} but CHI leads the drought-ranked variants: Classic's cumulative carry-over rewards Sacramento's 16-season drought; drought-based ranking in the other variants puts Chicago's uninterrupted recent stretch first. Under Capped \cola{} at $\textsc{Max} = 150$, both teams sit at the cap (Section~\ref{sec:case-cap-sweep}).}
+\caption{Cross-variant comparison. Numeric entries are drawn from the 2024--25 backtest; PHI 2016--17 rank is shown relative to the eligible pool size for each variant (14 for Classic, 22 for Simple/Simple Lottery/Countdown; ineligible under Capped \cola{} because the 2016--17 76ers had received a top-5 lottery pick the prior season). ``Bounded displacement'' = the maximum rank-vs-pick gap the mechanism admits; Countdown \cola{} enforces $\pm 4$ by design via the five-team elimination-pool structure. ``Per-series tanking cost'' = the maximum reduction in priority a team incurs from advancing one playoff series; Capped \cola{}'s bound is from Lemma~\ref{lem:capped-series-bound}. SAC leads Classic \cola{} but CHI leads the drought-ranked variants: Classic's cumulative carry-over rewards Sacramento's 16-season drought; drought-based ranking in the other variants puts Chicago's uninterrupted recent stretch first. Under Capped \cola{} at $\Max = 150$, both teams sit at the cap (Section~\ref{sec:case-cap-sweep}).}
 \label{tab:cross-variant}
 \end{table}
 
