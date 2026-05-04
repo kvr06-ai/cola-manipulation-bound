@@ -23,7 +23,9 @@
 \newtheorem{remark}{Remark}
 
 % --- Macros ---
-\newcommand{\cola}{\textsc{Cola}}
+% \cola{} forces upright shape so it renders correctly inside theorem/lemma/
+% definition bodies (which are italic by default; T1/.../m/scit is undefined).
+\newcommand{\cola}{\textup{\textsc{Cola}}}
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\Prob}{\mathbb{P}}
 
