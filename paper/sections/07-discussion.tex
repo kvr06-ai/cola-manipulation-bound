@@ -6,16 +6,21 @@
 \subsection{Implications for NBA Adoption}
 \label{sec:adoption}
 
-The results in \cref{sec:comparison} argue for treating \cola{} as a \emph{family} of mechanisms rather than a single design. Each variant occupies a distinct position on the explainability--robustness frontier, and adoption decisions are better framed as a choice within the family than as a binary accept/reject on any individual variant.
+The results in \cref{sec:comparison} argue for treating \cola{} as a \emph{family} of mechanisms rather than a single design. Each variant occupies a distinct position on the explainability--robustness--exposure frontier, and adoption decisions are better framed as a choice within the family than as a binary accept/reject on any individual variant.
 
 \begin{description}
-    \item[Simple \cola{}] is the minimal-departure option: no lottery, fully deterministic ordering by drought years. Its transparency makes it the easiest to communicate to fans and owners, but the absence of randomization leaves the mechanism exposed at the ranking boundary. A team tied with another on drought years and wins can have a strong incentive to lose the tiebreaker game.
+    \item[Simple \cola{}] is the minimal-departure option: no lottery, fully deterministic ordering by drought years. Its transparency makes it the easiest to communicate to fans and owners, but the absence of randomisation leaves the mechanism exposed at the ranking boundary. A team tied with another on drought years and wins can have a strong incentive to lose the tiebreaker game.
     \item[Simple Lottery \cola{}] retains Simple \cola{}'s drought-based state but layers pre-2019 NBA odds on the top 14 teams by drought. This resolves the boundary issue at the cost of reintroducing the weighted-lottery complexity that the current system's critics object to.
-    \item[Classic \cola{}] is the variant around which the original incentive-compatibility analysis is developed \citep{highley2026cola}. It preserves a weighted lottery over a ticket pool, with graduated diminishment on playoff and draft outcomes. This is the natural baseline for comparison with the status quo and the variant our manipulation bound (\cref{sec:bound}) directly analyzes.
+    \item[Classic \cola{}] is the variant around which the original incentive-compatibility analysis is developed \citep{highley2026cola}. It preserves a weighted lottery over a ticket pool, with graduated diminishment on playoff and draft outcomes. This is the natural baseline for comparison with the status quo and the variant our manipulation bound (\cref{sec:bound}) directly analyses.
     \item[Countdown \cola{}] satisfies the bounded-displacement property ($\pm 4$ ranks) by construction, at the cost of probability distributions that require Monte Carlo simulation to reason about. It is the strongest design on theoretical grounds but the hardest to explain.
+    \item[Capped \cola{}] introduces a stockpile cap that bounds the per-series cost of advancing in the playoffs (Lemma~\ref{lem:capped-series-bound}), addressing the playoff-tanking incentive that other variants attempt to defuse only through schedule design. The cap reduces resolution between the highest-priority teams (Section~\ref{sec:case-cap-sweep}) but is the only variant in the family that imposes a hard ceiling on the league-level tanking exposure.
 \end{description}
 
-Our reading is that \textbf{Classic \cola{} and Countdown \cola{} are the two serious adoption candidates}. Simple \cola{} and Simple Lottery \cola{} are useful as boundary cases and as starting points for incremental adoption, but neither is well-suited to the adversarial equilibrium the mechanism must survive.
+Including Capped \cola{}, the family now contains three serious adoption candidates: Classic, Countdown, and Capped \cola{}. Simple \cola{} and Simple Lottery \cola{} remain useful as boundary cases and as starting points for incremental adoption, but neither addresses the playoff-tanking equilibrium directly. The choice among the three serious candidates depends on which property the league prioritises: Classic optimises for adoption similarity to the status quo, Countdown for bounded rank displacement, and Capped for bounded per-series tanking exposure.
+
+\paragraph{Capped \cola{} and the league's flex-line concern.} \citet{highley2026solvable5} reports that an early-stage version of \cola{} that included a flexible lottery line (the line at which a team becomes lottery-eligible, adjusted dynamically based on competitive-balance signals) was rejected by the league. The flex line is the natural device for handling strong draft classes that threaten Assumption~1 of Section~\ref{sec:cola-ic} (playoff primacy); the league's reluctance to adopt one shifts the burden onto a fixed eligibility rule plus a per-series cost bound. Capped \cola{} is the resulting design: a static drought-based eligibility threshold (drought $\geq 2$) paired with a stockpile cap that converts the playoff-tanking question from ``how much priority does a team forgo by advancing'' into ``how much priority above the cap can a team accumulate.'' The empirical sweep in Section~\ref{sec:case-cap-sweep} suggests that $\textsc{Max} = 150$ produces both adequate ordering resolution (mean separation 47.7 tickets between rank 1 and rank 5) and a per-series cost (45 tickets at the worst, 30 typical) consistent with the league's stated concerns.
+
+\highley{The above paragraph infers the league's reasoning from your Substack remark that the flexible lottery line ``is not on the table.'' We have read the underlying concern as a combination of fan/media comprehension, GM/owner predictability, and CBA-level governance over who controls the line; if the actual feedback was narrower, please flag and we will replace this paragraph with whatever level of detail you are comfortable surfacing in print.}
 
 \paragraph{Transition.} Any \cola{} regime inherits the historical droughts of incumbent teams at transition. Three approaches are consistent with the backtester's results:
 \begin{enumerate}
@@ -32,15 +37,20 @@ We do not take a position on which transition is preferable; the backtester make
 \subsection{Manipulation Resilience}
 \label{sec:resilience}
 
-The bound in \cref{sec:bound} establishes that the worst-case probability gain from pool manipulation is at most ${\sim}4.0\%$ under empirically calibrated parameters. Combined with the backtester results in \cref{sec:comparison}, we can make a stronger claim: under realistic historical conditions, the \emph{combination} of manipulation channels available to a strategic team is bounded.
-
-Specifically, three manipulation channels exist under Classic \cola{}:
+The bounds in \cref{sec:bound} together establish that the manipulation channels available to a strategic team under \cola{} are jointly bounded. Three channels exist under Classic \cola{}:
 \begin{enumerate}
-    \item \textbf{Single-season tanking}, which moves a team down in wins but does not directly affect the ticket ordering (the flat $\alpha$ increment equalizes within-season loss differences). Classic \cola{} is designed to be robust to this channel by construction.
-    \item \textbf{Pool manipulation}, bounded at ${\sim}4.0\%$ by \cref{thm:bound}.
+    \item \textbf{Single-season tanking}, which moves a team down in wins but does not directly affect the ticket ordering (the flat $\alpha$ increment equalises within-season loss differences). Classic \cola{} is designed to be robust to this channel by construction.
+    \item \textbf{Pool manipulation}, bounded at ${\sim}4.0\%$ probability gain by \cref{thm:bound} under empirically calibrated parameters.
     \item \textbf{Multi-year strategic tanking} (the Process-style circumvention), bounded empirically by the diminishment schedule: \cref{sec:case-phi} shows that a team receiving four top-3 picks across four seasons falls to last in lottery priority, reversing rather than extending the intended advantage.
 \end{enumerate}
-All three channels exhibit diminishing returns in the \cola{} setting, in contrast to the status-quo lottery where repeat tanking has memoryless returns. The joint resilience is the main design property that distinguishes \cola{} from the weighted-lottery family.
+All three channels exhibit diminishing returns in the \cola{} setting, in contrast to the status-quo lottery where repeat tanking has memoryless returns.
+
+Capped \cola{} adds a fourth channel and bounds it directly:
+\begin{enumerate}
+    \setcounter{enumi}{3}
+    \item \textbf{Playoff-series tanking}, bounded at $0.3 \cdot \textsc{Max}$ tickets per series (Lemma~\ref{lem:capped-series-bound}). At $\textsc{Max} = 150$ this is 45 tickets, equivalent to less than two seasons of accumulation for a team near the wins-increment ceiling. This is the channel that other \cola{} variants do not address through their state representation; Capped \cola{} addresses it through the stockpile cap.
+\end{enumerate}
+The joint resilience across all four channels is the main design property that distinguishes \cola{} from the weighted-lottery family. Each channel is bounded by a different mechanism (carry-over for single-season tanking; structural anti-correlation in the index distribution for pool manipulation; graduated diminishment for multi-year tanking; the stockpile cap for playoff-series tanking), and the bounds compose: a strategic team cannot exceed the sum of the per-channel bounds, which empirically remains small.
 
 \subsection{Limitations and Future Work}
 \label{sec:limitations}

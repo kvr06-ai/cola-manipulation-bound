@@ -27,9 +27,14 @@
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\Prob}{\mathbb{P}}
 
+% Review-flag macro for items that warrant Highley's confirmation.
+% Renders inline in red so flagged items are visually scannable.
+% To remove all flags before submission: redefine to \newcommand{\highley}[1]{}
+\newcommand{\highley}[1]{\textcolor{red}{\textbf{[Highley:}~#1\textbf{]}}}
+
 % --- Title ---
 \title{Incentive Compatibility of Carry-Over Lottery Allocation:\\
-A Manipulation Bound and Historical Comparison of Four Variants}
+A Manipulation Bound and Historical Comparison of the \cola{} Family}
 
 \author{
   Timothy Highley\thanks{La Salle University. \texttt{highley@lasalle.edu}}
@@ -44,7 +49,7 @@ A Manipulation Bound and Historical Comparison of Four Variants}
 \maketitle
 
 \begin{abstract}
-% TODO: Write after all sections are drafted.
+The National Basketball Association (NBA) draft lottery creates a documented incentive misalignment: teams eliminated from playoff contention can improve their expected draft position by losing additional games. \citet{munro2020notanking} prove that no mechanism based on end-of-season records alone can simultaneously reward poor performance and eliminate this incentive. Carry-Over Lottery Allocation (\cola{}) sidesteps the impossibility by replacing single-season records with multi-year playoff history as the basis for draft priority \citep{highley2026cola}. We make two contributions to the \cola{} literature. First, we derive an analytic upper bound of approximately $4.0\%$ on the worst-case probability gain from pool manipulation under empirically calibrated index distributions. The bound confirms the simulation-based estimate of \citet{highley2026cola} from the analytic side and yields a closed-form sensitivity to the underlying parameters. Second, we present the first historical backtest of the \cola{} family across 26 NBA seasons (1999--2025), comparing five variants (Simple, Simple Lottery, Classic, Countdown, and Capped \cola{}) against 776 verified draft outcomes and 55 lottery-day-attributed pre-draft trades. The analysis identifies trade handling and lottery-day attribution as the two largest sources of implementation ambiguity, and quantifies the per-series tanking exposure introduced by Capped \cola{}'s stockpile bound. Together, the results support treating \cola{} as a family of mechanisms that admit multiple adoption trajectories rather than a single design.
 \end{abstract}
 
 % --- Sections ---

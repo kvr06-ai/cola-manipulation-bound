@@ -11,19 +11,19 @@
 % - Why multi-year memory escapes the impossibility
 
 \subsection{The NBA Draft Lottery}
+\label{sec:lottery-history}
 
-% TODO: Brief history. Coin flip (pre-1985) -> weighted lottery (1985) -> envelope reform (1990s)
-% -> 2019 flattened odds. Each reform reduced but never eliminated tanking incentives.
+The NBA assigns the top picks of its annual amateur draft via a lottery confined to the teams that did not reach the playoffs. The mechanism has been revised three times since its introduction, each revision motivated by an empirically observed tanking response. From 1966 to 1984 the league used a coin flip between the two worst-record conferences, paired with a reverse-order assignment for the remaining picks; the coin flip was abandoned after the 1984--85 ``Hakeem versus Jordan'' season produced public accusations that both Houston and Portland had tanked the final games to maximise their flip odds. From 1985 to 1989 the league used an unweighted envelope lottery among non-playoff teams. From 1990 to 2018 the lottery was weighted, with the worst team receiving a 25\% chance at the first pick and odds declining monotonically by record. The 2019 reform flattened the top three odds (the worst three teams now share a $14.0\%$ chance at the first pick) and extended the lottery to determine the top four picks rather than the top three, in response to the 2013--2017 Philadelphia ``Process.'' Each revision narrowed but did not eliminate the underlying tanking incentive, and the 2019 flattening shifted some of the incentive from the bottom of the standings toward the lower-middle of the lottery pool. \highley{The pre-1985 mechanism details are sourced from secondary historical accounts; if the original paper or Substack series cites a primary source, please flag.}
 
 \subsection{Impossibility Results}
 
 \subsubsection{Effort Manipulation}
 
-\citet{munro2020notanking} formalize the tanking problem as an impossibility. They define a \emph{No-Tanking Condition} (NTC): a mechanism satisfies NTC if no team can improve its expected draft position by losing a game it could win. Their main result shows that any mechanism mapping end-of-season records to draft probabilities that gives worse teams strictly better odds must violate NTC.
+\citet{munro2020notanking} formalise the tanking problem as an impossibility. They define a \emph{No-Tanking Condition} (NTC): a mechanism satisfies NTC if no team can improve its expected draft position by losing a game it could win. Their main result establishes that any mechanism mapping end-of-season records to draft probabilities, while giving worse teams strictly better odds, must violate NTC.
 
-The proof constructs a minimal counterexample: two teams, both eliminated, identical records, final game against each other. The loser finishes with a worse record and therefore receives better draft odds. Both teams prefer to lose. Only a uniform lottery (equal odds for all non-playoff teams) satisfies NTC, but this abandons the goal of helping the weakest teams.
+The proof constructs a minimal counterexample: two teams, both eliminated, with identical records and a final game against each other. The loser finishes with a worse record and therefore receives better draft odds. Both teams prefer to lose. Only a uniform lottery (equal odds for all non-playoff teams) satisfies NTC, but uniform odds abandon the goal of helping the weakest teams.
 
-Their proposed alternative, \emph{T-IC} (Truncated Incentive Compatibility), tracks each team's conditional probability of finishing last and freezes allocations at the moment IC would first be violated. This is optimal in theory but computationally expensive, opaque to fans, and limited to single-season scope.
+The authors propose an alternative mechanism, \emph{T-IC} (Truncated Incentive Compatibility), which tracks each team's conditional probability of finishing last and freezes allocations at the moment IC would first be violated. T-IC is optimal in theory but computationally expensive, opaque to fans, and limited to single-season scope. The mechanism's reliance on within-season conditional probabilities also implies that the freezing point itself becomes a strategic target, since the calculation depends on the wins-to-go distribution that teams can shift through marginal effort.
 
 \subsubsection{Preference Manipulation}
 
@@ -34,10 +34,19 @@ Their proposed alternative, \emph{T-IC} (Truncated Incentive Compatibility), tra
     \item \textbf{Strategy-Proofness (SP):} no team benefits from misreporting preferences.
 \end{itemize}
 
-% TODO: Discuss how these axioms may or may not map onto COLA.
-% Pending Highley's review of the RP/EF1 mapping (expected ~Apr 12).
+We trace the constituent axioms to peer-reviewed sources. RP extends Svensson's ``weak fairness'' from queue allocation to draft priority \citep{svensson1994allocation}. EF1 originates with \citet{lipton2004approximately} and is adapted to the indivisible-goods assignment setting by \citet{budish2011combinatorial}. The Coreno-Balbuzanov construction combines these properties with strategy-proofness; the impossibility shows that any draft rule satisfying all three jointly produces a contradiction in the allocation table.
+
+\highley{Whether RP and EF1 map cleanly onto \cola{} is the open question we deferred to your read. Our preliminary mapping: RP corresponds to longer droughts producing weakly better expected draft position (\cola{}'s priority ordering = ticket ranking), and EF1 corresponds to no team preferring another's outcome once one ``lucky'' lottery win is removed (the graduated diminishment schedule preserves perceived fairness in this sense). Strategy-proofness is the manipulation question Section~\ref{sec:bound} addresses. We are not certain whether the formal Coreno-Balbuzanov axioms admit this lift to a multi-season mechanism. If you would prefer this paragraph withdrawn, restructured, or replaced with a weaker observation (``Coreno-Balbuzanov is parallel work that does not cleanly apply''), please mark accordingly.}
 
 \subsection{Prior Reform Proposals}
+\label{sec:prior-reform}
 
-% TODO: Brief survey of alternatives considered by the NBA and in the literature.
-% Wheel proposals, auction mechanisms, etc.
+Beyond the T-IC mechanism of \citet{munro2020notanking}, three families of reform have appeared in the literature and the press. None has been adopted.
+
+\paragraph{Uniform lottery.} Equal odds for all non-playoff teams. Trivially satisfies NTC but provides no reward for the worst teams, contradicting the league's stated goal of helping struggling franchises rebuild.
+
+\paragraph{Wheel proposals.} A pre-committed rotation of draft positions across teams \citep{highley2026solvable1}. The wheel removes the link between record and draft odds entirely, eliminating tanking incentives but also eliminating the redistribution property: a team in a deep rebuild cannot accelerate it through poor performance. Owner buy-in has been the dominant obstacle. \highley{The wheel proposal is sometimes attributed to Mike Zarren of the Boston Celtics; if you have a citation we should use, please add.}
+
+\paragraph{Auction mechanisms.} Teams bid for draft positions using salary-cap space or future picks. Auction designs preserve rank-order priority but introduce significant complexity in cap accounting and the inter-temporal pricing of picks. No formal proposal has progressed beyond the literature, and none has been advanced by the league.
+
+\cola{}~\citep{highley2026cola} represents a different escape route from the Munro-Banchio impossibility: rather than weakening the link between record and draft odds within a season, it relocates the relevant ``record'' to a multi-year playoff history. The single-season manipulation channel that drives the Munro-Banchio counterexample becomes ineffective because no single-season choice materially shifts the multi-year ticket pool.

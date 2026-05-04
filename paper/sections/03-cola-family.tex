@@ -1,51 +1,125 @@
 \section{The \cola{} Mechanism Family}
 \label{sec:cola-family}
 
-% Lead: HIGHLEY. Formal definitions, taxonomy, and IC properties.
-%
-% This section is Highley's primary contribution to the paper.
-% Rajan to provide structural scaffold; Highley to fill formal content.
-%
-% Proposed structure (from paper outline, Mar 26):
-% 3.1 Common framework: lottery index, carry-over, diminishment
-% 3.2 Variant definitions (Simple, Simple Lottery, Classic, Countdown)
-% 3.3 IC properties and the five assumptions
-% 3.4 Relationship to Munro-Banchio and Coreno-Balbuzanov impossibilities
+% Lead: HIGHLEY (formal definitions, IC properties).
+% Rajan drafted this section conservatively from Highley et al. (2026) and the
+% Substack series (Parts 1-4 + Capped COLA post). Formal-mechanism content is
+% flagged for Highley's confirmation; engineering/implementation specs match
+% the backtester engine in docs/js/cola-engine.js.
+
+We organise the \cola{} mechanism family in three layers: a common framework that all variants share (Section~\ref{sec:cola-common}), the five concrete variants under consideration in this paper (Section~\ref{sec:cola-variants}), and the incentive-compatibility properties established by \citet{highley2026cola} together with the open assumption that motivates Section~\ref{sec:bound} (Section~\ref{sec:cola-ic}). The relationship to the Munro-Banchio impossibility (Section~\ref{sec:cola-impossibility}) closes the section.
 
 \subsection{Common Framework}
+\label{sec:cola-common}
 
-% TODO (Highley): Formal definition of lottery index L, carry-over rule,
-% diminishment schedule. Notation to be used throughout the paper.
+Every \cola{} variant maintains a per-team, integer-valued state across seasons and uses that state to determine draft priority in the current season. We refer to this state as the \emph{lottery index} and write $L_i^{(t)}$ for team $i$ at the end of season $t$.
 
-\begin{definition}[\cola{} Lottery Index]
-% Placeholder for formal definition.
+\begin{definition}[Lottery Index]
+\label{def:index}
+For each team $i$ and season $t$, the lottery index $L_i^{(t)} \in \mathbb{Z}_{\geq 0}$ is determined by an initial value $L_i^{(0)}$, a per-season \emph{increment} $\Delta_i^{(t)}$ (variant-specific, depending on team performance and eligibility), and a per-season \emph{diminishment} $\rho_i^{(t)} \in [0, 1]$ that scales the index down based on playoff and draft outcomes:
+\begin{equation}
+\label{eq:index-update}
+L_i^{(t+1)} = \left(L_i^{(t)} + \Delta_i^{(t)}\right) \cdot \left(1 - \rho_i^{(t)}\right).
+\end{equation}
+The \emph{pool} in season $t$ is $P^{(t)} = \sum_{i \in E^{(t)}} L_i^{(t)}$, where $E^{(t)} \subseteq \{1, \ldots, 30\}$ is the set of teams eligible for the lottery in that season.
 \end{definition}
 
-\subsection{Variant Definitions}
+\highley{Definition~\ref{def:index} is our reading of the common pattern across the variants. The original paper \citep{highley2026cola} formalises Classic \cola{} more directly; we have generalised the update rule to cover Simple, Countdown, and Capped variants in a single equation. If you prefer to keep Definition~\ref{def:index} restricted to Classic \cola{} and let the other variants use their own update rules without a unifying equation, please mark accordingly.}
 
-% TODO (Highley): Formal specs for each variant.
+The three components of the update --- the eligibility set $E^{(t)}$, the increment $\Delta_i^{(t)}$, and the diminishment $\rho_i^{(t)}$ --- are the levers that distinguish the variants. For a non-playoff team, the increment is positive (the team accumulates priority); for a team that wins a playoff series or a top draft pick, the diminishment is positive (the team consumes some or all of its accumulated priority). The five variants below differ in how each lever is parameterised.
+
+\subsection{Variant Definitions}
+\label{sec:cola-variants}
 
 \subsubsection{Simple \cola{}}
-% Deterministic ordering by drought. 22-team pool. No lottery.
+
+Simple \cola{} eliminates the lottery entirely. Eligibility is broad and ranking is deterministic.
+
+\begin{definition}[Drought]
+\label{def:drought}
+The \emph{drought} of team $i$ at the end of season $t$ is the maximum number of consecutive seasons up to and including $t$ in which team $i$ has neither won a playoff series nor received a top-3 lottery pick.
+\end{definition}
+
+\begin{definition}[Simple \cola{}]
+\label{def:simple-cola}
+The eligibility set $E^{(t)}$ is the 22 teams with zero playoff series wins in season $t$ (the 14 non-playoff teams and the 8 first-round losers). Teams are ranked by drought (descending), with most regular-season wins as tiebreaker. Draft picks are assigned in this rank order with no random component. The lottery index $L_i^{(t)}$ is the drought itself; the increment $\Delta_i^{(t)}$ is $+1$ if team $i$ neither wins a playoff series nor a top-3 pick in season $t$, and the diminishment $\rho_i^{(t)} = 1$ otherwise (the drought resets).
+\end{definition}
 
 \subsubsection{Simple Lottery \cola{}}
-% Same drought state. Pre-2019 NBA odds applied to top 14 by drought.
+
+\begin{definition}[Simple Lottery \cola{}]
+\label{def:simple-lot-cola}
+Simple Lottery \cola{} shares the eligibility set, drought state, and tiebreaker of Simple \cola{} (Definition~\ref{def:simple-cola}). It applies pre-2019 NBA lottery odds (25.0\% down to 0.5\% across the worst 14 teams in the prior weighted lottery) to the top 14 of the 22 eligible teams, ranked by drought. The remaining 8 teams receive picks 15--22 in deterministic rank order.
+\end{definition}
 
 \subsubsection{Classic \cola{}}
-% Lottery index L, flat +1,000 increment, graduated diminishment. Weighted lottery, picks 1-4.
+
+Classic \cola{} is the variant developed in detail by \citet{highley2026cola} and the variant our manipulation bound (Section~\ref{sec:bound}) directly analyses.
+
+\begin{definition}[Classic \cola{}]
+\label{def:classic-cola}
+The eligibility set is the 14 non-playoff teams. Each non-playoff team receives an increment of $\alpha = 1{,}000$ tickets per season; playoff teams receive zero increment. Diminishment applies in two channels:
+\begin{itemize}
+    \item \textbf{Playoff diminishment.} Champion: $\rho = 1.0$ (full reset); finals losers: $\rho = 0.75$; conference-finals losers: $\rho = 0.5$; second-round losers: $\rho = 0.25$; first-round losers: $\rho = 0$.
+    \item \textbf{Draft diminishment.} Pick \#1: $\rho = 1.0$; \#2: $\rho = 0.75$; \#3: $\rho = 0.5$; \#4: $\rho = 0.25$; picks $\geq 5$: $\rho = 0$.
+\end{itemize}
+The two channels apply sequentially within a season. The lottery for picks 1--4 is weighted by lottery index ($p_i = L_i / P$); picks 5--14 are assigned by lottery-index rank.
+\end{definition}
+
+\highley{The diminishment fractions $\{1.0, 0.75, 0.5, 0.25\}$ and the $\alpha = 1{,}000$ increment are taken from the original paper. Please confirm that the playoff and draft channels are presented as sequential rather than multiplicative within a single season; the backtester applies them sequentially (Phase~A pre-draft state, Phase~B post-draft diminishment), but the original paper's notation could also support a multiplicative composition.}
 
 \subsubsection{Countdown \cola{}}
-% McCarty number (drought x wins). 5-team elimination pools. 2-6 tickets.
+
+\begin{definition}[McCarty Number]
+\label{def:mccarty}
+The \emph{McCarty number} of team $i$ at the end of season $t$ is $M_i^{(t)} = d_i^{(t)} \cdot w_i^{(t)}$, where $d_i^{(t)}$ is team $i$'s drought (Definition~\ref{def:drought}) and $w_i^{(t)}$ is its regular-season wins.
+\end{definition}
+
+\begin{definition}[Countdown \cola{}]
+\label{def:countdown-cola}
+The eligibility set is the same 22-team pool as Simple \cola{}. Teams are ranked by McCarty number (descending), tiebroken by wins. The 22 teams are partitioned into nested 5-team \emph{elimination pools} by rank position. Draft picks are assigned bottom-up: the first draw uses pool~5 (rank positions 22, 21, 20, 19, 18), with ticket allocation $(2, 3, 4, 5, 6)$ from worst to best within the pool; the team drawn becomes the eliminated team and receives the highest draft pick currently available. Subsequent draws follow the same template, with each pool re-formed as the higher-ranked team from the previous pool joins.
+\end{definition}
+
+\highley{Countdown \cola{} is the variant whose closed-form draw probabilities require the most care; we use 10{,}000-trial Monte Carlo throughout (Section~\ref{sec:backtesting}) rather than analytic computation. Please confirm: is the bottom-up sequence and the $(2, 3, 4, 5, 6)$ ticket allocation the canonical Countdown \cola{} from \citep{highley2026solvable3}, or is there a published refinement we should use? The Substack heat map you shared in March was the empirical reference.}
+
+\subsubsection{Capped \cola{}}
+
+Capped \cola{} is the variant introduced by \citet{highley2026solvable5} in response to the NBA's reported reluctance to adopt a flexible lottery line. Its design stacks several mitigations of the playoff-tanking incentive: a wins-based increment that rewards within-season effort, a hard cap on the stockpile that bounds the per-series cost of advancing in the playoffs, and a graduated playoff-diminishment schedule that smooths the cliffs of Classic \cola{}.
+
+\begin{definition}[Capped \cola{}]
+\label{def:capped-cola}
+The eligibility set $E^{(t)}$ comprises the teams with drought $\geq 2$ at the end of season $t$, where drought now requires the joint absence of a top-5 lottery win and a playoff series win in the prior season. The increment is $\Delta_i^{(t)} = w_i^{(t)}$ for any team that finishes the regular season outside the top 6 of either conference (i.e., play-in or below); other teams receive zero increment. The lottery index is clamped continuously at $\textsc{Max}$ (default 150): if any update would yield $L_i^{(t)} > \textsc{Max}$, set $L_i^{(t)} = \textsc{Max}$. Diminishment applies in two channels:
+\begin{itemize}
+    \item \textbf{Playoff diminishment (six steps).} Champion: $\rho = 1.0$; runner-up: $\rho = 0.8$; conference-finals losers: $\rho = 0.6$; second-round losers: $\rho = 0.4$; first-round losers (excluding play-in winners): $\rho = 0.2$; play-in winners losing in round 1: $\rho = 0.1$; play-in losers: $\rho = 0$.
+    \item \textbf{Draft diminishment (five steps).} Pick \#1: $\rho = 1.0$; \#2: $\rho = 0.8$; \#3: $\rho = 0.6$; \#4: $\rho = 0.4$; \#5: $\rho = 0.2$; picks $\geq 6$: $\rho = 0$.
+\end{itemize}
+The lottery for the first five picks is raffled from the eligible pool (each team's chance equals $L_i / P$); picks 6--$|E^{(t)}|$ are assigned by lottery-index rank. The tiebreaker at the cap is most regular-season wins. The lottery is held after first-round playoff outcomes are known so that drought eligibility is resolved before the draw; first-round playoff diminishment applies before the lottery, and second-round-and-later playoff diminishment applies after.
+\end{definition}
+
+The variant is paired with a strengthened Stepien Rule: a team whose stockpile sits at the cap must retain its own first-round draft pick every other year, removing the exploit in which a capped team trades away its high-priority pick and routes the diminishment to an acquiring team that did not earn it. The opt-out provision (a team may decline a specific pick to avoid that pick's diminishment, re-entering for later picks) is documented in the methodology card of the backtester but is not modelled in the historical sweep, since the question this section answers is the calibration of $\textsc{Max}$ rather than the equilibrium effect of strategic opt-outs.
+
+\highley{Two questions on this definition. First, is the increment $\Delta_i^{(t)} = w_i^{(t)}$ correctly stated as ``regular-season wins for any team finishing outside the top 6 of either conference''? The Substack one-liner uses ``every team outside the top 6 regular-season seeds gets a wins-based increment,'' which we interpret to include play-in advancers who lose in round 1. Second, the formal name has not been finalised on your side as of the most recent thread; we are using ``Capped \cola{}'' here pending your final naming decision in the Substack writeup. If you would prefer ``Bounded \cola{}'' or another label, a single search-replace across the paper is cheap.}
 
 \subsection{Incentive Compatibility}
+\label{sec:cola-ic}
 
-% TODO (Highley): The five assumptions. Which hold by construction,
-% which require empirical support. Connection to Assumption 4 (pool manipulation)
-% which Section 4 addresses.
+\citet{highley2026cola} establish incentive compatibility for Classic \cola{} under five assumptions, four of which hold by construction in the regular-season game and one of which is supported by simulation. We summarise the assumptions here, both because they motivate the bound in Section~\ref{sec:bound} and because the alternative variants in Section~\ref{sec:cola-variants} can be classified by which subset of these assumptions they rely on.
+
+\begin{enumerate}
+    \item \textbf{Playoff primacy.} The expected value to a team of advancing in the playoffs (revenue, championship probability, brand) exceeds the expected value of any plausible draft-pick gain. This justifies treating playoff outcomes as the dominant priority for any team that has the option to enter the playoffs.
+    \item \textbf{Playoff advancement.} Within the playoffs, advancing further is preferred to losing earlier, controlling for opponent strength.
+    \item \textbf{Picks 5--14 negligible at the margin.} The expected value gap between adjacent picks in the 5--14 range is small enough that no team can profit from manipulating its position among those slots through within-season effort.
+    \item \textbf{Pool manipulation negligible.} A team cannot meaningfully shift its expected draft position by manipulating which other teams are in or out of the lottery pool. This is the assumption supported by simulation in \citep{highley2026cola} and the one Section~\ref{sec:bound} converts to an analytic upper bound.
+    \item \textbf{No traded-pick protections.} Pick trades do not interact with diminishment in a way that creates manipulation incentives. The strengthened Stepien Rule of Capped \cola{} is one mechanism for enforcing this assumption; Section~\ref{sec:trade-handling} examines the four pick-trade rules of \citep{highley2026solvable4} empirically.
+\end{enumerate}
+
+\highley{The above is our reading of the five assumptions from the original paper. The exact wording of (1)--(5) differs across the arXiv paper, the formal-proof video, and the Substack series; we have used the cleanest formulation we could extract. If you have a canonical numbered statement from the paper or a slide deck we should mirror, please mark and we will replace with that wording. The substantive content (which assumptions hold by construction, which require empirical support) we are confident on; the precise phrasing is the part that benefits from your direct review.}
 
 \subsection{Relationship to Prior Impossibilities}
+\label{sec:cola-impossibility}
 
-% TODO (Highley + Rajan): How COLA escapes Munro-Banchio (multi-year memory
-% breaks the single-season record dependency). Whether Coreno-Balbuzanov
-% axioms (RP, EF1) map onto COLA properties.
-% Pending Highley's review of axiom mapping.
+The Munro-Banchio impossibility (Section~\ref{sec:background}) applies to mechanisms that map end-of-season records to draft probabilities. The pathological scenario --- two eliminated teams, identical records, head-to-head final game --- depends on the within-season record being the sole input to the priority ordering. Multi-year memory breaks this dependency: in the same scenario under Classic \cola{}, the loser's lottery index increases by $\alpha = 1{,}000$ tickets, but the winner's index also increases by $\alpha$ (both teams missed the playoffs), so neither team's pool share changes through the loss. The single-game manipulation is converted from a unilateral improvement to a wash.
+
+The same argument applies to Capped \cola{} once both teams are below the wins-increment eligibility threshold. The two teams' wins-based increments differ by at most one (the winner gets one more), but the cap ($\textsc{Max} = 150$) can absorb that difference whenever both teams are sufficiently far from the cap, and the per-series structure of the playoff diminishment dominates the marginal-game incentive in the regions where the cap binds. Section~\ref{sec:bound} (Lemma~\ref{lem:capped-series-bound}) makes the per-series exposure explicit.
+
+The Coreno-Balbuzanov impossibility (Section~\ref{sec:background}) is harder to map onto \cola{} cleanly. \cola{} is a priority mechanism; the Coreno-Balbuzanov axioms are properties of allocation rules. The natural mapping interprets the lottery-index ordering as the priority and the draft selection as the allocation, but whether the resulting object satisfies RP and EF1 in the formal sense, or whether the multi-year structure makes the axioms inapplicable, remains open. \highley{This paragraph is the most speculative in the section. If you would prefer to defer the Coreno-Balbuzanov mapping to the Discussion as future work (Section~\ref{sec:limitations}) rather than addressing it here, the Section~\ref{sec:limitations} paragraph already exists; we can move the content there and leave Section~\ref{sec:cola-impossibility} focused on Munro-Banchio alone.}

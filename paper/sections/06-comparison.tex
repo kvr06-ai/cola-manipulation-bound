@@ -4,7 +4,7 @@
 % Lead: Rajan. Code: docs/js/ (all variant engines), docs/trade-simulator.html, docs/process.html.
 % Figures: generate from backtester data.
 
-This section presents a cross-variant comparative analysis using the 26-season historical backtest, examining how each \cola{} variant ranks teams differently under identical historical data. We focus on three team-season case studies that isolate distinct properties of the mechanism family (sustained drought, circumvention via repeat tanking, and elimination-pool variance), then turn to the handling of traded picks---the largest source of implementation ambiguity identified in \citet{highley2026solvable4}.
+This section presents a cross-variant comparative analysis using the 26-season historical backtest, examining how each \cola{} variant ranks teams differently under identical historical data. We focus on three team-season case studies that isolate distinct properties of the mechanism family (sustained drought, circumvention via repeat tanking, and elimination-pool variance), then turn to the calibration of Capped \cola{}'s stockpile cap (Section~\ref{sec:case-cap-sweep}) and the handling of traded picks (Section~\ref{sec:trade-handling}, the largest source of implementation ambiguity identified in \citet{highley2026solvable4}).
 
 \subsection{Case Study: Sacramento Kings (Maximum Drought)}
 \label{sec:case-sac}
@@ -63,6 +63,42 @@ Monte Carlo simulation (10{,}000 trials) yields $\Prob[\text{pick } \#1 \mid \te
 
 This case highlights a tradeoff: Countdown \cola{} satisfies Highley's ``no team falls more than 4 spots'' bounded-displacement property by design, but the same elimination structure introduces probability variance that weakens the correspondence between \cola{} index rank and expected draft position. The tradeoff is material for adoption: teams and owners evaluating the mechanism in advance cannot easily reason about expected outcomes without simulation.
 
+\subsection{Capped \cola{} Cap Calibration}
+\label{sec:case-cap-sweep}
+
+Capped \cola{} (Definition~\ref{def:capped-cola}) is parameterised by a single tunable constant: the stockpile cap $\textsc{Max}$. The cap controls the trade-off between (i) ordering resolution at the top of the lottery (a higher cap permits more separation between the highest-stockpile teams) and (ii) the per-series tanking exposure given by Lemma~\ref{lem:capped-series-bound} (a higher cap raises the maximum cost a team incurs by advancing past round~1). The empirical question is whether a value of $\textsc{Max}$ exists that produces both ``no more than 3--4 teams at the cap simultaneously'' (preserves separation between teams in active rebuild) and ``per-series cost of advancing in the playoffs is small relative to a typical team's annual accumulation'' (defuses the playoff-tanking incentive the league flagged).
+
+\Cref{tab:cap-sweep} reports the 21-stable-season aggregates from the sweep over $\textsc{Max} \in \{75, 100, 125, 150, 175, 200\}$, excluding the cold-start window 2000--2004 (Section~\ref{sec:backtesting}).
+
+\begin{table}[t]
+\centering
+\footnotesize
+\begin{tabular}{rrrrrrr}
+\toprule
+$\textsc{Max}$ & Teams at cap (mean / max) & Sep.\ R1--R5 (mean) & Per-series max & Per-series typical & Cum.\ regret (max) \\
+\midrule
+75  & 6.71 / 9 &  0.9 & 22.5 & 15 & 45.0 \\
+100 & 4.33 / 8 & 11.7 & 30.0 & 20 & 53.7 \\
+125 & 2.86 / 4 & 27.9 & 37.5 & 25 & 53.7 \\
+\textbf{150} & \textbf{1.62 / 3} & \textbf{47.7} & \textbf{45.0} & \textbf{30} & \textbf{57.6} \\
+175 & 0.95 / 2 & 65.4 & 52.5 & 35 & 67.2 \\
+200 & 0.52 / 2 & 76.4 & 60.0 & 40 & 76.8 \\
+\bottomrule
+\end{tabular}
+\caption{Sensitivity of Capped \cola{} aggregates to the cap value, computed across 21 stable seasons (2005--2025) of the 26-season backtest. Per-series ``max'' = $0.3 \cdot \textsc{Max}$ (the play-in advancer round~1 case from Lemma~\ref{lem:capped-series-bound}); per-series ``typical'' = $0.2 \cdot \textsc{Max}$ (any other series). Cumulative regret max is the worst empirical observation across the 21 seasons. The MAX = 150 row (bold) is the variant's published default per \citet{highley2026solvable5}.}
+\label{tab:cap-sweep}
+\end{table}
+
+Three patterns emerge from the sweep:
+
+\begin{enumerate}
+    \item \textbf{Sub-100 caps over-compress the lottery.} At $\textsc{Max} = 75$, more than six teams sit at the cap on average and the separation between the rank-1 and rank-5 stockpile drops to under 1 ticket. The mechanism's ordering signal is destroyed: teams with materially different long-run records are treated as interchangeable, defeating the priority-ordering property the variant inherits from the broader \cola{} family.
+    \item \textbf{Caps above 175 erase the cap's purpose.} At $\textsc{Max} \geq 175$, fewer than one team sits at the cap on average, meaning the cap rarely binds and the variant's per-series exposure converges to a fraction of an unbounded stockpile. The playoff-tanking-incentive argument the cap was introduced to make becomes uninformative.
+    \item \textbf{$\textsc{Max} = 150$ is on the frontier.} The cap-150 row produces the largest separation (47.7 tickets) compatible with the ``no more than 3--4 teams at cap'' target, while keeping the per-series max at 45 tickets (approximately a year and a half of accumulation for a team near the wins-increment ceiling). The closest alternative, $\textsc{Max} = 125$, produces tighter exposure (37.5 ticket max per series) at the cost of compressing separation to 27.9 tickets and pushing the typical teams-at-cap count to 2.9. Our memo-stage recommendation was $\textsc{Max} = 125$ \citep{rajan2026memo}; \citet{highley2026solvable5} selects $\textsc{Max} = 150$ on the rationale that the wider separation is worth the additional 7.5 tickets of per-series exposure.
+\end{enumerate}
+
+The published $\textsc{Max} = 150$ choice produces fewer than two teams at the cap in 19 of 21 stable seasons, and at most three in any single season. The cap binds primarily in the late 2010s, when accumulated wins for the league's longest-rebuilding franchises (Sacramento, Detroit, Charlotte) approach the cap simultaneously. \highley{We have read the $\textsc{Max} = 150$ choice as a published default in \citet{highley2026solvable5}; the Substack post phrases it as the calibration that supports the headline ``no playoff series win ever costs a team more than 45 lottery tickets.'' If you would prefer the paper present $\textsc{Max}$ as a free parameter and report results across the sweep without privileging 150, we can demote the bold row in Table~\ref{tab:cap-sweep} and reframe the section as a calibration exercise. Our recommendation is to keep 150 as the default and present 125 as the closest credible alternative, mirroring the memo.}
+
 \subsection{Trade Handling}
 \label{sec:trade-handling}
 
@@ -110,34 +146,36 @@ Option 1 (exclude) is the simplest but eliminates the diminishment mechanism's e
 \subsection{Cross-Variant Summary}
 \label{sec:cross-variant}
 
-\Cref{tab:cross-variant} summarizes how the four variants treat the three case-study teams and the primary trade-handling concern:
+\Cref{tab:cross-variant} summarises how the five variants treat the three case-study teams, the cap-calibration result, and the primary trade-handling concern.
 
 \begin{table}[t]
 \centering
 \footnotesize
-\begin{tabular}{lllll}
+\begin{tabular}{lp{2.0cm}p{2.0cm}p{2.0cm}p{2.0cm}p{2.4cm}}
 \toprule
-Property & Simple & Simple Lot. & Classic & Countdown \\
+Property & Simple & Simple Lot. & Classic & Countdown & Capped \\
 \midrule
-Top team 2024--25 & CHI & CHI & SAC & CHI \\
-Top team $P[\#1]$ & N/A (det.) & $25.0\%$ & $14.3\%$ & $29.7\%$ \\
-PHI 2016--17 rank & 21/22 & 21/22 & 14/14 & 21/22 \\
-Lottery component & None & Pre-2019 odds & Weighted & Elim.\ pools (MC) \\
-Bounded displacement & 0 (det.) & $\pm 13$ & $\pm 13$ & $\pm 4$ (design) \\
-Clean trade handling & N/A & N/A & Option-dep. & Option-dep. \\
-Fan explainability & High & High & Medium & Low \\
+Top team 2024--25 & CHI & CHI & SAC & CHI & SAC (at cap) \\
+Top team $\Prob[\#1]$ & N/A (det.) & $25.0\%$ & $14.3\%$ & $29.7\%$ & raffle by $L_i / P$ \\
+PHI 2016--17 rank & 21/22 & 21/22 & 14/14 & 21/22 & ineligible (drought $<2$) \\
+Lottery component & None & Pre-2019 odds & Weighted & Elim.\ pools (MC) & Top-5 raffle, then by rank \\
+Bounded displacement & 0 (det.) & $\pm 13$ & $\pm 13$ & $\pm 4$ (design) & by stockpile rank \\
+Per-series tanking cost & 1 drought yr & 1 drought yr & 0--$\rho \cdot L_i$ & McCarty-dep. & $\leq 0.3 \cdot \textsc{Max}$ \\
+Clean trade handling & N/A & N/A & Option-dep. & Option-dep. & Option 2 + Stepien \\
+Fan explainability & High & High & Medium & Low & Medium-low \\
 \bottomrule
 \end{tabular}
-\caption{Cross-variant comparison. Numeric entries are drawn from the 2024--25 backtest; PHI 2016--17 rank is shown relative to the eligible pool size for each variant (14 for Classic, 22 for the others). ``Bounded displacement'' refers to the maximum rank-vs-pick gap the mechanism admits; Countdown \cola{} enforces $\pm 4$ by design via the five-team elimination-pool structure. SAC leads Classic \cola{} but CHI leads the three other variants: Classic's cumulative carry-over rewards Sacramento's 16-season drought, while drought-based ranking in the other variants puts Chicago's uninterrupted recent stretch first.}
+\caption{Cross-variant comparison. Numeric entries are drawn from the 2024--25 backtest; PHI 2016--17 rank is shown relative to the eligible pool size for each variant (14 for Classic, 22 for Simple/Simple Lottery/Countdown; ineligible under Capped \cola{} because the 2016--17 76ers had received a top-5 lottery pick the prior season). ``Bounded displacement'' = the maximum rank-vs-pick gap the mechanism admits; Countdown \cola{} enforces $\pm 4$ by design via the five-team elimination-pool structure. ``Per-series tanking cost'' = the maximum reduction in priority a team incurs from advancing one playoff series; Capped \cola{}'s bound is from Lemma~\ref{lem:capped-series-bound}. SAC leads Classic \cola{} but CHI leads the drought-ranked variants: Classic's cumulative carry-over rewards Sacramento's 16-season drought; drought-based ranking in the other variants puts Chicago's uninterrupted recent stretch first. Under Capped \cola{} at $\textsc{Max} = 150$, both teams sit at the cap (Section~\ref{sec:case-cap-sweep}).}
 \label{tab:cross-variant}
 \end{table}
 
-Three observations follow:
+Four observations follow:
 
 \begin{enumerate}
-    \item \textbf{Rank agreement at the bottom, disagreement at the top.} All four variants agree that Philadelphia should receive near-lowest lottery priority during the tail of the Process (rank $\geq 14/14$ or $21/22$). At the top of the 2024--25 pool, however, the variants disagree: drought-based ranking (Simple, Simple Lottery, Countdown) puts Chicago first, while Classic \cola{}'s cumulative ticket carry-over puts Sacramento first. The disagreement reflects which component of team history---total drought time vs.\ total accumulated ticket mass---each variant prioritizes.
-    \item \textbf{Lottery structure drives probability variance.} $\Prob[\#1]$ for the top-ranked team ranges from $14.3\%$ (Classic, diffuse weighted lottery) to $29.7\%$ (Countdown, concentrated pool-1 leader) on the same 2024--25 data. Simple \cola{} is deterministic; Simple Lottery applies fixed 25\% worst-team odds regardless of pool state. Owners evaluating the mechanism in advance cannot treat ``top rank'' as equivalent to ``high \#1 probability'' across variants.
-    \item \textbf{Complexity--robustness tradeoff.} Countdown \cola{} bounds displacement tightly but requires Monte Carlo simulation to reason about probabilities. Simple \cola{} is fully transparent but loses the randomization that protects against degenerate strategic behavior at the ranking boundary. Classic \cola{} occupies the middle and is therefore the most common basis for comparison with the status quo.
+    \item \textbf{Rank agreement at the bottom, disagreement at the top.} All five variants agree that the 2016--17 76ers should receive near-lowest lottery priority. Capped \cola{} agrees by a different mechanism (eligibility): the 76ers' 2015--16 \#1 pick removes them from the eligible pool entirely under the drought $\geq 2$ requirement, while the other four variants rank them at or near the bottom of an eligible pool. At the top of the 2024--25 pool, however, the variants disagree: drought-based ranking (Simple, Simple Lottery, Countdown) puts Chicago first, while Classic \cola{}'s cumulative ticket carry-over puts Sacramento first. Capped \cola{} renders the question moot in 2024--25 by placing both at the cap.
+    \item \textbf{Lottery structure drives probability variance.} $\Prob[\#1]$ for the top-ranked team ranges from $14.3\%$ (Classic, diffuse weighted lottery) to $29.7\%$ (Countdown, concentrated pool-1 leader) on the same 2024--25 data. Simple \cola{} is deterministic; Simple Lottery applies fixed 25\% worst-team odds regardless of pool state; Capped \cola{} raffles the top five picks proportional to stockpile share with multiple teams at the cap effectively splitting the highest-priority slot. Owners evaluating the mechanism in advance cannot treat ``top rank'' as equivalent to ``high \#1 probability'' across variants.
+    \item \textbf{Complexity--robustness tradeoff.} Countdown \cola{} bounds displacement tightly but requires Monte Carlo simulation to reason about probabilities. Simple \cola{} is fully transparent but loses the randomisation that protects against degenerate strategic behaviour at the ranking boundary. Classic \cola{} occupies the middle and is the most common basis for comparison with the status quo. Capped \cola{} adds a fifth point on the frontier: it preserves the rank-driven raffle structure of Classic but bounds the per-series tanking cost via the cap (Lemma~\ref{lem:capped-series-bound}), at the cost of reducing the resolution between teams above the cap.
+    \item \textbf{Capped \cola{} occupies a distinct adoption slot.} The four pre-Capped variants form a frontier from full transparency (Simple) to bounded displacement (Countdown). Capped \cola{} sits off this frontier: it sacrifices some between-team resolution to bound the per-series cost in a way the others do not. This is the design feature \citet{highley2026solvable5} introduces in response to the league's ``flexible lottery line is not on the table'' feedback; it is the only variant that addresses the playoff-tanking incentive directly through a stockpile bound rather than through eligibility or schedule.
 \end{enumerate}
 
 These tradeoffs frame the adoption discussion in \cref{sec:discussion}: no single variant dominates the others on all axes, which is itself an argument for presenting \cola{} as a family of mechanisms rather than a single design.
