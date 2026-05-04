@@ -4,7 +4,7 @@
 % Lead: Rajan. Code: cola/bound.py, cola/simulate.py.
 % Figures: figures/gain_vs_delta.pdf, bound_sensitivity.pdf, bound_vs_sim.pdf.
 
-The incentive compatibility of Classic \cola{} rests on five assumptions, four of which hold by construction. The fifth---\emph{pool manipulation gains are negligible}---is supported in the original paper by simulation over 1{,}000 synthetic seasons \citep{highley2026cola}. In this section, we derive an analytic bound that confirms and extends this simulation result.
+The incentive compatibility of Classic \cola{} rests on five assumptions, four of which hold by construction. The fifth---\emph{pool manipulation gains are negligible}---is supported in the original paper by simulation over 1{,}000 synthetic seasons \citep{highley2026cola}. The companion formal-proof materials close the same gap with an additional behavioral assumption ($G > $ expected pool-manipulation gain, where $G$ is the value of a single regular-season win). In this section, we present a third closure: an analytic upper bound on the manipulation gain itself, conditioned on empirically calibrated structural properties of the index distribution.
 
 \subsection{Setup and Notation}
 
@@ -65,14 +65,24 @@ Combining via the approximation in \cref{eq:approx}: $G_{\max} \leq p_{\max} \cd
 \end{proof}
 
 \subsection{Empirical Calibration}
+\label{sec:calibration}
 
-Using simulation-calibrated parameters from \citet{highley2026cola}: $T_{\max} = 10$, $T_{\text{boundary}} = 5$, $n = 14$, $\bar{k} = 3.1$:
+Plugging \cref{eq:bound} requires four numerical inputs. We adopt the following values:
+
+\begin{itemize}
+    \item $T_{\max} = 10$. The maximum consecutive non-playoff stretch observed in our 26-season backtest (\cref{sec:backtesting}) is the Sacramento Kings' 16-year drought, but the longest stretch within the steady-state period (post cold start) bounds the practical extreme at approximately ten consecutive non-playoff years. \citet{highley2026cola} reports a similar observational bound (no team in the simulated history misses more than ten consecutive years).
+    \item $T_{\text{boundary}} = 5$. The maximum consecutive non-playoff drought we observe for a team near the playoff boundary (i.e., a team whose record is plausibly within one game of crossing into the playoffs). This is our calibration; we have not seen a published value in \citet{highley2026cola} or the companion materials.
+    \item $n = 14$. The number of lottery-eligible teams under Classic \cola{}, equal to the league's 14 non-playoff teams.
+    \item $\bar{k} = 3.1$. The average index multiplier ($\bar{L} / \alpha$), calibrated from our backtest. \citet{highley2026cola} characterises the steady-state distribution by noting that an average team's drought before reset is approximately three years; our $\bar{k} = 3.1$ matches that observation.
+\end{itemize}
+
+\highley{The four parameters above were attributed to ``Highley et al.\ (2026)'' in an earlier draft. On rereading, only $\bar{k}$ has a near-direct counterpart in the original paper (the ``average drought of three'' observation); $T_{\max}$ has an observational counterpart but no defined parameter; $T_{\text{boundary}}$ has no precedent; $n = 14$ is structural. We have relabelled them as our own calibration. Please flag if any of these values should be sourced or revised.}
 
 \begin{equation}
 G_{\max} \leq \frac{10 \cdot 4}{23 \cdot 14 \cdot 3.1} \approx 4.0\%
 \end{equation}
 
-This contains the simulation-observed maximum of $3.0\%$ across 1{,}000 seasons with approximately $1.3\times$ headroom. Our independent 200-season Bradley-Terry simulation confirms the bound, with observed maximum gain of $1.70\%$ (\cref{fig:bound_vs_sim}).
+This contains the simulation-observed maximum of $3.0\%$ across 1{,}000 seasons reported in \citet{highley2026cola} with approximately $1.3\times$ headroom. Our independent 200-season Bradley-Terry simulation confirms the bound, with observed maximum gain of $1.70\%$ (\cref{fig:bound_vs_sim}).
 
 \subsection{Sensitivity Analysis}
 
