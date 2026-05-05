@@ -261,8 +261,16 @@ function updateTimelineChart(teamId, variantData, variant, seasonsData) {
       parts.push('Tickets: ' + Math.round(teamState.index).toLocaleString());
     }
     if (teamState.madePlayoffs) {
-      const result = teamState.playoffResult.replace('_', ' ');
-      parts.push(result === 'champion' ? 'Won championship' : 'Playoffs (' + result + ')');
+      // playoffResult can be null for R1 winners in the live projection
+      // year (they're alive in playoffs, no final result yet).
+      if (teamState.playoffResult) {
+        const result = teamState.playoffResult.replace('_', ' ');
+        parts.push(result === 'champion' ? 'Won championship' : 'Playoffs (' + result + ')');
+      } else if (teamState.seriesWon >= 1) {
+        parts.push('Playoffs (alive, won R' + teamState.seriesWon + ')');
+      } else {
+        parts.push('Playoffs (in progress)');
+      }
     } else {
       parts.push('Missed playoffs');
     }
