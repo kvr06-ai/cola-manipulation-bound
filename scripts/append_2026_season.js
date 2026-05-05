@@ -155,6 +155,7 @@ for (const t of SEASON_2026) {
 }
 
 const newSeason = {
+  season: '2025-26',
   year: 2026,
   teams,
 };

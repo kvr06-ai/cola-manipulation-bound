@@ -208,10 +208,13 @@ function createTimelineChart(canvasId) {
 function updateTimelineChart(teamId, variantData, variant, seasonsData) {
   if (!timelineChart) return;
 
-  const years = Object.keys(variantData).map(Number).sort();
+  const years = Object.keys(variantData).map(Number).sort((a, b) => a - b);
   const labels = years.map((y) => {
     const s = seasonsData.find((s) => s.year === y);
-    return s ? s.season : String(y);
+    if (s && s.season) return s.season;
+    // Synthesise the season label when missing (e.g., live-projection year
+    // that was appended without a `season` string in older datasets).
+    return (y - 1) + '-' + String(y).slice(-2);
   });
 
   const data = [];
