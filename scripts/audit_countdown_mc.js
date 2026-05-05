@@ -36,6 +36,10 @@ const SEED = 42;
 const TRIALS = 100000;
 const rng = mulberry32(SEED);
 
+// Target year selectable via CLI: `node audit_countdown_mc.js 2026`.
+const ARG_YEAR = parseInt(process.argv[2], 10);
+const TARGET_YEAR = Number.isFinite(ARG_YEAR) ? ARG_YEAR : 2025;
+
 // ── Engine constants (mirrored from cola-engine.js) ──
 const COUNTDOWN_POOL_TICKETS = [6, 5, 4, 3, 2];
 
@@ -99,7 +103,6 @@ const nba = JSON.parse(
   fs.readFileSync(path.join(__dirname, '..', 'docs', 'data', 'nba-data.json'), 'utf-8')
 );
 
-const TARGET_YEAR = 2025;
 
 // Compute drought up to and including TARGET_YEAR for every team.
 // Drought = consecutive seasons without a playoff series win OR top-3 lottery pick.

@@ -734,6 +734,207 @@ const TRADE_RULES = {
   EXCLUDE: 'exclude',
 };
 
+// =============================================================================
+// 3-2-1 (NBA's 2026 Adopted Reform Proposal)
+// =============================================================================
+// Source: NBA 3-2-1 lottery proposal as analysed in Highley's Substack
+// (https://highleytj.substack.com/p/a-professional-draft-reform-researcher)
+// and CBS Sports explainer
+// (https://www.cbssports.com/nba/news/nba-new-draft-lottery-system-tanking/).
+//
+// Eligibility (per CBS):
+//   - The 10 teams that miss the postseason entirely.
+//   - The four No. 9 & 10 seeds (both conferences) -- record seeds 9 and
+//     10 in each conference. These are the 9v10 play-in participants.
+//   - The two No. 7 vs. 8 play-in losers -- the loser of the 7v8 game IF
+//     they also lose the subsequent Game 3. (When the 7v8 loser wins
+//     Game 3, they make the playoffs and are NOT in the lottery.)
+//
+// Ball allocation:
+//   - Tier 1 (bottom 3 by record): 2 balls each -- 6 balls
+//   - Tier 2 (slots 4-10 of the non-playoff teams): 3 balls each -- 21 balls
+//   - Tier 3 (the 9-10 record seeds in lottery): 2 balls each
+//   - Tier 4 (the 7v8 play-in losers who also lost Game 3): 1 ball each
+//   - Headline total: 37 balls (assumes both 7v8 losers also lose Game 3).
+//     Actual total varies by season's play-in outcomes; in 2026, both 7v8
+//     losers (ORL and PHX) won Game 3 and made playoffs, so Tier 4 = 0.
+//
+// All 16 (or fewer) lottery slots are raffled. Consecutive-year
+// restrictions (no team picks #1 in consecutive years; no top-5 picks in
+// three consecutive years) affect future-year eligibility and are not
+// modelled in this static engine.
+
+const TANK_321_BOTTOM_BALLS = 2;       // Tier 1: bottom 3 by record
+const TANK_321_MID_BALLS = 3;          // Tier 2: slots 4-10
+const TANK_321_910_BALLS = 2;          // Tier 3: 9-10 record seeds in lottery
+const TANK_321_78_LOSER_BALLS = 1;     // Tier 4: 7v8 losers who lost Game 3
+const TANK_321_HEADLINE_TOTAL = 37;    // canonical figure; actual varies
+
+// Static team-to-conference mapping. NBA franchise relocations in our
+// 1999-2026 window do not change conference assignment.
+const TANK_321_TEAM_CONF = {
+  // East
+  ATL: 'E', BOS: 'E', BKN: 'E', CHA: 'E', CHI: 'E', CLE: 'E', DET: 'E',
+  IND: 'E', MIA: 'E', MIL: 'E', NYK: 'E', ORL: 'E', PHI: 'E', TOR: 'E',
+  WAS: 'E',
+  // Pre-Brooklyn relocation
+  NJN: 'E',
+  // Pre-Charlotte renaming variants
+  CHO: 'E',
+  // West
+  DAL: 'W', DEN: 'W', GSW: 'W', HOU: 'W', LAC: 'W', LAL: 'W', MEM: 'W',
+  MIN: 'W', NOP: 'W', OKC: 'W', PHX: 'W', POR: 'W', SAC: 'W', SAS: 'W',
+  UTA: 'W',
+  // Pre-2008 Seattle, pre-rebrand New Orleans Hornets
+  SEA: 'W', NOH: 'W',
+};
+
+/**
+ * Compute the NBA's 3-2-1 lottery odds for each season.
+ */
+function computeTank321Lottery(seasonsData) {
+  const results = {};
+
+  for (const season of seasonsData) {
+    const year = season.year;
+
+    // Step 1: Conference seeds for the season (record-based, with
+    // tiebreakers). Primary sort: more wins -> better seed. Tiebreaker
+    // for identical records: a team that made the playoffs ranks above
+    // a non-playoff team; among playoff teams, a play-in advancer ranks
+    // below a direct entry (since play-in advancers came from the 7v8
+    // game with weaker original seeding); among non-playoff teams,
+    // play-in losers rank above lottery teams. This approximates the
+    // NBA's actual head-to-head/division/conference tiebreakers
+    // sufficiently for 3-2-1 tier classification.
+    const conf = TANK_321_TEAM_CONF;
+    const eastTeams = season.teams.filter(t => conf[t.id] === 'E');
+    const westTeams = season.teams.filter(t => conf[t.id] === 'W');
+    const sortByRecord = (a, b) => {
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      // Same wins: rank direct playoff entries above play-in entries
+      // (direct entries had the higher seed in the round-of-16 by
+      // record). Among ties, prefer madePlayoffs && !playInAdvanced.
+      const aDirect = a.madePlayoffs && !a.playInAdvanced;
+      const bDirect = b.madePlayoffs && !b.playInAdvanced;
+      if (aDirect !== bDirect) return aDirect ? -1 : 1;
+      const aPlayInAdv = a.playInAdvanced === true;
+      const bPlayInAdv = b.playInAdvanced === true;
+      if (aPlayInAdv !== bPlayInAdv) return aPlayInAdv ? -1 : 1;
+      return 0;
+    };
+    eastTeams.sort(sortByRecord);
+    westTeams.sort(sortByRecord);
+    const confSeed = {};
+    eastTeams.forEach((t, i) => { confSeed[t.id] = i + 1; });
+    westTeams.forEach((t, i) => { confSeed[t.id] = i + 1; });
+
+    // Step 2: Build the non-playoff lottery pool, sorted worst-first by
+    // overall record.
+    const pool = season.teams.filter(t => !t.madePlayoffs);
+    pool.sort((a, b) => a.wins - b.wins);
+
+    // Step 3: Detect play-in era.
+    const isPlayInEra = season.teams.some(t => t.playInParticipant === true);
+
+    const balls = {};
+
+    if (!isPlayInEra) {
+      // Pre-play-in: 14-team lottery. Bottom 3 (2 balls), mid 7 (3 balls),
+      // top 4 (2 balls). Total: 35 balls.
+      pool.forEach((t, i) => {
+        if (i < 3) balls[t.id] = TANK_321_BOTTOM_BALLS;
+        else if (i < 10) balls[t.id] = TANK_321_MID_BALLS;
+        else balls[t.id] = TANK_321_910_BALLS;
+      });
+    } else {
+      // Play-in era. Identify play-in losers within the pool.
+      const playInLosers = pool.filter(t => t.playInParticipant === true);
+
+      // Tier classification:
+      //   - Bottom 3 by overall record (Tier 1).
+      //   - Slots 4-10 of pool intersected with non-play-in teams (Tier 2).
+      //   - Play-in losers from record-seed 9 or 10 (Tier 3).
+      //   - Play-in losers from record-seed 7 or 8 (Tier 4).
+      const bottom3Ids = new Set(pool.slice(0, 3).map(t => t.id));
+      const tier3Ids = new Set();
+      const tier4Ids = new Set();
+      for (const team of playInLosers) {
+        const cs = confSeed[team.id];
+        if (cs === 9 || cs === 10) tier3Ids.add(team.id);
+        else if (cs === 7 || cs === 8) tier4Ids.add(team.id);
+      }
+
+      for (const t of pool) {
+        if (bottom3Ids.has(t.id)) {
+          balls[t.id] = TANK_321_BOTTOM_BALLS;
+        } else if (tier3Ids.has(t.id)) {
+          balls[t.id] = TANK_321_910_BALLS;
+        } else if (tier4Ids.has(t.id)) {
+          balls[t.id] = TANK_321_78_LOSER_BALLS;
+        } else {
+          // Tier 2: any non-bottom-3, non-play-in-loser team in the pool.
+          balls[t.id] = TANK_321_MID_BALLS;
+        }
+      }
+    }
+
+    const totalBalls = Object.values(balls).reduce((s, b) => s + b, 0);
+
+    const probabilities = {};
+    for (const id in balls) {
+      probabilities[id] = totalBalls > 0 ? balls[id] / totalBalls : 0;
+    }
+
+    const teamsOut = {};
+    for (const team of season.teams) {
+      teamsOut[team.id] = {
+        wins: team.wins,
+        losses: team.losses,
+        madePlayoffs: team.madePlayoffs,
+        playoffResult: team.playoffResult,
+        seriesWon: team.seriesWon,
+        draftPick: team.draftPick,
+        balls: balls[team.id] !== undefined ? balls[team.id] : 0,
+        probability: probabilities[team.id] !== undefined ? probabilities[team.id] : null,
+        eligible: team.id in balls,
+        confSeed: confSeed[team.id],
+      };
+    }
+
+    const draftOrder = [];
+    for (const team of season.teams) {
+      if (!(team.id in balls)) continue;
+      draftOrder.push({
+        id: team.id,
+        name: team.name,
+        wins: team.wins,
+        losses: team.losses,
+        balls: balls[team.id],
+        probability: probabilities[team.id],
+        confSeed: confSeed[team.id],
+        draftPick: team.draftPick,
+      });
+    }
+    draftOrder.sort((a, b) => {
+      if (b.balls !== a.balls) return b.balls - a.balls;
+      return a.wins - b.wins;
+    });
+    draftOrder.forEach((t, i) => { t.colaPosition = i + 1; });
+
+    results[year] = {
+      teams: teamsOut,
+      draftOrder,
+      totalBalls,
+      headlineTotal: TANK_321_HEADLINE_TOTAL,
+      eligibleCount: draftOrder.length,
+      isPlayInEra,
+    };
+  }
+
+  return results;
+}
+
 /**
  * Build a lookup from trade metadata: (year, pick) -> trade entry.
  */
@@ -925,10 +1126,11 @@ function computeAllVariants(seasonsData, cappedMax) {
     countdown: computeCountdownCOLA(seasonsData),
     classic: computeClassicCOLA(seasonsData),
     capped: computeCappedCOLA(seasonsData, cappedMax),
+    tank321: computeTank321Lottery(seasonsData),
   };
 }
 
 // Export for use in app.js (and for Node.js testing)
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { computeSimpleCOLA, computeSimpleLotteryCOLA, computeCountdownCOLA, computeClassicCOLA, computeCappedCOLA, computeAllVariants, TRADE_RULES, buildTradeLookup, computeClassicCOLAWithTradeRule, computeAllTradeRules, ALPHA, PLAYOFF_DIMINISH, DRAFT_DIMINISH, PRE_2019_ODDS, COUNTDOWN_POOL_TICKETS, CAPPED_PLAYOFF_DIMINISH_DIRECT, CAPPED_PLAYIN_R1_FRAC, CAPPED_DRAFT_DIMINISH, CAPPED_DEFAULT_MAX, CAPPED_DROUGHT_MIN, CAPPED_MARGINAL_MAX_FRAC, CAPPED_MARGINAL_TYPICAL_FRAC };
+  module.exports = { computeSimpleCOLA, computeSimpleLotteryCOLA, computeCountdownCOLA, computeClassicCOLA, computeCappedCOLA, computeTank321Lottery, computeAllVariants, TRADE_RULES, buildTradeLookup, computeClassicCOLAWithTradeRule, computeAllTradeRules, ALPHA, PLAYOFF_DIMINISH, DRAFT_DIMINISH, PRE_2019_ODDS, COUNTDOWN_POOL_TICKETS, CAPPED_PLAYOFF_DIMINISH_DIRECT, CAPPED_PLAYIN_R1_FRAC, CAPPED_DRAFT_DIMINISH, CAPPED_DEFAULT_MAX, CAPPED_DROUGHT_MIN, CAPPED_MARGINAL_MAX_FRAC, CAPPED_MARGINAL_TYPICAL_FRAC, TANK_321_HEADLINE_TOTAL, TANK_321_BOTTOM_BALLS, TANK_321_MID_BALLS, TANK_321_910_BALLS, TANK_321_78_LOSER_BALLS };
 }

@@ -122,6 +122,20 @@ function updateLotteryChart(draftOrder, variant) {
     lotteryChart.data.datasets[0].tooltipData = tooltips;
     lotteryChart.options.scales.x.title.text = 'Top-5 raffle odds (stockpile / pool)';
     lotteryChart.options.scales.x.ticks.callback = (v) => v.toFixed(0) + '%';
+  } else if (variant === 'tank321') {
+    // 3-2-1 NBA proposal: per-ball #1-pick probabilities
+    const labels = draftOrder.map((t) => '#' + t.colaPosition + ' ' + t.id);
+    const data = draftOrder.map((t) => (t.probability || 0) * 100);
+    const tooltips = draftOrder.map(
+      (t) => (t.probability * 100).toFixed(2) + '% chance (' + t.balls + ' ball' + (t.balls === 1 ? '' : 's') + ', conf seed ' + (t.confSeed || '?') + ')'
+    );
+
+    lotteryChart.data.labels = labels;
+    lotteryChart.data.datasets[0].data = data;
+    lotteryChart.data.datasets[0].backgroundColor = labels.map(() => CHART_COLORS.highlight || '#e94560');
+    lotteryChart.data.datasets[0].tooltipData = tooltips;
+    lotteryChart.options.scales.x.title.text = 'Odds of #1 pick (NBA 3-2-1 proposal)';
+    lotteryChart.options.scales.x.ticks.callback = (v) => v.toFixed(0) + '%';
   } else {
     // Classic COLA: show probabilities
     const labels = draftOrder.map((t) => '#' + t.colaPosition + ' ' + t.id);
@@ -219,7 +233,9 @@ function updateTimelineChart(teamId, variantData, variant, seasonsData) {
         ? (teamState.mccarty || 0)
         : variant === 'capped'
           ? (teamState.index || 0)
-          : teamState.index;
+          : variant === 'tank321'
+            ? (teamState.balls || 0)
+            : teamState.index;
     data.push(value);
 
     // Color by playoff status
@@ -239,6 +255,8 @@ function updateTimelineChart(teamId, variantData, variant, seasonsData) {
       parts.push('McCarty: ' + (teamState.mccarty || 0) + ' (drought ' + teamState.drought + ' × ' + teamState.wins + ' wins)');
     } else if (variant === 'capped') {
       parts.push('Stockpile: ' + Math.round(teamState.index || 0) + ' (drought ' + teamState.drought + ' yrs)');
+    } else if (variant === 'tank321') {
+      parts.push('Balls: ' + (teamState.balls || 0) + ' (conf seed ' + (teamState.confSeed || '?') + ')');
     } else {
       parts.push('Tickets: ' + Math.round(teamState.index).toLocaleString());
     }

@@ -51,7 +51,7 @@
         <p>Under COLA, losing more games <em>never</em> improves your draft position. Teams that have been genuinely bad for years get the most help. Teams having one bad season after years of success don't jump the line.</p>
 
         <h2>What This Tool Does</h2>
-        <p>This tool takes <strong>real NBA data from 2000 to 2025</strong> and asks: <em>what would the draft have looked like under COLA?</em> You can explore five COLA variants:</p>
+        <p>This tool takes <strong>real NBA data from 2000 to 2026</strong> (with the 2025-26 season as a live post-R1 projection for the 2026 NBA Draft Lottery) and asks: <em>what would the draft have looked like under COLA?</em> You can explore five COLA variants and the NBA's adopted 3-2-1 reform proposal:</p>
 
         <div class="info-cards" style="margin: 1rem 0;">
             <div class="info-card">
@@ -88,7 +88,7 @@
 
         <h2>How to Use This Tool</h2>
         <ol style="margin: 0.5rem 0 1rem 1.5rem; color: var(--text); line-height: 1.8;">
-            <li><strong>Season View:</strong> Slide to any season (2000 to 2025). Toggle between Simple and Classic COLA. The table shows each lottery team's COLA ranking; the chart visualizes it.</li>
+            <li><strong>Season View:</strong> Slide to any season (2000 to 2026). The slider defaults to the live 2025-26 projection. Toggle between Simple and Classic COLA. The table shows each lottery team's COLA ranking; the chart visualizes it.</li>
             <li><strong>Team Timeline:</strong> Pick your team from the dropdown. Watch how their COLA score evolves year by year. Green dots = playoff years. Red = lottery years. Gold = championship.</li>
             <li><strong>Side-by-Side Comparison:</strong> See how Simple COLA and Classic COLA rank the same teams differently, alongside what actually happened.</li>
         </ol>
@@ -122,8 +122,9 @@
 
         <div class="controls">
             <label for="year-slider">Season:</label>
-            <input type="range" id="year-slider" min="2000" max="2025" value="2025">
-            <span id="year-display" class="year-display">2024-25</span>
+            <input type="range" id="year-slider" min="2000" max="2026" value="2026">
+            <span id="year-display" class="year-display">2025-26</span>
+            <span id="live-projection-badge" style="display:none; margin-left: 0.6rem; padding: 0.15rem 0.5rem; background: var(--accent); color: var(--bg); font-size: 0.75rem; font-weight: bold; border-radius: 3px; vertical-align: middle;">LIVE 2026 DRAFT PROJECTION</span>
 
             <div class="tabs">
                 <div class="tab" data-variant="simple">Simple COLA</div>
@@ -131,7 +132,12 @@
                 <div class="tab" data-variant="countdown">Countdown COLA</div>
                 <div class="tab active" data-variant="classic">Classic COLA</div>
                 <div class="tab" data-variant="capped">Capped COLA</div>
+                <div class="tab" data-variant="tank321" title="NBA's 2026 adopted reform proposal">3-2-1 (NBA proposal)</div>
             </div>
+        </div>
+
+        <div id="live-projection-banner" style="display:none; margin: 0.6rem 0; padding: 0.7rem 0.9rem; background: var(--surface); border-left: 3px solid var(--accent); border-radius: 4px; font-size: 0.9rem;">
+            <strong>Live 2026 draft projection.</strong> The 2025&ndash;26 NBA regular season ended April 12, 2026; first-round playoffs concluded May 4. The 2026 NBA Draft Lottery has not yet been held, so all <em>Real Pick</em> values for 2025&ndash;26 are unknown (shown as &mdash;). For Capped COLA, first-round diminishment is applied pre-lottery per the variant&rsquo;s spec; second-round-and-later diminishment will apply once those results land. Numbers below reflect the lottery odds as of right now.
         </div>
 
         <div id="capped-controls" class="controls" style="display: none; margin-top: 0.6rem; padding: 0.6rem 0.8rem; background: var(--surface); border-radius: 4px; border-left: 3px solid var(--accent);">

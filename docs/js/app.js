@@ -5,8 +5,9 @@
 
 let nbaData = null;
 let colaResults = null;
-let currentYear = 2025;
+let currentYear = 2026;
 let currentVariant = 'classic';
+const LIVE_PROJECTION_YEAR = 2026;
 let currentTeam = 'SAC';
 let cappedMax = 150;
 
@@ -98,9 +99,20 @@ function updateCappedControlsVisibility() {
 
 function updateYearDisplay() {
   const season = nbaData.seasons.find((s) => s.year === currentYear);
-  document.getElementById('year-display').textContent = season
+  // Synthesise display label since season.season isn't always present
+  // (e.g., the 2025-26 entry was appended programmatically without one).
+  const startYear = currentYear - 1;
+  const label = String(startYear) + '-' + String(currentYear).slice(-2);
+  document.getElementById('year-display').textContent = season && season.season
     ? season.season
-    : currentYear;
+    : label;
+
+  // Show the LIVE projection badge + banner only on the live year.
+  const isLive = currentYear === LIVE_PROJECTION_YEAR;
+  const badge = document.getElementById('live-projection-badge');
+  const banner = document.getElementById('live-projection-banner');
+  if (badge) badge.style.display = isLive ? 'inline-block' : 'none';
+  if (banner) banner.style.display = isLive ? 'block' : 'none';
 }
 
 function render() {
@@ -135,6 +147,8 @@ function renderDraftTable() {
       tdValue.textContent = team.mccarty.toLocaleString();
     } else if (currentVariant === 'capped') {
       tdValue.textContent = Math.round(team.index).toLocaleString();
+    } else if (currentVariant === 'tank321') {
+      tdValue.textContent = team.balls + ' ball' + (team.balls === 1 ? '' : 's');
     } else {
       tdValue.textContent = Math.round(team.index).toLocaleString();
     }
@@ -154,7 +168,7 @@ function renderDraftTable() {
     tr.appendChild(tdRank);
     tr.appendChild(tdTeam);
     tr.appendChild(tdValue);
-    if (currentVariant === 'classic' || currentVariant === 'simpleLottery' || currentVariant === 'countdown' || currentVariant === 'capped') {
+    if (currentVariant === 'classic' || currentVariant === 'simpleLottery' || currentVariant === 'countdown' || currentVariant === 'capped' || currentVariant === 'tank321') {
       const tdProb = document.createElement('td');
       if (currentVariant === 'countdown') {
         // Monte Carlo probabilities: show 1 decimal, <1% for tiny values
@@ -175,6 +189,9 @@ function renderDraftTable() {
       } else if (currentVariant === 'capped') {
         tdProb.textContent = (team.probability * 100).toFixed(1) + '%';
         tdProb.title = 'Top-5 raffle odds: stockpile / pool. Drought: ' + team.drought + ' yrs.';
+      } else if (currentVariant === 'tank321') {
+        tdProb.textContent = (team.probability * 100).toFixed(2) + '%';
+        tdProb.title = 'Per-ball probability: ' + team.balls + ' / total balls. Conf seed: ' + (team.confSeed || '?');
       } else {
         tdProb.textContent = (team.probability * 100).toFixed(1) + '%';
       }
@@ -216,6 +233,12 @@ function renderDraftTable() {
     probHeader.style.display = '';
     probHeader.textContent = 'Odds of #1 Pick';
     probHeader.title = 'Capped COLA top-5 raffle odds: stockpile / total pool';
+  } else if (currentVariant === 'tank321') {
+    valueHeader.textContent = 'Lottery Balls';
+    valueHeader.title = 'Ball allocation under NBA 3-2-1 proposal: bottom-3=2, mid-7=3, 9-10 seeds=2, 7-8 play-in losers=1';
+    probHeader.style.display = '';
+    probHeader.textContent = 'Odds of #1 Pick';
+    probHeader.title = 'Per-ball probability under NBA 3-2-1 proposal: 1/total balls per ball';
   } else {
     valueHeader.textContent = 'Tickets';
     valueHeader.title = 'Accumulated lottery tickets (more = better odds of a high pick)';
