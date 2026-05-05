@@ -829,51 +829,94 @@ function computeTank321Lottery(seasonsData) {
     eastTeams.forEach((t, i) => { confSeed[t.id] = i + 1; });
     westTeams.forEach((t, i) => { confSeed[t.id] = i + 1; });
 
-    // Step 2: Build the non-playoff lottery pool, sorted worst-first by
-    // overall record.
-    const pool = season.teams.filter(t => !t.madePlayoffs);
-    pool.sort((a, b) => a.wins - b.wins);
-
-    // Step 3: Detect play-in era.
+    // Step 2: Detect play-in era and build the 3-2-1 pool.
+    //
+    // Per Highley's Substack ("A team could be in the playoffs and even
+    // win in the playoffs but still be in the lottery"), the 3-2-1 pool
+    // does NOT exclude teams that made the playoffs via the play-in.
+    // The full pool is:
+    //   - All teams with conference record-seed >= 11 (10 non-play-in
+    //     non-playoff teams).
+    //   - All record-9 and record-10 teams (4, both conferences),
+    //     regardless of play-in outcome -- they may have advanced
+    //     through 9v10 + Game 3 to become playoff 8-seeds.
+    //   - The two record-7-or-8 7v8 game LOSERS (1 per conference),
+    //     regardless of Game 3 outcome -- they may have won Game 3 to
+    //     become playoff 8-seeds.
+    //
+    // The 7v8 winner becomes the playoff 7-seed by definition. We
+    // identify it via `playoffSeed === 7` (added to nba-data.json for
+    // play-in-era seasons). The 7v8 LOSER is the OTHER record-7/8 team
+    // in the same conference.
     const isPlayInEra = season.teams.some(t => t.playInParticipant === true);
 
     const balls = {};
 
     if (!isPlayInEra) {
-      // Pre-play-in: 14-team lottery. Bottom 3 (2 balls), mid 7 (3 balls),
-      // top 4 (2 balls). Total: 35 balls.
+      // Pre-play-in: 14-team lottery (the 14 non-playoff teams).
+      const pool = season.teams.filter(t => !t.madePlayoffs);
+      pool.sort((a, b) => a.wins - b.wins);
       pool.forEach((t, i) => {
         if (i < 3) balls[t.id] = TANK_321_BOTTOM_BALLS;
         else if (i < 10) balls[t.id] = TANK_321_MID_BALLS;
         else balls[t.id] = TANK_321_910_BALLS;
       });
     } else {
-      // Play-in era. Identify play-in losers within the pool.
-      const playInLosers = pool.filter(t => t.playInParticipant === true);
+      // Play-in era. Build the 16-team pool explicitly.
+      //
+      // Pool A: record-seed 11+ in each conference (no play-in, no
+      // playoffs). 5 teams per conference, 10 total.
+      const poolA = season.teams.filter(t => {
+        const cs = confSeed[t.id];
+        return cs && cs >= 11;
+      });
 
-      // Tier classification:
-      //   - Bottom 3 by overall record (Tier 1).
-      //   - Slots 4-10 of pool intersected with non-play-in teams (Tier 2).
-      //   - Play-in losers from record-seed 9 or 10 (Tier 3).
-      //   - Play-in losers from record-seed 7 or 8 (Tier 4).
-      const bottom3Ids = new Set(pool.slice(0, 3).map(t => t.id));
-      const tier3Ids = new Set();
-      const tier4Ids = new Set();
-      for (const team of playInLosers) {
-        const cs = confSeed[team.id];
-        if (cs === 9 || cs === 10) tier3Ids.add(team.id);
-        else if (cs === 7 || cs === 8) tier4Ids.add(team.id);
-      }
+      // Pool B: record-seed 9 or 10. 2 teams per conference, 4 total.
+      // Always in 3-2-1 lottery regardless of play-in outcome.
+      const poolB = season.teams.filter(t => {
+        const cs = confSeed[t.id];
+        return cs === 9 || cs === 10;
+      });
 
-      for (const t of pool) {
+      // Pool C: record-seed 7 or 8 7v8 LOSERS. The 7v8 winner is the
+      // playoff 7-seed; the 7v8 loser is the other record-7/8 team.
+      // Identification requires `playoffSeed` (added to nba-data.json
+      // for play-in-era seasons where Tier 4 matters). When playoffSeed
+      // is missing for the conference, fall back to omitting Tier 4
+      // for that season — the resulting 14-team / 35-ball pool matches
+      // the pre-play-in fallback shape and avoids over-counting.
+      const havePlayoffSeed = season.teams.some(t => t.playoffSeed === 7);
+      const playoffSevenSeeds = new Set(
+        season.teams.filter(t => t.playoffSeed === 7).map(t => t.id)
+      );
+      const poolC = havePlayoffSeed
+        ? season.teams.filter(t => {
+            const cs = confSeed[t.id];
+            if (cs !== 7 && cs !== 8) return false;
+            return !playoffSevenSeeds.has(t.id);
+          })
+        : [];
+
+      // Tier 1: bottom 3 by overall record (across pool A + B + C).
+      // Sort the union worst-first to identify the 3 worst-record teams.
+      const allPool = [...poolA, ...poolB, ...poolC];
+      allPool.sort((a, b) => a.wins - b.wins);
+      const bottom3Ids = new Set(allPool.slice(0, 3).map(t => t.id));
+
+      // Apply tier ball allocation. Order matters: a team can only be
+      // in one tier (Tier 1 takes precedence if a bottom-3 team also
+      // happens to be record-9/10, though this is structurally rare).
+      const poolBIds = new Set(poolB.map(t => t.id));
+      const poolCIds = new Set(poolC.map(t => t.id));
+      for (const t of allPool) {
         if (bottom3Ids.has(t.id)) {
           balls[t.id] = TANK_321_BOTTOM_BALLS;
-        } else if (tier3Ids.has(t.id)) {
-          balls[t.id] = TANK_321_910_BALLS;
-        } else if (tier4Ids.has(t.id)) {
+        } else if (poolCIds.has(t.id)) {
           balls[t.id] = TANK_321_78_LOSER_BALLS;
+        } else if (poolBIds.has(t.id)) {
+          balls[t.id] = TANK_321_910_BALLS;
         } else {
-          // Tier 2: any non-bottom-3, non-play-in-loser team in the pool.
+          // Pool A non-bottom-3: Tier 2 (mid 7).
           balls[t.id] = TANK_321_MID_BALLS;
         }
       }

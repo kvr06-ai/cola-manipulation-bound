@@ -82,6 +82,17 @@ const R1_LOSERS  = new Set(['ORL', 'BOS', 'ATL', 'TOR', 'PHX', 'POR', 'DEN', 'HO
 const PLAYIN_ADVANCED = new Set(['PHI', 'ORL', 'POR', 'PHX']);
 const PLAYIN_PARTICIPANT = new Set(['PHI', 'ORL', 'CHA', 'MIA', 'PHX', 'LAC', 'POR', 'GSW']);
 
+// Playoff seeds (1-8) per conference, from R1 bracket pairings.
+// East R1: DET(1)vsORL(8), BOS(2)vsPHI(7), NYK(3)vsATL(6), CLE(4)vsTOR(5).
+// West R1: OKC(1)vsPHX(8), SAS(2)vsPOR(7), DEN(3)vsMIN(6), LAL(4)vsHOU(5).
+// Source: ESPN 2026 NBA playoff bracket.
+const PLAYOFF_SEEDS = {
+  // East
+  DET: 1, BOS: 2, NYK: 3, CLE: 4, TOR: 5, ATL: 6, PHI: 7, ORL: 8,
+  // West
+  OKC: 1, SAS: 2, DEN: 3, LAL: 4, HOU: 5, MIN: 6, POR: 7, PHX: 8,
+};
+
 function buildTeam(t) {
   const playoffParticipant = R1_WINNERS.has(t.id) || R1_LOSERS.has(t.id);
   const madePlayoffs = playoffParticipant;
@@ -108,17 +119,19 @@ function buildTeam(t) {
     draftPick: null, // Lottery has not occurred yet; live projection.
     playInParticipant: PLAYIN_PARTICIPANT.has(t.id),
     playInAdvanced: PLAYIN_ADVANCED.has(t.id),
+    playoffSeed: PLAYOFF_SEEDS[t.id] !== undefined ? PLAYOFF_SEEDS[t.id] : null,
   };
 }
 
 // ── Append to dataset, preserving the existing numeric-key ordering ──
 const data = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
 
-// Idempotency check.
-const existing = data.seasons.find(s => s.year === 2026);
-if (existing) {
-  console.error('Season year=2026 already exists in dataset. Aborting.');
-  process.exit(1);
+// Idempotency: replace existing 2026 entry if present so the script
+// can be re-run after spec corrections.
+const existingIdx = data.seasons.findIndex(s => s.year === 2026);
+if (existingIdx !== -1) {
+  data.seasons.splice(existingIdx, 1);
+  console.log('Existing 2026 entry removed; will replace.');
 }
 
 // Preserve the same array ordering as the most recent season. The

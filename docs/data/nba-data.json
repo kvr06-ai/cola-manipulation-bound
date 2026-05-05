@@ -9469,7 +9469,8 @@
           "seriesWon": 1,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": 1
         },
         {
           "id": "CLE",
@@ -9481,7 +9482,8 @@
           "seriesWon": 1,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": 4
         },
         {
           "id": "BOS",
@@ -9493,7 +9495,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": 2
         },
         {
           "id": "HOU",
@@ -9505,7 +9508,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": 5
         },
         {
           "id": "NYK",
@@ -9517,7 +9521,8 @@
           "seriesWon": 1,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": 3
         },
         {
           "id": "LAL",
@@ -9529,7 +9534,8 @@
           "seriesWon": 1,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": 4
         },
         {
           "id": "DEN",
@@ -9541,7 +9547,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": 3
         },
         {
           "id": "LAC",
@@ -9553,7 +9560,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": true,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": null
         },
         {
           "id": "IND",
@@ -9565,7 +9573,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": null
         },
         {
           "id": "MIN",
@@ -9577,7 +9586,8 @@
           "seriesWon": 1,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": 6
         },
         {
           "id": "GSW",
@@ -9589,7 +9599,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": true,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": null
         },
         {
           "id": "MEM",
@@ -9601,7 +9612,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": null
         },
         {
           "id": "MIL",
@@ -9613,7 +9625,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": null
         },
         {
           "id": "DET",
@@ -9625,7 +9638,8 @@
           "seriesWon": 1,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": 1
         },
         {
           "id": "ORL",
@@ -9637,7 +9651,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": true,
-          "playInAdvanced": true
+          "playInAdvanced": true,
+          "playoffSeed": 8
         },
         {
           "id": "SAC",
@@ -9649,7 +9664,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": null
         },
         {
           "id": "ATL",
@@ -9661,7 +9677,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": 6
         },
         {
           "id": "DAL",
@@ -9673,7 +9690,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": null
         },
         {
           "id": "CHI",
@@ -9685,7 +9703,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": null
         },
         {
           "id": "MIA",
@@ -9697,7 +9716,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": true,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": null
         },
         {
           "id": "PHX",
@@ -9709,7 +9729,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": true,
-          "playInAdvanced": true
+          "playInAdvanced": true,
+          "playoffSeed": 8
         },
         {
           "id": "POR",
@@ -9721,7 +9742,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": true,
-          "playInAdvanced": true
+          "playInAdvanced": true,
+          "playoffSeed": 7
         },
         {
           "id": "SAS",
@@ -9733,7 +9755,8 @@
           "seriesWon": 1,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": 2
         },
         {
           "id": "TOR",
@@ -9745,7 +9768,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": 5
         },
         {
           "id": "BKN",
@@ -9757,7 +9781,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": null
         },
         {
           "id": "PHI",
@@ -9769,7 +9794,8 @@
           "seriesWon": 1,
           "draftPick": null,
           "playInParticipant": true,
-          "playInAdvanced": true
+          "playInAdvanced": true,
+          "playoffSeed": 7
         },
         {
           "id": "NOP",
@@ -9781,7 +9807,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": null
         },
         {
           "id": "CHA",
@@ -9793,7 +9820,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": true,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": null
         },
         {
           "id": "WAS",
@@ -9805,7 +9833,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": null
         },
         {
           "id": "UTA",
@@ -9817,7 +9846,8 @@
           "seriesWon": 0,
           "draftPick": null,
           "playInParticipant": false,
-          "playInAdvanced": false
+          "playInAdvanced": false,
+          "playoffSeed": null
         }
       ]
     }
