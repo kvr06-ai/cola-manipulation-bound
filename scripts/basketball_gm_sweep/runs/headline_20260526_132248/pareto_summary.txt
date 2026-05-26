@@ -1,0 +1,18 @@
+# Pareto-optimal configs (n=5 of 48). 3-objective universal dominance:
+#   max_years_between_conf_finals (LOWER), manipulation_gain_pct (LOWER), rank_one_to_five_spread (HIGHER)
+# Per-config summary = MEDIAN across 50 replicates (seeds 1000-1049, 30 simulated seasons each).
+# per_series_cost_typical is reported as a 4th disclosure column (NA for uncapped) but NOT a dominance dimension.
+#
+config_id	E	C	S	max_yrs_CF_med	max_yrs_CF_std	manip_pct_med	per_series_cost_typ_med	rank_spread_med
+11	14	150	reset-on-championship	27.00	2.71	2.1429	30.000	2.433
+19	22	null	reset-on-championship	26.00	3.31	18.1818		2.650
+26	22	150	bounded-30yr	28.00	2.57	1.3636	30.000	2.867
+31	22	200	reset-on-championship	27.50	2.76	1.3636	40.000	2.667
+45	16-tiered	200	unbounded	27.50	2.96	1.8750	40.000	2.700
+
+# Named-variant mapping
+Status quo NBA lottery	config_id=0	E=14	C=null	S=single-season	max_yrs_CF_med=28.50	max_yrs_CF_std=3.12	manip_pct=28.5714	per_series=n/a	rank_spread=2.767	[dominated]
+Classic COLA	config_id=1	E=14	C=null	S=unbounded	max_yrs_CF_med=27.50	max_yrs_CF_std=2.99	manip_pct=28.5714	per_series=n/a	rank_spread=2.367	[dominated]
+Simple COLA	config_id=17	E=22	C=null	S=unbounded	max_yrs_CF_med=29.00	max_yrs_CF_std=2.89	manip_pct=18.1818	per_series=n/a	rank_spread=2.667	[dominated]
+Capped@150	config_id=26	E=22	C=150	S=bounded-30yr	max_yrs_CF_med=28.00	max_yrs_CF_std=2.57	manip_pct=1.3636	per_series=30.000	rank_spread=2.867	[Pareto]
+3-2-1 proposal	config_id=32	E=16-tiered	C=null	S=single-season	max_yrs_CF_med=28.00	max_yrs_CF_std=2.40	manip_pct=25.0000	per_series=n/a	rank_spread=2.567	[dominated]
