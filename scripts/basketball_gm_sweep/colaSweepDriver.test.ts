@@ -78,23 +78,85 @@ function mulberry32(seed: number) {
 	};
 }
 
+// Box-Muller transform: convert two uniform[0,1) draws to one standard normal.
+function gaussian(rng: () => number): number {
+	let u1 = rng();
+	let u2 = rng();
+	// Avoid log(0).
+	if (u1 < 1e-12) u1 = 1e-12;
+	return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+}
+
+// ============================================================================
+// Persistent team-strength Markov model.
+//
+// Replaces the prior i.i.d. uniform[0.2, 0.6]-per-year strength refresh with
+// a persistent process tied to draft outcomes, so the feedback loop the
+// primary objective (max years between conference finals) measures is
+// preserved.
+//
+// Transition: strength_{t+1} = clip(
+//     rho * strength_t + (1-rho) * mu + alpha * pick_value(pick_t) + eps_t,
+//     0, 1)
+//   where eps_t ~ Normal(0, sigma^2). Parameters chosen for plausibility,
+//   not exact NBA-data fit; sensitivity on (rho, alpha, sigma) is future work.
+//
+// Tuned values: rho = 0.9 (persistence), mu = 0.5 (parity mean),
+//               alpha = 0.15 (per-draft impact), sigma = 0.05 (annual shock).
+// Initialization: strength_0 ~ Uniform[0.3, 0.7].
+//
+// Tuning notes (smoke test, config_id=1, 30 seasons, replicate seed=0):
+//   - rho=0.8, alpha=0.10 (initial defaults): max_gap=24, never_reached=0.
+//     Loop visible in CF-count variance (1..7) but not in the franchise-never-
+//     reached diagnostic.
+//   - rho=0.9, alpha=0.15: max_gap=30, never_reached=1. CF-count range 0..8.
+//     Adopted as the smoke baseline; loop manifests on both diagnostics.
+//   - rho=0.9, alpha=0.20, sigma=0.07: max_gap=22, never_reached=0. Larger
+//     draft impact over-corrects (#1 picks pull bad teams up too fast),
+//     compressing the gap distribution. Rejected.
+// ============================================================================
+
+const MARKOV_RHO = 0.9;
+const MARKOV_MU = 0.5;
+const MARKOV_ALPHA = 0.15;
+const MARKOV_SIGMA = 0.05;
+
+function pickValue(pick: number | null): number {
+	// Monotonically decreasing in pick number; picks 1..15 contribute
+	// positively, pick 16+ contributes zero. Pick 1 -> full alpha; pick 15 -> 0.
+	if (pick === null || pick === undefined) return 0;
+	return Math.max(0, (16 - pick) / 15);
+}
+
+function transitionStrength(
+	prevStrength: number,
+	prevDraftPick: number | null,
+	rng: () => number,
+): number {
+	const meanReversion = MARKOV_RHO * prevStrength + (1 - MARKOV_RHO) * MARKOV_MU;
+	const draftBoost = MARKOV_ALPHA * pickValue(prevDraftPick);
+	const shock = MARKOV_SIGMA * gaussian(rng);
+	const next = meanReversion + draftBoost + shock;
+	return Math.max(0, Math.min(1, next));
+}
+
 // ============================================================================
 // Synthetic regular-season + playoff bracket.
 //
-// For each franchise, draw a season "strength" from a mild parity distribution.
-// Convert to wins, sort within conference, top 8 enter playoffs, lottery teams
-// are the rest. Walk a single-elimination bracket with probability proportional
-// to relative strength (no home-court adjustment, no injuries, no mid-season
-// trades — those are not what the paper's dial space controls).
+// Strength is supplied externally and persists across seasons (see Markov
+// model above). Convert to wins, sort within conference, top 8 enter playoffs,
+// lottery teams are the rest. Walk a single-elimination bracket with
+// probability proportional to relative strength (no home-court adjustment,
+// no injuries, no mid-season trades — those are not what the paper's dial
+// space controls).
 // ============================================================================
 
 function simulateSeasonOutcomes(
 	rng: () => number,
 	teams: { tid: number; cid: number }[],
+	strength: number[],
 ): { wins: number; playoffRoundsWon: number; tid: number; cid: number }[] {
 	const NUM_TEAMS = teams.length;
-	// Strength: gamma-like proxy. 0..1, mean 0.5.
-	const strength = teams.map(() => 0.2 + rng() * 0.6);
 	// Wins out of 82, scaled by strength relative to league mean, with noise.
 	const meanStrength = strength.reduce((a, b) => a + b, 0) / NUM_TEAMS;
 	const wins = strength.map((s, i) => {
@@ -448,6 +510,15 @@ test("ZenGM COLA sweep driver: one config, N seasons", async () => {
 		cid: t.cid,
 	}));
 
+	// Persistent team strength, indexed by tid. Initialized Uniform[0.3, 0.7]
+	// (narrower than the prior i.i.d. Uniform[0.2, 0.6] refresh so the league
+	// starts near parity); evolved each season by transitionStrength() using
+	// the prior season's draft pick (see Markov model docstring above).
+	const persistentStrength: number[] = new Array(NUM_TEAMS).fill(0);
+	for (const t of teamsForRng) {
+		persistentStrength[t.tid] = 0.3 + rng() * 0.4;
+	}
+
 	const seasonLog: SeasonEntry[] = [];
 	const historyByTid: Record<number, { season: number; cola: number }[]> = {};
 
@@ -455,8 +526,13 @@ test("ZenGM COLA sweep driver: one config, N seasons", async () => {
 		const currentSeason = START_SEASON + s;
 		g.setWithoutSavingToDB("season", currentSeason);
 
-		// 1. Simulate season outcomes (wins + playoff bracket).
-		const outcomes = simulateSeasonOutcomes(rng, teamsForRng);
+		// 1. Simulate season outcomes (wins + playoff bracket) using the
+		// persistent strength vector — see Markov model above.
+		const outcomes = simulateSeasonOutcomes(
+			rng,
+			teamsForRng,
+			persistentStrength,
+		);
 		await appendTeamSeasons(currentSeason, outcomes);
 
 		// 2. Apply carry-over scope (dial S) BEFORE the COLA update.
@@ -516,6 +592,19 @@ test("ZenGM COLA sweep driver: one config, N seasons", async () => {
 			})),
 		};
 		seasonLog.push(entry);
+
+		// 9. Markov transition: evolve each team's strength based on the
+		// season's draft pick. Higher picks (lower pick number) push strength
+		// up toward the long-run mean plus draft boost; lottery shocks add
+		// year-to-year variability. Picks 16+ contribute zero (pickValue=0).
+		for (const t of teamsForRng) {
+			const pick = draftPickByTid[t.tid] ?? null;
+			persistentStrength[t.tid] = transitionStrength(
+				persistentStrength[t.tid]!,
+				pick,
+				rng,
+			);
+		}
 	}
 
 	fs.writeFileSync(outputPath, JSON.stringify(seasonLog, null, 2));

@@ -131,8 +131,47 @@ and mocks `self`/`window`. The driver:
    - Applies cap clamp (dial C) by clipping team.cola to ≤ C.
    - Calls **real ZenGM** `draft.genOrder(mock=true)` for the lottery.
    - Calls **real ZenGM** `cola.updateLotteryChancesAfterLottery(top4)`.
+   - Updates each team's persistent strength via the Markov transition
+     below (the prior season's draft pick feeds the strength update).
 3. Returns the per-season `{tid, conf, wins, playoffRoundsWon, draftPick,
    cola}` array as JSON.
+
+### Simulation model
+
+Team strength persists across seasons via a Markov process tied to
+draft outcomes. For each team:
+
+```
+strength_{t+1} = clip(
+    rho * strength_t                       # persistence
+    + (1 - rho) * mu                       # mean reversion toward parity
+    + alpha * pick_value(draft_pick_t)     # draft-pick boost
+    + eps_t,                               # annual shock
+    0, 1
+)
+eps_t ~ Normal(0, sigma^2)
+pick_value(p) = max(0, (16 - p) / 15)      # pick 1 -> 1.0, pick 15 -> 0, 16+ -> 0
+```
+
+Tuned parameters (set in `colaSweepDriver.test.ts`):
+
+| Param | Value | Role |
+|---|---|---|
+| `rho`   | 0.9  | persistence / autocorrelation |
+| `mu`    | 0.5  | long-run parity mean |
+| `alpha` | 0.15 | per-draft impact |
+| `sigma` | 0.05 | annual shock standard deviation |
+
+Initial state: `strength_0 ~ Uniform[0.3, 0.7]` per team.
+
+Calibration philosophy: parameters were chosen for plausibility and
+tuned so the smoke test's per-team CF-gap distribution disperses
+relative to the prior i.i.d. uniform baseline (see `ASSUMPTIONS.md` Z-2
+for the tuning trace). They are not fit to historical NBA team-strength
+trajectories; sensitivity analysis on `(rho, alpha, sigma)` is future
+work. The model preserves the feedback loop the primary objective
+measures (lottery position → draft pick → next-season strength) without
+claiming quantitative accuracy.
 
 See `ASSUMPTIONS.md` for the full list of engine/dial/objective
 assumptions and `ASSUMPTIONS_FOR_HIGHLEY.md` for the policy-relevant

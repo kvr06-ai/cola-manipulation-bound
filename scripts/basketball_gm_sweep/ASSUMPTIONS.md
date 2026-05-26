@@ -26,16 +26,38 @@ colaSweepDriver.test.ts:194) that zeros the COLA index of R1-loser teams
 before the lottery draw, making them effectively ineligible while leaving
 ZenGM's source untouched.
 
-**Z-2. Player-strength model is ZenGM's, accepted as exogenous.**
+**Z-2. Team-strength model is a persistent Markov process tied to draft outcomes.**
 We do not run ZenGM's full game-by-game simulation in the Node driver (that
 requires a browser-side `createLeague()` invocation; see Z-3). Instead, we
-synthesize per-season win records via a parity model
-(`simulateSeasonOutcomes`, colaSweepDriver.test.ts:84): each team draws a
-strength in [0.2, 0.6], converted to wins around mean 41 with ±18 wins
-tilt. Bracket outcomes are sampled with `P(A beats B) = strength_A /
-(strength_A + strength_B)`. This omits ZenGM's contracts/trades/injuries —
-which the paper's dial space does not control — but matches ZenGM's
-top-heavy-but-noisy parity profile.
+synthesize per-season win records from a per-team strength variable that
+persists across seasons (`simulateSeasonOutcomes` +
+`transitionStrength` in colaSweepDriver.test.ts). The transition is
+
+    strength_{t+1} = clip(rho * strength_t + (1 - rho) * mu
+                          + alpha * pick_value(draft_pick_t)
+                          + eps_t,
+                          0, 1)
+
+with `eps_t ~ Normal(0, sigma^2)`. Pick value is monotone-decreasing in
+pick number, `pick_value(p) = max(0, (16 - p) / 15)` (pick 1 contributes
+full alpha, pick 15 contributes zero, picks 16+ contribute zero). Tuned
+parameters: rho=0.9 (persistence), mu=0.5 (parity mean), alpha=0.15
+(per-draft impact), sigma=0.05 (annual shock). Initial strength
+~ Uniform[0.3, 0.7]. Strength is converted to wins around a mean of 41
+with a ±18-win tilt; bracket outcomes are sampled with
+`P(A beats B) = strength_A / (strength_A + strength_B)`.
+
+Rationale: the prior i.i.d. Uniform[0.2, 0.6] refresh broke the feedback
+loop the primary objective (max years between conference finals) is
+designed to measure. With i.i.d. refresh, every franchise reaches the CF
+across a 30-season horizon by chance, and the per-team CF-count
+distribution is tight. The Markov model restores the link between draft
+outcomes and subsequent team quality, which is the mechanism COLA is
+designed to manage. Calibration philosophy: parameters chosen for
+plausibility, not exact NBA-data fit. Documented limitations in L-Z2 below.
+
+The model still omits ZenGM's contracts/trades/injuries, which the paper's
+dial space does not control.
 
 **Z-3. Regular-season game simulation is bypassed.**
 ZenGM's `actions.playAmount('untilDraft')` requires a fully constructed
@@ -226,13 +248,16 @@ the headline 48×50 run (~2,400 vitest invocations), batching multiple
 replicates per vitest invocation would cut wall time materially. This
 optimization is left for the headline pass.
 
-**S-6. No seasonal aging, regression, or roster turnover.**
-Each season independently draws strength values. There is no
-year-over-year continuity in team strength — equivalent to assuming a
-flat parity model with full-strength variance refresh annually. ZenGM's
-real game engine would have aging curves and salary-cap-driven turnover;
-we accept the simpler model since the dial space tests the lottery
-mechanism, not roster-construction dynamics.
+**S-6. Team strength persists across seasons via a Markov model tied to draft outcomes.**
+See Z-2 for the transition equation and parameter values. Team strength
+is initialized from Uniform[0.3, 0.7] at t=0 and updated each season as
+a function of the prior season's strength, the prior season's draft
+pick value, and a Normal shock. This replaces the earlier i.i.d.
+Uniform[0.2, 0.6] refresh; aging curves, free agency, and trades are
+still abstracted into the single strength variable. The dial space
+tests the lottery mechanism, not roster-construction dynamics, but the
+feedback loop (lottery position → draft pick → next-season strength)
+that the primary objective measures is now wired in.
 
 ---
 
@@ -378,6 +403,37 @@ season's cycle.
 genOrder.ts:349-355: `logLotteryChances` / `logLotteryWinners` are
 skipped under `mock=true`. The driver does not depend on UI
 notification side effects.
+
+---
+
+## 9. Limitations
+
+**L-Z2. Strength Markov model is parametrically calibrated, not fit to
+historical NBA team-strength trajectories.**
+The (rho, alpha, sigma) values were tuned on the Classic-COLA smoke
+config so that the per-team CF-gap distribution dispersed (max gap 22 →
+28, occasional franchises with zero CF appearances over 30 years)
+relative to the prior i.i.d. baseline. They were not estimated from
+NBA team-strength time series, ratings-system rankings, or any other
+empirical anchor. Sensitivity analysis on (rho, alpha, sigma), and a
+formal calibration against either NBA SRS / Elo trajectories or
+Basketball Reference SoS data, is future work.
+
+**L-Z3. Lottery-draw nondeterminism propagates into the strength
+trajectory.**
+Per S-3, ZenGM's lottery draw uses an unseeded `Math.random`, so the
+draft pick assigned to each team is nondeterministic across replicates
+even when the mulberry32 seed is fixed. Under the prior i.i.d. strength
+model this nondeterminism was confined to the `draftPick` field of one
+season; under the Markov model it now feeds into next season's strength
+via the alpha * pick_value term, so two runs with identical seeds can
+produce materially different `max_years_between_conf_finals` (observed
+range 22-30 across 5 single-replicate smoke runs). Headline runs use
+multiple replicates per config, so this nondeterminism is absorbed into
+the Monte Carlo error bar; the smoke test should be interpreted as a
+single random draw, not a deterministic baseline. Dependency-injecting
+ZenGM's random source is tracked as future work (README "Next-session
+work" item 1).
 
 ---
 

@@ -30,15 +30,31 @@ of the resulting Pareto frontier.
    ρ = playoff-success-linear vs. step), we should add it before locking
    the run.
 
-3. **The lottery mechanism is real ZenGM; regular-season game simulation
-   is synthesized (strength-weighted win records + single-elimination
-   bracket).** ZenGM's full game engine (`actions.playAmount`) requires
-   a browser-side `createLeague()` invocation that is impractical to
-   port to Node. The synthesis preserves the parity profile but
-   bypasses contracts/trades/injuries — none of which the dial space
-   controls. The objective being measured (max years between conference
-   finals) depends only on win records and bracket outcomes, both of
-   which the synthesis produces.
+3. **The lottery mechanism is real ZenGM; regular-season game outcomes
+   are synthesized AND team strength persists across seasons via a
+   Markov model tied to draft outcomes.** ZenGM's full game engine
+   (`actions.playAmount`) requires a browser-side `createLeague()`
+   invocation that is impractical to port to Node. The synthesis
+   bypasses contracts/trades/injuries (none of which the dial space
+   controls) but preserves the feedback loop the primary objective
+   measures by evolving team strength via
+
+       strength_{t+1} = clip(rho * strength_t + (1 - rho) * mu
+                             + alpha * pick_value(pick_t) + eps_t,
+                             0, 1)
+
+   with `eps_t ~ Normal(0, sigma^2)`. Tuned parameters:
+   rho=0.9 (persistence), mu=0.5 (parity mean), alpha=0.15 (per-draft
+   impact), sigma=0.05 (annual shock). Initial strength
+   ~ Uniform[0.3, 0.7]. The pick-value function is monotone-decreasing
+   in pick number (`max(0, (16-p)/15)`): pick 1 gives a full +alpha
+   boost, pick 15 gives zero, picks 16+ give zero. Parameters were
+   tuned on the Classic-COLA smoke config so that the per-team CF-gap
+   distribution dispersed relative to the prior i.i.d. baseline (max
+   gap 22 → 28+, occasional franchises now never reach CF in 30 years
+   under a single replicate). Calibration is parametric, not fit to
+   historical NBA team-strength trajectories; sensitivity on (rho,
+   alpha, sigma) is future work.
 
 4. **30-year simulation horizon for the smoke; 50-year horizon for the
    headline; 50 replicates per configuration at the headline.** 30 years
@@ -56,14 +72,21 @@ of the resulting Pareto frontier.
    historical anchoring, forward-sim for the Pareto frontier across
    counterfactual dial settings.
 
-6. **Player-strength model is synthesized (uniform[0.2, 0.6] per season,
-   refreshed annually), not inherited from ZenGM's player generation.**
-   No year-over-year team-strength continuity: a team's parity profile
-   is drawn fresh each season. Real NBA has aging curves and
-   rebuilds-on-rebuilds; the dial space controls the lottery, not roster
-   dynamics, so we accept this. If the headline frontier looks
-   suspiciously parity-friendly at high-S, this is a candidate
-   confound to revisit.
+6. **Lottery-draw nondeterminism propagates into the strength
+   trajectory under the Markov model.** ZenGM's lottery draw uses an
+   unseeded `Math.random` (the driver's mulberry32 only seeds the
+   synthetic season/bracket sim). Under the prior i.i.d. strength
+   model that nondeterminism was confined to the per-season draftPick
+   field; under the Markov model in item 3, the draft pick feeds into
+   next season's strength, so two single-replicate runs with identical
+   mulberry32 seeds can produce materially different
+   `max_years_between_conf_finals` (observed range 22-30 across five
+   smoke runs of the Classic-COLA config). The headline run uses
+   multiple replicates per config so this nondeterminism is absorbed
+   into Monte Carlo error bars; single-replicate smoke results should
+   be read as one random draw, not as a deterministic baseline.
+   Dependency-injecting ZenGM's random source is tracked as a
+   known-future-work item.
 
 7. **License compliance: source-available private research use only.**
    The cloned `kvr06-ai/zengm` fork is gitignored from the public paper
