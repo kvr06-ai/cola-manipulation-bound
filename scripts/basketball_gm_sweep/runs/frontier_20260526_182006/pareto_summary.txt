@@ -1,0 +1,12 @@
+# Pareto-optimal configs (n=3 of 48). Uncapped Pareto computed in 3-objective space; capped Pareto computed in 4-objective space. Dominance NOT compared across capped/uncapped.
+config_id	E	C	S	max_yrs_CF	manip_bound	per_series_cost_typ	rank1to5_spread
+18	22	null	bounded-30yr	24	1.1818		3.067
+32	16-tiered	null	single-season	30	1.2500		3.433
+37	16-tiered	100	unbounded	22	20.0000	20.000	3.500
+
+# Named-variant mapping (E, C, S match in grid)
+Status quo NBA lottery	config_id=0	E=14	C=null	S=single-season	max_yrs_CF=30	manip=1.2857	per_series=n/a	rank_spread=2.667	[dominated]
+Classic COLA	config_id=1	E=14	C=null	S=unbounded	max_yrs_CF=29	manip=1.2857	per_series=n/a	rank_spread=2.733	[dominated]
+Simple COLA	config_id=17	E=22	C=null	S=unbounded	max_yrs_CF=26	manip=1.1818	per_series=n/a	rank_spread=2.667	[dominated]
+Capped@150	config_id=26	E=22	C=150	S=bounded-30yr	max_yrs_CF=30	manip=30.0000	per_series=30.000	rank_spread=2.933	[dominated]
+3-2-1 proposal	config_id=32	E=16-tiered	C=null	S=single-season	max_yrs_CF=30	manip=1.2500	per_series=n/a	rank_spread=3.433	[Pareto]

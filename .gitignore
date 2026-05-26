@@ -7,8 +7,15 @@ build/
 
 # Basketball-GM sweep: local zengm fork (separate repo, not tracked here)
 scripts/basketball_gm_sweep/zengm-fork/
-scripts/basketball_gm_sweep/runs/
 scripts/basketball_gm_sweep/node_modules/
+# Sweep artifacts: ignore transient smoke/normal runs by file pattern (not the
+# whole directory) so named runs like runs/frontier_* and runs/headline_* can
+# be tracked when we want a permanent record.
+scripts/basketball_gm_sweep/runs/sweep_*.csv
+scripts/basketball_gm_sweep/runs/_driver_out_*.json
+scripts/basketball_gm_sweep/runs/*/cfg_*.log
+scripts/basketball_gm_sweep/runs/*/raw_cfg_*.csv
+scripts/basketball_gm_sweep/runs/*/failures.log
 
 # LaTeX build artifacts
 paper/main.pdf
