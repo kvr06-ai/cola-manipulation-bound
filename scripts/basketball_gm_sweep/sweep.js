@@ -1,30 +1,38 @@
 #!/usr/bin/env node
 /**
- * Basketball-GM COLA sweep driver (Track B scaffold).
+ * Basketball-GM COLA sweep driver.
  *
  * Reads `dial_grid.json`, expands the 7-dial grid into 48 configurations,
- * invokes the zengm engine headlessly for each (config, season), parses the
- * per-season output, evaluates the four objectives (objectives.js), and
- * aggregates one CSV row per (config_id, replicate_id, season).
+ * invokes the zengm engine headlessly for each (config, replicate), parses
+ * the per-season output, evaluates the four objectives (objectives.js), and
+ * aggregates one CSV row per (config_id, replicate_id).
  *
- * STATUS (Track B scaffold, 2026-05-26):
+ * STATUS (Track B real-engine driver, 2026-05-26):
  *   - Grid expansion: implemented.
- *   - zengm invocation: STUB. Headless invocation of the full season+playoffs+
- *     draft pipeline requires a Node-side driver that mocks browser globals,
- *     loads src/worker/index.ts (via vitest's setup pattern), and steps the
- *     game phases manually. See DIAL_MAPPING.md for the engineering ticket.
+ *   - zengm invocation: REAL. Drives `zengm-fork/src/worker/core/draft/
+ *     colaSweepDriver.test.ts` via vitest. The driver bootstraps a 30-team
+ *     league directly into the mocked IDB cache, synthesizes season outcomes
+ *     (wins + playoff bracket), then invokes real ZenGM `cola.updateLottery
+ *     ChancesAfterPlayoffs`, `draft.genOrder`, and `cola.updateLotteryChances
+ *     AfterLottery` for each simulated season. The `--stub` flag keeps the
+ *     synthetic-season path available for fast pipeline checks.
  *   - Objective evaluation: implemented (objectives.js).
  *   - CSV output: implemented.
  *
- * USAGE (once zengm headless driver is plumbed):
- *   node sweep.js --config-id 0 --replicates 50 --seasons 30
- *   node sweep.js --full          # all 48 configs * 50 seasons
- *   node sweep.js --smoke         # one config, one season (for verification)
+ * USAGE:
+ *   node sweep.js --smoke                    # one config, one replicate, real engine
+ *   node sweep.js --smoke --stub             # one config, one replicate, stub engine
+ *   node sweep.js --config-id 0 --replicates 50
+ *   node sweep.js --full                     # all 48 configs * 50 replicates
  */
 
 const fs = require('fs');
 const path = require('path');
+const child_process = require('child_process');
 const { evaluateAll } = require('./objectives.js');
+
+const ZENGM_FORK_DIR = path.join(__dirname, 'zengm-fork');
+const DRIVER_TEST_REL = 'src/worker/core/draft/colaSweepDriver.test.ts';
 
 // =============================================================================
 // 1. Grid expansion: dial_grid.json -> 48 explicit configurations.
@@ -64,29 +72,78 @@ function loadGrid(gridPath) {
 }
 
 // =============================================================================
-// 2. zengm invocation (STUB).
+// 2. zengm invocation: REAL engine driver via vitest subprocess.
 //
-// The zengm simulator is a browser-targeted Web Worker app. Reaching it
-// headlessly requires one of three approaches (see DIAL_MAPPING.md):
+// We invoke `colaSweepDriver.test.ts` inside the zengm-fork via the project's
+// own vitest CLI. That harness uses zengm's `src/test/setup.ts` to populate
+// `self.bbgm` in Node (the same setup `genOrderNBA.test.ts` relies on). The
+// driver reads its config from COLA_DRIVER_CONFIG and writes a season log to
+// COLA_DRIVER_OUTPUT.
 //
-//   (a) Vitest node-environment driver: load src/worker/index.ts with the
-//       fake-indexeddb shim (zengm-fork/src/test/setup.ts) and step game
-//       phases manually via the worker API. Existing genOrderNBA.test.ts
-//       exercises the lottery in this mode but not full-season sims.
+// Engine pieces used (REAL):
+//   - cola.updateLotteryChancesAfterPlayoffs  (zengm-fork/src/worker/core/draft/cola.ts)
+//   - cola.updateLotteryChancesAfterLottery   (zengm-fork/src/worker/core/draft/cola.ts)
+//   - draft.genOrder(mock=true)               (zengm-fork/src/worker/core/draft/genOrder.ts)
 //
-//   (b) Playwright e2e driver: spin up the dev server (`node --run dev`),
-//       drive the UI via Playwright, intercept league state via window
-//       globals. Higher overhead but no source modifications needed.
+// Synthesized in the driver (NOT real ZenGM game simulation):
+//   - Per-season wins (strength-weighted random + noise)
+//   - Single-elimination bracket outcomes (probability proportional to strength)
+//   - Player generation, salary cap, trades, free agency: all bypassed
 //
-//   (c) Engine extraction: peel the simulation core (regular-season game
-//       sim + playoff bracket + draft) into a standalone Node module. This
-//       is the cleanest long-term path; substantial engineering ticket.
-//
-// For Track B scaffold, this stub returns a synthetic season log so the
-// downstream pipeline (objectives + CSV) is testable end-to-end.
+// Dials applied via local patches in the driver (no source modification):
+//   - E (eligibility): cola=0 mask on ineligible teams before genOrder
+//   - C (cap):         Math.min(cola, C) clamp after updateLotteryChancesAfterPlayoffs
+//   - S (carry-over):  pre-update zero / window-replay / champion-reset
+//   - Δ, ρ, W, T:      Classic defaults, baked into ZenGM cola.ts (PLAYOFF_FACTORS,
+//                      DRAFT_LOTTERY_FACTORS, COLA_ALPHA, lottery chance computation).
 // =============================================================================
 
-function runZengmSeason(config, replicate, seed) {
+function runZengmSeasonReal(config, replicateSeed) {
+    const driverConfig = {
+        id: config.id,
+        E: config.E,
+        C: config.C,
+        S: config.S,
+        delta: config.delta,
+        rho: config.rho,
+        W: config.W,
+        T: config.T,
+        seasons: config.seasons,
+        seed: replicateSeed,
+    };
+    const outputPath = path.join(__dirname, 'runs', `_driver_out_${process.pid}_${replicateSeed}.json`);
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+
+    const env = Object.assign({}, process.env, {
+        COLA_DRIVER_CONFIG: JSON.stringify(driverConfig),
+        COLA_DRIVER_OUTPUT: outputPath,
+    });
+
+    // Run vitest with only this single test file scoped to the basketball
+    // project. `--passWithNoTests=false` + `--silent=passed-only` keeps the
+    // output manageable.
+    const result = child_process.spawnSync(
+        path.join(ZENGM_FORK_DIR, 'node_modules/.bin/vitest'),
+        ['--run', '--project', 'basketball', DRIVER_TEST_REL],
+        { cwd: ZENGM_FORK_DIR, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+    );
+
+    if (result.status !== 0) {
+        console.error('vitest stdout:\n' + result.stdout);
+        console.error('vitest stderr:\n' + result.stderr);
+        throw new Error(`zengm driver exited with status ${result.status}`);
+    }
+    if (!fs.existsSync(outputPath)) {
+        console.error('vitest stdout:\n' + result.stdout);
+        throw new Error(`zengm driver produced no output at ${outputPath}`);
+    }
+
+    const seasonLog = JSON.parse(fs.readFileSync(outputPath, 'utf8'));
+    fs.unlinkSync(outputPath);
+    return seasonLog;
+}
+
+function runZengmSeasonStub(config, replicate, seed) {
     // TODO: replace with real zengm invocation. See above for three approaches.
     // The stub fabricates one season's worth of team-result records, sufficient
     // for objectives.js to compute non-NaN outputs in the scaffold smoke test.
@@ -224,12 +281,15 @@ function shuffle(arr, rng) {
 // 4. Main driver: iterate configs, run replicates, aggregate, write CSV.
 // =============================================================================
 
-function runSweep({ gridPath, outPath, configIdsToRun, replicates, mode }) {
+function runSweep({ gridPath, outPath, configIdsToRun, replicates, mode, useStub, seasonsOverride }) {
     const { configs } = loadGrid(gridPath);
 
-    const targetConfigs = (configIdsToRun === 'all')
+    let targetConfigs = (configIdsToRun === 'all')
         ? configs
         : configs.filter(c => configIdsToRun.includes(c.id));
+    if (seasonsOverride !== undefined) {
+        targetConfigs = targetConfigs.map(c => ({ ...c, seasons: seasonsOverride }));
+    }
 
     const csvHeader = [
         'config_id', 'replicate_id', 'E', 'C', 'S', 'delta', 'seasons',
@@ -246,14 +306,23 @@ function runSweep({ gridPath, outPath, configIdsToRun, replicates, mode }) {
     const rows = [csvHeader.join(',')];
     let runIdx = 0;
 
+    console.log(`Sweep mode=${mode} useStub=${useStub} configs=${targetConfigs.length} replicates/config=${replicates}`);
+
     for (const config of targetConfigs) {
         for (let rep = 0; rep < replicates; rep++) {
-            // Build the season log for one replicate (one full simulation run
-            // of `config.seasons` seasons).
-            const seasonLog = [];
-            for (let s = 0; s < config.seasons; s++) {
-                const seasonEntry = runZengmSeason(config, rep * config.seasons + s, 42);
-                seasonLog.push(seasonEntry);
+            let seasonLog;
+            if (useStub) {
+                // Stub path: synthesize each season independently (no carry-over).
+                seasonLog = [];
+                for (let s = 0; s < config.seasons; s++) {
+                    seasonLog.push(runZengmSeasonStub(config, rep * config.seasons + s, 42));
+                }
+            } else {
+                // Real path: a single vitest subprocess produces the full
+                // N-season seasonLog (preserves COLA carry-over).
+                const t0 = Date.now();
+                seasonLog = runZengmSeasonReal(config, rep);
+                console.log(`  [real] config=${config.id} rep=${rep} seasons=${config.seasons} elapsed=${((Date.now() - t0) / 1000).toFixed(1)}s`);
             }
             const result = evaluateAll(config, seasonLog);
 
@@ -294,10 +363,11 @@ function runSweep({ gridPath, outPath, configIdsToRun, replicates, mode }) {
 // =============================================================================
 
 function parseArgs(argv) {
-    const args = { mode: 'normal', configIds: 'all', replicates: 1 };
+    const args = { mode: 'normal', configIds: 'all', replicates: 1, useStub: false };
     for (let i = 2; i < argv.length; i++) {
         if (argv[i] === '--smoke') args.mode = 'smoke';
         else if (argv[i] === '--full') args.mode = 'full';
+        else if (argv[i] === '--stub') args.useStub = true;
         else if (argv[i] === '--config-id') args.configIds = [parseInt(argv[++i], 10)];
         else if (argv[i] === '--replicates') args.replicates = parseInt(argv[++i], 10);
         else if (argv[i] === '--seasons') args.seasonsOverride = parseInt(argv[++i], 10);
@@ -313,6 +383,11 @@ if (require.main === module) {
     let replicates = args.replicates;
     if (args.mode === 'full') replicates = 50;
     if (args.mode === 'smoke') replicates = 1;
+    // For smoke runs, default to 30-year horizon (per Track B smoke spec).
+    // For full runs, dial_grid.json provides 50; sensitivity sweeps override.
+    if (args.mode === 'smoke' && args.seasonsOverride === undefined) {
+        args.seasonsOverride = 30;
+    }
 
     runSweep({
         gridPath,
@@ -320,7 +395,9 @@ if (require.main === module) {
         configIdsToRun: args.configIds,
         replicates,
         mode: args.mode,
+        useStub: args.useStub,
+        seasonsOverride: args.seasonsOverride,
     });
 }
 
-module.exports = { loadGrid, runZengmSeason, runSweep };
+module.exports = { loadGrid, runZengmSeasonReal, runZengmSeasonStub, runSweep };

@@ -22,15 +22,26 @@ session).
 
 ```
 basketball_gm_sweep/
-├── README.md              # this file
-├── DIAL_MAPPING.md        # zengm internals -> 7-dial taxonomy
-├── dial_grid.json         # 48-configuration grid spec
-├── sweep.js               # main driver (loads grid, invokes engine, writes CSV)
-├── objectives.js          # primary + 3 secondary objective functions
-├── zengm-fork/            # local clone of kvr06-ai/zengm (GITIGNORED)
-├── patches/               # per-config patch files (to be generated; see DIAL_MAPPING.md)
-└── runs/                  # CSV outputs per sweep run (GITIGNORED)
+├── README.md                       # this file
+├── DIAL_MAPPING.md                 # zengm internals -> 7-dial taxonomy
+├── ASSUMPTIONS.md                  # comprehensive testbed assumptions
+├── ASSUMPTIONS_FOR_HIGHLEY.md      # distilled, policy-relevant assumptions
+├── dial_grid.json                  # 48-configuration grid spec
+├── sweep.js                        # main driver (loads grid, invokes engine, writes CSV)
+├── objectives.js                   # primary + 3 secondary objective functions
+├── colaSweepDriver.test.ts         # versioned copy of the zengm-side driver
+├── zengm-fork/                     # local clone of kvr06-ai/zengm (GITIGNORED)
+│   └── src/worker/core/draft/
+│       └── colaSweepDriver.test.ts # driver location at runtime (synced from above)
+└── runs/                           # CSV outputs per sweep run (GITIGNORED)
 ```
+
+The driver test file (`colaSweepDriver.test.ts`) is committed at the parent
+level as a versioned copy; at run time it must live inside the zengm-fork at
+`zengm-fork/src/worker/core/draft/colaSweepDriver.test.ts` for vitest to
+discover it (the project includes/excludes are anchored to the fork's source
+tree). Re-clone protocol: after cloning zengm-fork, copy the parent-level
+driver into the fork.
 
 ## Dial grid
 
@@ -75,8 +86,11 @@ Per `objectives.js`:
 ## How to run
 
 ```bash
-# Smoke test (one config, one season, stub engine)
-node sweep.js --smoke
+# Smoke test (one config, 30 simulated seasons, REAL engine)
+node sweep.js --smoke --config-id 1
+
+# Smoke test with synthetic-season stub (fast pipeline check)
+node sweep.js --smoke --stub --config-id 1
 
 # Single configuration (config_id = N) for `R` replicates
 node sweep.js --config-id 0 --replicates 50
@@ -88,35 +102,56 @@ node sweep.js --full
 Output: CSV per run in `runs/sweep_${mode}_${timestamp}.csv`. One row per
 `(config_id, replicate_id)`.
 
-## Status (Track B scaffold, 2026-05-26)
+## Status (Track B real-engine driver, 2026-05-26)
 
 | Component | Status |
 |---|---|
 | Grid expansion (`dial_grid.json` → 48 explicit configs) | Implemented |
 | Objective functions (`objectives.js`) | Implemented |
 | CSV aggregator | Implemented |
-| zengm headless invocation (`runZengmSeason`) | **STUB** — see `DIAL_MAPPING.md` for the engineering ticket |
-| Per-config dial patches in `patches/` | Not yet generated |
-| Full sweep run | Blocked on the above two items |
+| zengm headless invocation | **REAL** — `zengm-fork/src/worker/core/draft/colaSweepDriver.test.ts` |
+| Runtime dial application (E, C, S) | Implemented in driver (no source patches needed) |
+| Smoke test (Classic, 30 seasons, 1 replicate) | Passing |
+| Full sweep (48 × 50) | Ready; cost ≈ 48×50×3s ≈ 2hr at current per-replicate overhead |
 
-## Blockers and next-session work
+## Engine driver details
 
-1. **Headless season driver.** ZenGM runs in a browser Web Worker. The
-   recommended path is a Vitest node-environment driver that loads
-   `src/worker/index.ts` with `fake-indexeddb`, then steps annual phases
-   via the worker API. Existing tests exercise lottery generation but
-   not full-season simulation. See `DIAL_MAPPING.md` for the three
-   approaches (Vitest, Playwright, engine extraction).
+The driver lives at `zengm-fork/src/worker/core/draft/colaSweepDriver.test.ts`
+and is invoked as a vitest subprocess. It uses ZenGM's own test-setup
+file (`zengm-fork/src/test/setup.ts`) which provides `fake-indexeddb`
+and mocks `self`/`window`. The driver:
 
-2. **Dial patches.** Only `draftType` is exposed via `gameAttributes`.
-   Every dial except T requires modifying source files. Build a
-   patch-file generator in `patches/` that emits one diff per config
-   against the COLA implementation in `src/worker/core/draft/cola.ts`.
+1. Bootstraps a 30-team league directly into the mocked IDB cache
+   (bypassing `createLeague()`, which is browser-coupled).
+2. For each simulated season:
+   - Synthesizes wins + playoff bracket outcomes (strength-weighted).
+   - Applies carry-over scope (dial S) by zeroing/clamping team.cola.
+   - Applies eligibility mask (dial E) by zeroing R1-loser team.cola.
+   - Calls **real ZenGM** `cola.updateLotteryChancesAfterPlayoffs()`.
+   - Applies cap clamp (dial C) by clipping team.cola to ≤ C.
+   - Calls **real ZenGM** `draft.genOrder(mock=true)` for the lottery.
+   - Calls **real ZenGM** `cola.updateLotteryChancesAfterLottery(top4)`.
+3. Returns the per-season `{tid, conf, wins, playoffRoundsWon, draftPick,
+   cola}` array as JSON.
 
-3. **Run budget.** 2,400 simulated seasons. ZenGM's typical
-   browser-side season takes seconds to tens of seconds depending on
-   league size; under Node + fake IDB the throughput should be
-   comparable. Budget: 4–12 hours of wall-clock for the full sweep.
+See `ASSUMPTIONS.md` for the full list of engine/dial/objective
+assumptions and `ASSUMPTIONS_FOR_HIGHLEY.md` for the policy-relevant
+distillation.
+
+## Next-session work
+
+1. **Lottery-draw determinism.** ZenGM's lottery draw uses `randInt` from
+   `src/common/random.ts`, which calls Node's `Math.random` and is not
+   seeded by our driver. To make lottery outcomes reproducible we need
+   to override ZenGM's random source via dependency injection.
+
+2. **Replicate batching.** Current overhead is ~3 s per replicate
+   (vitest startup + driver). For the headline 48 × 50 run, batching
+   multiple replicates per subprocess would cut wall time materially.
+
+3. **Per-config patch files.** If we later need to sweep ρ / W / T,
+   we'll need to emit per-config patches under `patches/` and apply via
+   `git apply` (currently runtime patches in the driver cover E, C, S).
 
 ## License reminder
 
