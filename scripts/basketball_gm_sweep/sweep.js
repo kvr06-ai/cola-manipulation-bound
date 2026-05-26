@@ -99,6 +99,29 @@ function loadGrid(gridPath) {
 // =============================================================================
 
 function runZengmSeasonReal(config, replicateSeed) {
+    // Backward-compatible wrapper around the batched path. The original
+    // single-replicate entry point is retained so existing callers and the
+    // module's public API (see module.exports below) keep working.
+    const [{ seasonLog }] = runZengmSeasonsRealBatch(config, [replicateSeed]);
+    return seasonLog;
+}
+
+/**
+ * Run N replicates of one config inside a SINGLE vitest subprocess. This
+ * amortises the ~3 s vitest startup over N replicates. The driver loops over
+ * seeds internally and writes a JSON array `[{ seed, seasonLog }, ...]` to
+ * COLA_DRIVER_OUTPUT.
+ *
+ * @param {Object} config - dial configuration
+ * @param {number[]} seeds - per-replicate seeds (length N)
+ * @returns {Array<{ seed: number, seasonLog: Array }>} per-replicate results
+ *          in the order requested.
+ */
+function runZengmSeasonsRealBatch(config, seeds) {
+    if (!Array.isArray(seeds) || seeds.length === 0) {
+        throw new Error("runZengmSeasonsRealBatch: seeds must be a non-empty array");
+    }
+
     const driverConfig = {
         id: config.id,
         E: config.E,
@@ -109,23 +132,28 @@ function runZengmSeasonReal(config, replicateSeed) {
         W: config.W,
         T: config.T,
         seasons: config.seasons,
-        seed: replicateSeed,
+        // `seed` is the LEGACY single-replicate field — when COLA_DRIVER_REPLICATES
+        // is set (batched mode), the driver ignores this and iterates over the
+        // batch seeds instead. Set to the first seed as a sensible default.
+        seed: seeds[0],
     };
-    const outputPath = path.join(__dirname, 'runs', `_driver_out_${process.pid}_${replicateSeed}.json`);
+    const outputPath = path.join(
+        __dirname,
+        'runs',
+        `_driver_out_${process.pid}_cfg${config.id}_batch${seeds.length}_${Date.now()}.json`,
+    );
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 
     const env = Object.assign({}, process.env, {
         COLA_DRIVER_CONFIG: JSON.stringify(driverConfig),
         COLA_DRIVER_OUTPUT: outputPath,
+        COLA_DRIVER_REPLICATES: JSON.stringify(seeds),
     });
 
-    // Run vitest with only this single test file scoped to the basketball
-    // project. `--passWithNoTests=false` + `--silent=passed-only` keeps the
-    // output manageable.
     const result = child_process.spawnSync(
         path.join(ZENGM_FORK_DIR, 'node_modules/.bin/vitest'),
         ['--run', '--project', 'basketball', DRIVER_TEST_REL],
-        { cwd: ZENGM_FORK_DIR, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+        { cwd: ZENGM_FORK_DIR, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
     );
 
     if (result.status !== 0) {
@@ -138,9 +166,18 @@ function runZengmSeasonReal(config, replicateSeed) {
         throw new Error(`zengm driver produced no output at ${outputPath}`);
     }
 
-    const seasonLog = JSON.parse(fs.readFileSync(outputPath, 'utf8'));
+    const raw = JSON.parse(fs.readFileSync(outputPath, 'utf8'));
     fs.unlinkSync(outputPath);
-    return seasonLog;
+
+    // The batched driver writes [{ seed, seasonLog }, ...] in the order it
+    // received them. Verify shape so older driver versions (pre-batching) fail
+    // loudly rather than silently dropping replicates.
+    if (!Array.isArray(raw) || raw.length !== seeds.length || !raw.every((r) => Array.isArray(r.seasonLog))) {
+        throw new Error(
+            `runZengmSeasonsRealBatch: driver output shape mismatch (expected array of {seed, seasonLog} length ${seeds.length}, got ${JSON.stringify(raw).slice(0, 200)})`,
+        );
+    }
+    return raw;
 }
 
 function runZengmSeasonStub(config, replicate, seed) {
@@ -281,7 +318,7 @@ function shuffle(arr, rng) {
 // 4. Main driver: iterate configs, run replicates, aggregate, write CSV.
 // =============================================================================
 
-function runSweep({ gridPath, outPath, configIdsToRun, replicates, mode, useStub, seasonsOverride }) {
+function runSweep({ gridPath, outPath, configIdsToRun, replicates, mode, useStub, seasonsOverride, seeds: seedsOverride }) {
     const { configs } = loadGrid(gridPath);
 
     let targetConfigs = (configIdsToRun === 'all')
@@ -295,7 +332,14 @@ function runSweep({ gridPath, outPath, configIdsToRun, replicates, mode, useStub
         'config_id', 'replicate_id', 'E', 'C', 'S', 'delta', 'seasons',
         'max_years_between_conf_finals',
         'franchises_never_reached_cf',
+        // Manipulation-gain bound is now reported as a probability-percentage
+        // gain (`manipulation_gain_pct`) — canonical and unified across capped
+        // and uncapped configs. The legacy multiplicative bound is kept for
+        // backward compatibility (downstream Pareto/analysis scripts may
+        // still index it). See objectives.js manipulationGainUpperBound().
+        'manipulation_gain_pct',
         'manipulation_gain_bound',
+        'manipulation_gain_regime',
         'per_series_cost_typical',
         'per_series_cost_playin',
         'rank_one_to_five_spread',
@@ -308,46 +352,79 @@ function runSweep({ gridPath, outPath, configIdsToRun, replicates, mode, useStub
 
     console.log(`Sweep mode=${mode} useStub=${useStub} configs=${targetConfigs.length} replicates/config=${replicates}`);
 
+    // Build the per-config seed list once. If the caller supplied an explicit
+    // `seeds` array (e.g. for the verification run with [42, 43, 44, 45, 46]),
+    // use it; otherwise default to 0..N-1 to preserve the legacy behavior.
+    const buildSeeds = () => {
+        if (Array.isArray(seedsOverride) && seedsOverride.length > 0) {
+            return seedsOverride.slice(0, replicates);
+        }
+        return Array.from({ length: replicates }, (_, i) => i);
+    };
+
+    const writeRow = (config, replicateId, result) => {
+        rows.push([
+            config.id,
+            replicateId,
+            config.E,
+            config.C === null ? 'null' : config.C,
+            config.S,
+            config.delta,
+            config.seasons,
+            result.max_years_between_conf_finals,
+            result.franchises_never_reached_cf,
+            result.manipulation_gain_pct,
+            result.manipulation_gain_bound,
+            result.manipulation_gain_regime,
+            result.per_series_cost_typical === null ? '' : result.per_series_cost_typical,
+            result.per_series_cost_playin === null ? '' : result.per_series_cost_playin,
+            result.rank_one_to_five_spread,
+            result.expected_pick_worst,
+            result.expected_pick_fifth_worst,
+        ].join(','));
+    };
+
     for (const config of targetConfigs) {
-        for (let rep = 0; rep < replicates; rep++) {
-            let seasonLog;
-            if (useStub) {
-                // Stub path: synthesize each season independently (no carry-over).
-                seasonLog = [];
+        if (useStub) {
+            // Stub path: each "season" is one synthesized year — keep the legacy
+            // per-replicate loop because the stub does not amortise startup.
+            for (let rep = 0; rep < replicates; rep++) {
+                const seasonLog = [];
                 for (let s = 0; s < config.seasons; s++) {
                     seasonLog.push(runZengmSeasonStub(config, rep * config.seasons + s, 42));
                 }
-            } else {
-                // Real path: a single vitest subprocess produces the full
-                // N-season seasonLog (preserves COLA carry-over).
-                const t0 = Date.now();
-                seasonLog = runZengmSeasonReal(config, rep);
-                console.log(`  [real] config=${config.id} rep=${rep} seasons=${config.seasons} elapsed=${((Date.now() - t0) / 1000).toFixed(1)}s`);
+                const result = evaluateAll(config, seasonLog);
+                writeRow(config, rep, result);
+                runIdx++;
+                if (mode === 'smoke') {
+                    console.log(`[smoke] config_id=${config.id} replicate=${rep}: ${JSON.stringify(result, null, 2)}`);
+                    break;
+                }
             }
-            const result = evaluateAll(config, seasonLog);
+        } else {
+            // Real path: batch all replicates of this config into ONE vitest
+            // subprocess invocation. The ~3 s startup is paid once per config
+            // instead of once per (config, replicate).
+            const seeds = buildSeeds();
+            const seedsToRun = mode === 'smoke' ? seeds.slice(0, 1) : seeds;
+            const t0 = Date.now();
+            const batch = runZengmSeasonsRealBatch(config, seedsToRun);
+            const elapsed = (Date.now() - t0) / 1000;
+            const perReplicate = elapsed / seedsToRun.length;
+            console.log(`  [real] config=${config.id} seeds=${JSON.stringify(seedsToRun)} seasons=${config.seasons} elapsed=${elapsed.toFixed(1)}s (${perReplicate.toFixed(2)}s/replicate amortised)`);
 
-            rows.push([
-                config.id,
-                rep,
-                config.E,
-                config.C === null ? 'null' : config.C,
-                config.S,
-                config.delta,
-                config.seasons,
-                result.max_years_between_conf_finals,
-                result.franchises_never_reached_cf,
-                result.manipulation_gain_bound,
-                result.per_series_cost_typical === null ? '' : result.per_series_cost_typical,
-                result.per_series_cost_playin === null ? '' : result.per_series_cost_playin,
-                result.rank_one_to_five_spread,
-                result.expected_pick_worst,
-                result.expected_pick_fifth_worst,
-            ].join(','));
-
-            runIdx++;
-            if (mode === 'smoke') {
-                console.log(`[smoke] config_id=${config.id} replicate=${rep}: ${JSON.stringify(result, null, 2)}`);
-                break;
+            for (let i = 0; i < batch.length; i++) {
+                const { seed, seasonLog } = batch[i];
+                const result = evaluateAll(config, seasonLog);
+                // For headline runs, replicate_id reflects the seed actually used.
+                // This is more useful than a sequential 0..N-1 index because reruns
+                // with the same seed produce bit-identical rows (RNG determinism).
+                writeRow(config, seed, result);
+                runIdx++;
+                if (mode === 'smoke') {
+                    console.log(`[smoke] config_id=${config.id} seed=${seed}: ${JSON.stringify(result, null, 2)}`);
+                    break;
+                }
             }
         }
         if (mode === 'smoke') break;
@@ -371,6 +448,18 @@ function parseArgs(argv) {
         else if (argv[i] === '--config-id') args.configIds = [parseInt(argv[++i], 10)];
         else if (argv[i] === '--replicates') args.replicates = parseInt(argv[++i], 10);
         else if (argv[i] === '--seasons') args.seasonsOverride = parseInt(argv[++i], 10);
+        else if (argv[i] === '--seeds') {
+            // Comma-separated list of integer seeds, e.g. --seeds 42,43,44,45,46
+            args.seeds = argv[++i].split(',').map((s) => parseInt(s, 10));
+            if (args.seeds.some(Number.isNaN)) {
+                throw new Error(`--seeds expected a comma-separated integer list, got '${argv[i]}'`);
+            }
+            // If --replicates not separately set, infer it from the seed count.
+            if (args.replicates === 1 || args.replicates === undefined) {
+                args.replicates = args.seeds.length;
+            }
+        }
+        else if (argv[i] === '--out') args.outPath = argv[++i];
     }
     return args;
 }
@@ -378,11 +467,11 @@ function parseArgs(argv) {
 if (require.main === module) {
     const args = parseArgs(process.argv);
     const gridPath = path.join(__dirname, 'dial_grid.json');
-    const outPath = path.join(__dirname, 'runs', `sweep_${args.mode}_${Date.now()}.csv`);
+    const outPath = args.outPath || path.join(__dirname, 'runs', `sweep_${args.mode}_${Date.now()}.csv`);
 
     let replicates = args.replicates;
-    if (args.mode === 'full') replicates = 50;
-    if (args.mode === 'smoke') replicates = 1;
+    if (args.mode === 'full' && !args.seeds) replicates = 50;
+    if (args.mode === 'smoke' && !args.seeds) replicates = 1;
     // For smoke runs, default to 30-year horizon (per Track B smoke spec).
     // For full runs, dial_grid.json provides 50; sensitivity sweeps override.
     if (args.mode === 'smoke' && args.seasonsOverride === undefined) {
@@ -397,7 +486,14 @@ if (require.main === module) {
         mode: args.mode,
         useStub: args.useStub,
         seasonsOverride: args.seasonsOverride,
+        seeds: args.seeds,
     });
 }
 
-module.exports = { loadGrid, runZengmSeasonReal, runZengmSeasonStub, runSweep };
+module.exports = {
+    loadGrid,
+    runZengmSeasonReal,
+    runZengmSeasonsRealBatch,
+    runZengmSeasonStub,
+    runSweep,
+};

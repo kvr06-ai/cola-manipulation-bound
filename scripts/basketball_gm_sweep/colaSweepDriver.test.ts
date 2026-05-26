@@ -487,33 +487,52 @@ afterAll(() => {
 	idb.league = undefined;
 });
 
-test("ZenGM COLA sweep driver: one config, N seasons", async () => {
-	const configRaw = process.env.COLA_DRIVER_CONFIG;
-	const outputPath = process.env.COLA_DRIVER_OUTPUT;
-	if (!configRaw || !outputPath) {
-		// Skip silently when not driven by the sweep harness; tests in this file
-		// only execute when env is set.
-		console.log("[colaSweepDriver] skipping: env not set");
-		return;
-	}
-	const config = JSON.parse(configRaw) as Config;
+// ============================================================================
+// Single-replicate routine. Extracted from the prior monolithic test body so
+// the batched harness can invoke it N times within ONE vitest subprocess
+// (avoiding the ~3 s startup cost per replicate).
+//
+// Returns the SeasonEntry[] log for one replicate.
+//
+// RNG-determinism fix (per ASSUMPTIONS.md L-Z3 / S-3):
+//   ZenGM's lottery draw uses Math.random() via randInt() (src/common/
+//   random.ts line 32). Before this change, Math.random was unseeded, so
+//   even with a fixed mulberry32 seed in this driver, the lottery outcomes
+//   varied across runs. We now OVERRIDE Math.random for the duration of one
+//   replicate to be a seeded mulberry32, then restore the original.
+//
+//   Approach chosen (vs. vi.mock or seed-parameter injection):
+//   - vi.mock would require modifying genOrder/cola to import from a mocked
+//     module path; touchier and harder to scope per-replicate.
+//   - Threading a seed parameter through genOrder / randInt would diverge
+//     the fork from upstream ZenGM, breaking future merges.
+//   - Math.random override is one line, scoped via try/finally, and reads
+//     from the same mulberry32 stream the rest of the driver uses (derived
+//     from `(config.id, replicate_seed, 42)` via hashSeed). It does NOT
+//     persist outside the replicate.
+// ============================================================================
+
+async function runOneReplicate(
+	config: Config,
+	replicateSeed: number,
+): Promise<SeasonEntry[]> {
 	const SEASONS = config.seasons;
 	const NUM_TEAMS = 30;
 	const START_SEASON = 2025;
 
-	const rng = mulberry32(hashSeed(config.id, config.seed, 42));
-	configureEligibility(config.E);
+	// Derive a single mulberry32 stream from (configId, replicateSeed,
+	// baseSeed=42). The same stream drives strength generation, win-noise,
+	// bracket samples, AND (via the Math.random override below) the lottery
+	// draw — so a fixed (config_id, replicateSeed) pair is fully deterministic.
+	const rng = mulberry32(hashSeed(config.id, replicateSeed, 42));
 
+	configureEligibility(config.E);
 	await bootstrapLeague(NUM_TEAMS, START_SEASON);
 	const teamsForRng = (await idb.cache.teams.getAll()).map((t) => ({
 		tid: t.tid,
 		cid: t.cid,
 	}));
 
-	// Persistent team strength, indexed by tid. Initialized Uniform[0.3, 0.7]
-	// (narrower than the prior i.i.d. Uniform[0.2, 0.6] refresh so the league
-	// starts near parity); evolved each season by transitionStrength() using
-	// the prior season's draft pick (see Markov model docstring above).
 	const persistentStrength: number[] = new Array(NUM_TEAMS).fill(0);
 	for (const t of teamsForRng) {
 		persistentStrength[t.tid] = 0.3 + rng() * 0.4;
@@ -522,91 +541,147 @@ test("ZenGM COLA sweep driver: one config, N seasons", async () => {
 	const seasonLog: SeasonEntry[] = [];
 	const historyByTid: Record<number, { season: number; cola: number }[]> = {};
 
-	for (let s = 0; s < SEASONS; s++) {
-		const currentSeason = START_SEASON + s;
-		g.setWithoutSavingToDB("season", currentSeason);
+	// Install seeded Math.random for the duration of this replicate. ZenGM's
+	// randInt() (used inside genOrder for the lottery draw) calls Math.random
+	// internally; routing it through our mulberry32 makes the lottery draw
+	// reproducible. The `originalRandom` capture + finally restore ensures we
+	// don't leak the override into subsequent replicates or other vitest tests
+	// running in the same process.
+	const originalRandom = Math.random;
+	Math.random = rng;
 
-		// 1. Simulate season outcomes (wins + playoff bracket) using the
-		// persistent strength vector — see Markov model above.
-		const outcomes = simulateSeasonOutcomes(
-			rng,
-			teamsForRng,
-			persistentStrength,
-		);
-		await appendTeamSeasons(currentSeason, outcomes);
+	try {
+		for (let s = 0; s < SEASONS; s++) {
+			const currentSeason = START_SEASON + s;
+			g.setWithoutSavingToDB("season", currentSeason);
 
-		// 2. Apply carry-over scope (dial S) BEFORE the COLA update.
-		const champion = outcomes.find((o) => o.playoffRoundsWon === 4);
-		await applyCarryOverScope(
-			config.S,
-			s,
-			historyByTid,
-			champion ? champion.tid : null,
-		);
+			// 1. Simulate season outcomes (wins + playoff bracket) using the
+			// persistent strength vector — see Markov model above.
+			const outcomes = simulateSeasonOutcomes(
+				rng,
+				teamsForRng,
+				persistentStrength,
+			);
+			await appendTeamSeasons(currentSeason, outcomes);
 
-		// 3. Apply eligibility mask (dial E): zero out cola for non-eligible teams
-		// so the lottery draw effectively excludes them.
-		await applyEligibilityMask(config.E, outcomes);
+			// 2. Apply carry-over scope (dial S) BEFORE the COLA update.
+			const champion = outcomes.find((o) => o.playoffRoundsWon === 4);
+			await applyCarryOverScope(
+				config.S,
+				s,
+				historyByTid,
+				champion ? champion.tid : null,
+			);
 
-		// 4. REAL ZenGM: update lottery chances after playoffs.
-		await cola.updateLotteryChancesAfterPlayoffs();
+			// 3. Apply eligibility mask (dial E): zero out cola for non-eligible
+			// teams so the lottery draw effectively excludes them.
+			await applyEligibilityMask(config.E, outcomes);
 
-		// 5. Apply cap clamp (dial C).
-		await applyCapClamp(config.C);
+			// 4. REAL ZenGM: update lottery chances after playoffs.
+			await cola.updateLotteryChancesAfterPlayoffs();
 
-		// 6. REAL ZenGM: run the lottery draw (mock=true so it doesn't persist
-		//    draft picks to a real DB; we read the returned draftPicks array).
-		const draftRes = await draft.genOrder(true);
-		const draftPickByTid: Record<number, number> = {};
-		for (const dp of draftRes.draftPicks) {
-			if (dp.round === 1 && dp.tid === dp.originalTid) {
-				draftPickByTid[dp.tid] = dp.pick;
+			// 5. Apply cap clamp (dial C).
+			await applyCapClamp(config.C);
+
+			// 6. REAL ZenGM: run the lottery draw (mock=true so it doesn't
+			//    persist draft picks to a real DB; we read the returned
+			//    draftPicks array). RNG: deterministic (Math.random override).
+			const draftRes = await draft.genOrder(true);
+			const draftPickByTid: Record<number, number> = {};
+			for (const dp of draftRes.draftPicks) {
+				if (dp.round === 1 && dp.tid === dp.originalTid) {
+					draftPickByTid[dp.tid] = dp.pick;
+				}
+			}
+
+			// 7. REAL ZenGM: apply post-lottery diminishment to the top 4 picks.
+			const top4Tids = draftRes.draftPicks
+				.filter((dp) => dp.round === 1 && dp.pick >= 1 && dp.pick <= 4)
+				.sort((a, b) => a.pick - b.pick)
+				.map((dp) => dp.originalTid);
+			await cola.updateLotteryChancesAfterLottery(top4Tids);
+
+			// 8. Capture per-team state.
+			const teamsNow = await idb.cache.teams.getAll();
+			const colaByTid: Record<number, number> = {};
+			for (const t of teamsNow) {
+				colaByTid[t.tid] = t.cola ?? 0;
+				historyByTid[t.tid] ??= [];
+				historyByTid[t.tid]!.push({ season: s, cola: t.cola ?? 0 });
+			}
+			const entry: SeasonEntry = {
+				season: s,
+				teams: outcomes.map((o) => ({
+					tid: o.tid,
+					conf: o.cid === 0 ? "E" : "W",
+					wins: o.wins,
+					playoffRoundsWon: o.playoffRoundsWon,
+					draftPick: draftPickByTid[o.tid] ?? null,
+					cola: colaByTid[o.tid] ?? 0,
+				})),
+			};
+			seasonLog.push(entry);
+
+			// 9. Markov transition: evolve each team's strength based on the
+			// season's draft pick.
+			for (const t of teamsForRng) {
+				const pick = draftPickByTid[t.tid] ?? null;
+				persistentStrength[t.tid] = transitionStrength(
+					persistentStrength[t.tid]!,
+					pick,
+					rng,
+				);
 			}
 		}
-
-		// 7. REAL ZenGM: apply post-lottery diminishment to the top 4 picks.
-		// Need to extract the top-4 tids from draftPicks (round 1, picks 1..4).
-		const top4Tids = draftRes.draftPicks
-			.filter((dp) => dp.round === 1 && dp.pick >= 1 && dp.pick <= 4)
-			.sort((a, b) => a.pick - b.pick)
-			.map((dp) => dp.originalTid);
-		await cola.updateLotteryChancesAfterLottery(top4Tids);
-
-		// 8. Capture per-team state.
-		const teamsNow = await idb.cache.teams.getAll();
-		const colaByTid: Record<number, number> = {};
-		for (const t of teamsNow) {
-			colaByTid[t.tid] = t.cola ?? 0;
-			historyByTid[t.tid] ??= [];
-			historyByTid[t.tid]!.push({ season: s, cola: t.cola ?? 0 });
-		}
-		const entry: SeasonEntry = {
-			season: s,
-			teams: outcomes.map((o) => ({
-				tid: o.tid,
-				conf: o.cid === 0 ? "E" : "W",
-				wins: o.wins,
-				playoffRoundsWon: o.playoffRoundsWon,
-				draftPick: draftPickByTid[o.tid] ?? null,
-				cola: colaByTid[o.tid] ?? 0,
-			})),
-		};
-		seasonLog.push(entry);
-
-		// 9. Markov transition: evolve each team's strength based on the
-		// season's draft pick. Higher picks (lower pick number) push strength
-		// up toward the long-run mean plus draft boost; lottery shocks add
-		// year-to-year variability. Picks 16+ contribute zero (pickValue=0).
-		for (const t of teamsForRng) {
-			const pick = draftPickByTid[t.tid] ?? null;
-			persistentStrength[t.tid] = transitionStrength(
-				persistentStrength[t.tid]!,
-				pick,
-				rng,
-			);
-		}
+	} finally {
+		Math.random = originalRandom;
 	}
 
+	return seasonLog;
+}
+
+test("ZenGM COLA sweep driver: one config, N replicates × M seasons", async () => {
+	const configRaw = process.env.COLA_DRIVER_CONFIG;
+	const outputPath = process.env.COLA_DRIVER_OUTPUT;
+	const replicatesRaw = process.env.COLA_DRIVER_REPLICATES;
+	if (!configRaw || !outputPath) {
+		// Skip silently when not driven by the sweep harness; tests in this file
+		// only execute when env is set.
+		console.log("[colaSweepDriver] skipping: env not set");
+		return;
+	}
+	const config = JSON.parse(configRaw) as Config;
+
+	if (replicatesRaw) {
+		// Batched mode: run all replicates in this single vitest subprocess.
+		// Output: JSON array of { seed, seasonLog } in the requested order.
+		const seeds = JSON.parse(replicatesRaw) as number[];
+		if (!Array.isArray(seeds) || seeds.length === 0) {
+			throw new Error(`COLA_DRIVER_REPLICATES expected non-empty array, got '${replicatesRaw}'`);
+		}
+		const results: { seed: number; seasonLog: SeasonEntry[] }[] = [];
+		for (const seed of seeds) {
+			const t0 = Date.now();
+			const seasonLog = await runOneReplicate(config, seed);
+			const elapsed = ((Date.now() - t0) / 1000).toFixed(2);
+			console.log(
+				`[colaSweepDriver] config=${config.id} seed=${seed} seasons=${seasonLog.length} elapsed=${elapsed}s`,
+			);
+			results.push({ seed, seasonLog });
+		}
+		fs.writeFileSync(outputPath, JSON.stringify(results, null, 2));
+		console.log(
+			`[colaSweepDriver] wrote ${results.length} replicates × ${config.seasons} seasons to ${outputPath}`,
+		);
+		return;
+	}
+
+	// Legacy single-replicate mode (no COLA_DRIVER_REPLICATES). Preserved for
+	// any external caller still using the old shape, but the sweep.js harness
+	// now always sets COLA_DRIVER_REPLICATES.
+	const seasonLog = await runOneReplicate(config, config.seed);
 	fs.writeFileSync(outputPath, JSON.stringify(seasonLog, null, 2));
-	console.log(`[colaSweepDriver] wrote ${seasonLog.length} seasons to ${outputPath}`);
+	console.log(
+		`[colaSweepDriver] wrote ${seasonLog.length} seasons to ${outputPath} (legacy single-replicate path)`,
+	);
 });

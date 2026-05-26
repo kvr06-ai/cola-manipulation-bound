@@ -226,27 +226,54 @@ runs use 50 replicates per config (2,400 total simulated seasons at the
 dial_grid.json `_sensitivity_protocol`) verify the frontier is not a
 Monte Carlo artefact.
 
-**S-3. Reproducibility: deterministic PRNG keyed by `(config_id, replicate, base_seed=42)`.**
-`hashSeed(configId, replicate, baseSeed)` in colaSweepDriver.test.ts:60.
+**S-3. Reproducibility: deterministic PRNG keyed by `(config_id, replicate_seed, base_seed=42)`, INCLUDING the lottery draw.**
+`hashSeed(configId, replicateSeed, baseSeed)` in colaSweepDriver.test.ts.
 Each (config, replicate) gets a unique 32-bit seed; mulberry32 produces
-the bracket samples and strength values. ZenGM's own lottery draw uses
-its internal random (via `randInt`); the driver does not currently
-override this, so the lottery draw RNG is independent. To make the
-lottery draw reproducible, future work should override ZenGM's random
-source via dependency injection.
+the bracket samples, strength values, AND the lottery draw.
+
+As of 2026-05-26 the driver overrides `Math.random` for the duration of
+each replicate with the same mulberry32 stream used for the rest of the
+simulation (`runOneReplicate()`, try/finally-scoped). ZenGM's `randInt()`
+(src/common/random.ts:32) calls `Math.random` internally, so the override
+makes the lottery draw fully deterministic. The original `Math.random` is
+restored at the end of each replicate so the override does not leak into
+subsequent replicates batched into the same vitest subprocess (see S-5)
+or into any other vitest test running in the same process.
+
+Approach chosen (vs. alternatives):
+- vi.mock on src/common/random.ts: rejected — would require modifying
+  the import paths in genOrder/cola; touchier to scope per-replicate.
+- Threading a seed parameter through genOrder/randInt: rejected —
+  would diverge the fork from upstream ZenGM, breaking future merges.
+- Math.random override: chosen — single-line patch in driver only,
+  zero ZenGM source modification, replicate-scoped via try/finally.
+
+Verification: two consecutive runs with identical (config_id,
+replicate_seed) now produce bit-identical CSV rows. Confirmed
+empirically on cfg_id=1, seed=42 (see commit message for the run log).
+
+**S-5. Single replicate vs. multiple replicates per config — batched as of 2026-05-26.**
+The sweep harness (`sweep.js`) now batches all replicates of a given
+config into ONE vitest subprocess invocation via the
+`COLA_DRIVER_REPLICATES` env var (JSON list of seeds). The driver loops
+over seeds within one process, writing `[{ seed, seasonLog }, ...]` to
+the output path. The ~3 s vitest startup is paid once per config
+instead of once per (config, replicate). Empirical measurement at the
+5-replicate verification scale: legacy per-replicate path ≈ 19 s
+total (3.8 s/replicate); batched path ≈ 5.5 s total (1.1 s/replicate
+amortised) — a ~3.4× speedup for cfg_1 (E=14 uncapped, 30 seasons).
+For the headline 48 × 50 run this projects to ~40 min instead of the
+prior ~2 h estimate.
+
+The legacy single-replicate behaviour is preserved as a fallback path
+(driver runs without COLA_DRIVER_REPLICATES → uses `config.seed`),
+unused by the current `sweep.js` but kept for ad-hoc invocations.
 
 **S-4. League starting state: each replicate starts from a fresh new-league.**
 `bootstrapLeague` zeroes all team.cola at the start of the run. No prior
 historical seasons are loaded. This is the standard "new league" starting
 condition — equivalent to `initializeCola()` with no prior season data,
 which is a no-op.
-
-**S-5. Single replicate vs. multiple replicates per config.**
-The driver currently launches one vitest subprocess per replicate. The
-2.9s per-replicate startup overhead dominates for short horizons; for
-the headline 48×50 run (~2,400 vitest invocations), batching multiple
-replicates per vitest invocation would cut wall time materially. This
-optimization is left for the headline pass.
 
 **S-6. Team strength persists across seasons via a Markov model tied to draft outcomes.**
 See Z-2 for the transition equation and parameter values. Team strength
@@ -281,16 +308,67 @@ Per Highley: this captures the *worst-served* franchise. Alternative
 aggregations (median, p90) are NOT computed in the primary metric but
 the per-team gaps are retained in `perTeamGaps` for diagnostic use.
 
-**O-4. Secondary objective: `manipulationGainUpperBound` is analytical, not simulation-derived.**
-Computed from `config` directly via the closed-form bound from Theorem
-1: `1 + 4/E` for uncapped, `η · C` for capped (η ∈ {0.2, 0.3}). Does
-not use seasonLog. The bound is an upper bound — actual realized
-manipulation gain in simulation may be lower.
+**O-4. Secondary objective: `manipulationGainUpperBound` returns a unified
+probability-percentage gain across capped and uncapped regimes.**
+Computed from `config` directly; does not use seasonLog. The bound is
+an upper bound — actual realized manipulation gain in simulation may be
+lower.
+
+The canonical field is `manipulation_gain_pct` (probability-percentage
+points). The derived `manipulation_gain_bound = 1 + gain_pct/100` is
+retained for backward compatibility with the pre-2026-05-26 CSV schema.
+
+*Uncapped (Theorem 1, first-order approximation):*
+
+    gain_pct_uncapped = 100 · 4 / |E|
+
+For E=14 (Classic): gain_pct ≈ 28.57 %. For E=22: 18.18 %. For E=16-
+tiered: 25.00 %.
+
+*Capped (Lemma 2 ticket bound, converted to a probability via worst-
+case pool):*
+
+    gain_pct_capped = 100 · 0.3 / |E|
+
+Derivation: Lemma 2 bounds the per-series ticket gain at `η · C` with
+η = 0.3 in the play-in case (worst case across η ∈ {0.2, 0.3}). To
+convert this to a probability gain, we divide by the conservative pool
+upper bound `P_max = C · |E|` (all eligible teams simultaneously at
+the cap). The cap value `C` cancels: gain_pct_capped ≤ 100 · 0.3 /|E|.
+
+Caveat: the realised pool in steady state is materially smaller than
+`C · |E|` (only droughted teams approach the cap), so the realised
+probability gain can exceed this bound. We retain `C · |E|` here as a
+*conservative analytical floor* on the manipulation gain that the
+capped regime achieves, used for cross-regime Pareto comparison in
+`objectives.js`. A typical-case estimate would replace `P_max` with
+the empirical steady-state pool from the simulation; that estimate is
+out of scope for the analytical bound. The cap-cancels-out property is
+the substantive finding: under the conservative-pool assumption, only
+|E| binds the capped manipulation gain.
+
+Verification anchors (cfg_id from `dial_grid.json`):
+- cfg 1 (Classic, E=14, uncapped): gain_pct = 28.57.
+- cfg 17 (E=22, uncapped): gain_pct = 18.18.
+- cfg 32/33 (3-2-1 baseline, E=16-tiered, uncapped): gain_pct = 25.00.
+- cfg 4 (E=14, C=100): gain_pct = 2.143; per-series typical/play-in = 20/30.
+- cfg 14 (E=14, C=200): gain_pct = 2.143 (identical to cfg 4: C cancels).
+- cfg 37 (E=16-tiered, C=100, S=unbounded): gain_pct = 1.875.
+
+This is a strict semantic change from the pre-2026-05-26 schema, in
+which capped configs reported the raw-ticket per-series cost in the
+`manipulation_gain_bound` column (e.g. cfg 37 = 20.0 raw tickets,
+which is NOT a probability gain). Downstream Pareto/analysis code
+that consumed `manipulation_gain_bound` will continue to work but is
+now indexing an apples-to-apples probability ratio across all 48 cells.
 
 **O-5. Secondary objective: `perSeriesCost` returns null for uncapped.**
-Per Lemma 2: per-series cost = `η · C`. Null when C = null
-(unbounded). Reported as analytical only — not measured from simulated
-manipulator behavior.
+Per Lemma 2: per-series cost = `η · C` in raw tickets (η = 0.2
+standard, η = 0.3 play-in). Null when C = null (unbounded). Reported
+as analytical only — not measured from simulated manipulator behavior.
+Retained as a separate column (`per_series_cost_typical`,
+`per_series_cost_playin`) so the raw Lemma 2 disclosure survives the
+O-4 probability-conversion above.
 
 **O-6. Secondary objective: `rankOneToFiveSpread` measures expected-pick
 divergence between worst and 5th-worst team.**
@@ -419,21 +497,24 @@ empirical anchor. Sensitivity analysis on (rho, alpha, sigma), and a
 formal calibration against either NBA SRS / Elo trajectories or
 Basketball Reference SoS data, is future work.
 
-**L-Z3. Lottery-draw nondeterminism propagates into the strength
-trajectory.**
-Per S-3, ZenGM's lottery draw uses an unseeded `Math.random`, so the
-draft pick assigned to each team is nondeterministic across replicates
-even when the mulberry32 seed is fixed. Under the prior i.i.d. strength
-model this nondeterminism was confined to the `draftPick` field of one
-season; under the Markov model it now feeds into next season's strength
-via the alpha * pick_value term, so two runs with identical seeds can
-produce materially different `max_years_between_conf_finals` (observed
-range 22-30 across 5 single-replicate smoke runs). Headline runs use
-multiple replicates per config, so this nondeterminism is absorbed into
-the Monte Carlo error bar; the smoke test should be interpreted as a
-single random draw, not a deterministic baseline. Dependency-injecting
-ZenGM's random source is tracked as future work (README "Next-session
-work" item 1).
+**L-Z3. [RESOLVED 2026-05-26] Lottery-draw nondeterminism propagates into the strength trajectory.**
+Original limitation: ZenGM's lottery draw used an unseeded `Math.random`,
+so the draft pick assigned to each team was nondeterministic across
+replicates even when the mulberry32 seed was fixed. Under the Markov
+model this fed into next season's strength via the alpha * pick_value
+term, so two runs with identical seeds could produce materially different
+`max_years_between_conf_finals` (observed range 22-30 across 5 single-
+replicate smoke runs).
+
+Resolution: per S-3, the driver now overrides `Math.random` for the
+duration of each replicate with the same mulberry32 stream used for
+strength generation and bracket samples. Two consecutive runs with
+identical (config_id, replicate_seed) now produce bit-identical CSVs.
+The "single replicate as random draw" framing in the prior version of
+this note no longer applies — single replicates are now reproducible
+exactly. Headline runs still use multiple replicates to characterise
+Monte Carlo dispersion over the strength-and-lottery joint distribution;
+that justification is unchanged.
 
 ---
 

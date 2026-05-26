@@ -90,52 +90,85 @@ function maxYearsBetweenConferenceFinals(seasonLog) {
 }
 
 // =============================================================================
-// Secondary objective: analytical manipulation-gain upper bound.
-// Per Theorem 1 of the manipulation-bound paper: M_classic <= 1 + 4 * alpha / P
-// for Classic COLA at pool P. For Capped COLA, the bound is governed by
-// Lemma 2: per-series gain bounded by eta * C with eta in {0.2, 0.3}.
-// Analytical, not simulation-derived; depends only on config.
+// Secondary objective: analytical manipulation-gain upper bound, unified across
+// capped and uncapped regimes as a probability-percentage-point gain (Δp · 100).
+//
+// Both regimes return `gain_pct`, the bounded probability gain (in percentage
+// points) from a single optimal manipulation. The derived multiplicative bound
+// `bound = 1 + gain_pct / 100` is retained for backward compatibility with the
+// pre-2026-05-26 schema (where `manipulation_gain_bound` carried a mix of
+// multiplicative ratios for uncapped configs and raw-ticket counts for capped
+// configs — an unit mismatch). The unification rests on the following:
+//
+//   Uncapped (Classic-style, per Theorem 1 / Eq. 6 with the first-order
+//   approximation G_i ≈ p_i · (Δ/P)):
+//     gain_pct_uncapped ≈ 100 · 4 / |E|
+//   This matches the existing 1 + 4/|E| multiplicative bound numerically:
+//     bound_uncapped = 1 + 4/|E|  ⇒  gain_pct = 100 · (bound - 1) = 100 · 4/|E|.
+//   For Classic (E=14): gain_pct ≈ 28.57 %.
+//
+//   Capped (per Lemma 2 worst-case, converted to a probability):
+//     Per Lemma 2 a team at the cap gains at most 0.3·C tickets per series
+//     (play-in case; 0.2·C otherwise). We adopt the worst case η = 0.3.
+//     The conservative upper bound on the pool is C · |E| (all eligible teams
+//     simultaneously at the cap), yielding:
+//
+//         Δp_capped ≤ 0.3·C / (C·|E|) = 0.3 / |E|
+//         gain_pct_capped ≤ 100 · 0.3 / |E|
+//
+//     The cap value C cancels out: only the eligibility size |E| binds.
+//   For E=14: gain_pct ≤ 2.143 %. For E=22: gain_pct ≤ 1.364 %. For 16-tiered:
+//   gain_pct ≤ 1.875 %.
+//
+// Caveat: the capped bound is a stronger claim than Lemma 2 itself. Lemma 2
+// bounds ticket gain; converting to a probability bound here requires the
+// worst-case pool assumption P_max = C·|E|. In realistic regimes only the
+// already-droughted teams accumulate to the cap, so the realised pool is
+// smaller and the realised gain larger than the bound. We retain the
+// conservative C·|E| pool ceiling so the bound is genuinely an upper bound,
+// not a typical-case estimate. See ASSUMPTIONS.md item O-4 for the audit
+// trail of this derivation.
 // =============================================================================
 
 /**
  * Compute the theoretical manipulation-gain upper bound for a given dial
- * configuration. This is the closed-form bound from Theorem 1; it does not
- * use the simulation output.
+ * configuration. Closed-form, no simulation dependency. Returns the
+ * probability gain in percentage points (`gain_pct`) as the canonical value,
+ * plus the derived multiplicative bound `1 + gain_pct/100`.
  *
  * @param {Object} config - dial configuration with fields { E, delta, C, S, ... }
- * @returns {{ bound: number, formula: string }}
+ * @returns {{ gain_pct: number, bound: number, regime: 'capped'|'uncapped', formula: string, notes: string }}
  */
 function manipulationGainUpperBound(config) {
-    const { E, delta, C, S } = config;
+    const { E, C } = config;
 
-    // Classic COLA: P = |E| * alpha (steady state with no diminishment activity).
-    // Conservative upper bound per Theorem 1: multiplicative factor 1 + k*alpha/P
-    // where k counts the number of pre-diminishment cliffs the manipulator can
-    // surmount. For Classic (k = 4 draft cliffs), this reduces to:
-    //   bound = 1 + 4 / |E|
-    // For unbounded scope, the bound is a steady-state expression.
-    // For bounded/capped scope, switch to Lemma 2.
+    const eligibilitySize = typeof E === "number" ? E : (E === "16-tiered" ? 16 : 22);
 
     if (C !== null && C !== undefined) {
-        // Capped: per-series cost from Lemma 2.
-        // eta = 0.2 typical (regular round), 0.3 play-in-round.
-        const etaTypical = 0.2;
+        // Capped regime. Worst-case ticket gain per series (Lemma 2, play-in
+        // case): eta * C with eta = 0.3. Worst-case pool: C * |E|.
+        // ⇒ gain_pct ≤ 100 * 0.3 / |E| (cap C cancels).
         const etaPlayIn = 0.3;
+        const gain_pct = 100 * etaPlayIn / eligibilitySize;
+        const bound = 1 + gain_pct / 100;
         return {
-            bound: etaTypical * C,
-            bound_playin: etaPlayIn * C,
-            formula: `eta * C = ${etaTypical} * ${C} = ${etaTypical * C} (typical); play-in: ${etaPlayIn} * ${C} = ${etaPlayIn * C}`,
-            notes: "Capped configuration: per-series cost is the binding constraint (Lemma 2)."
+            gain_pct,
+            bound,
+            regime: "capped",
+            formula: `100 * ${etaPlayIn} / |E| = 100 * ${etaPlayIn} / ${eligibilitySize} = ${gain_pct.toFixed(4)} %`,
+            notes: "Capped configuration: Lemma 2 ticket bound (eta * C) converted to probability via worst-case pool C * |E|; cap C cancels.",
         };
     }
 
-    // Uncapped (Classic-style) bound.
-    const eligibilitySize = typeof E === "number" ? E : (E === "16-tiered" ? 16 : 22);
-    const bound = 1 + 4 / eligibilitySize;
+    // Uncapped (Classic-style) bound. gain_pct = 100 * 4 / |E|.
+    const gain_pct = 100 * 4 / eligibilitySize;
+    const bound = 1 + gain_pct / 100;
     return {
+        gain_pct,
         bound,
-        formula: `1 + 4 / |E| = 1 + 4 / ${eligibilitySize} = ${bound}`,
-        notes: `Classic-style uncapped bound. Steady-state assumption; |E| = ${eligibilitySize}.`
+        regime: "uncapped",
+        formula: `100 * 4 / |E| = 100 * 4 / ${eligibilitySize} = ${gain_pct.toFixed(4)} %`,
+        notes: `Classic-style uncapped bound (Theorem 1 first-order approximation). |E| = ${eligibilitySize}.`,
     };
 }
 
@@ -222,10 +255,15 @@ function evaluateAll(config, seasonLog) {
         // Primary
         max_years_between_conf_finals: primary.maxGap,
         franchises_never_reached_cf: primary.neverReached.length,
-        // Manipulation gain bound (analytical)
+        // Manipulation gain bound (analytical, unified probability-percentage gain).
+        // `manipulation_gain_pct` is the canonical value (probability-percentage-point
+        // gain). `manipulation_gain_bound = 1 + pct/100` is retained for backward
+        // compatibility with the pre-2026-05-26 schema.
+        manipulation_gain_pct: manipGain.gain_pct,
         manipulation_gain_bound: manipGain.bound,
+        manipulation_gain_regime: manipGain.regime,
         manipulation_gain_formula: manipGain.formula,
-        // Per-series cost (capped only)
+        // Per-series cost (capped only) — Lemma 2 disclosure in raw tickets.
         per_series_cost_typical: seriesCost ? seriesCost.typical : null,
         per_series_cost_playin: seriesCost ? seriesCost.playIn : null,
         // Rank-1-to-5 spread
