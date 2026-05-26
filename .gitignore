@@ -5,6 +5,11 @@ build/
 .venv/
 *.pyc
 
+# Basketball-GM sweep: local zengm fork (separate repo, not tracked here)
+scripts/basketball_gm_sweep/zengm-fork/
+scripts/basketball_gm_sweep/runs/
+scripts/basketball_gm_sweep/node_modules/
+
 # LaTeX build artifacts
 paper/main.pdf
 paper/*.aux
