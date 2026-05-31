@@ -33,10 +33,6 @@
         </p>
     </header>
 
-    <div class="version-banner">
-        Headline run: <strong>2026-05-26</strong> &middot; commit <code>d91cffb</code> &middot; from the MIT Sloan Sports Analytics Conference 2027 paper submission
-    </div>
-
     <div id="boot-error" class="boot-error"></div>
 
     <!-- ============================================================ -->
@@ -168,7 +164,7 @@
             The 48 variants come from sweeping three of COLA's seven design &ldquo;dials&rdquo;: eligibility size (14, 22, or a 16-team tiered structure), stockpile cap (uncapped, 100, 150, or 200), and carry-over scope (single-season, unbounded, bounded over 30 years, or reset on championship). The other four dials are held at Classic COLA defaults.
         </p>
         <p class="methodology">
-            For each variant, we ran 50 simulated 30-season runs. The lottery itself uses the real ZenGM COLA code unchanged. Regular-season outcomes are synthesized (strength-weighted wins, single-elimination playoff bracket) because the full ZenGM game engine does not run cleanly outside a browser. Team strength persists across seasons via a small Markov model; parameters are calibrated for plausibility, not fit to historical NBA data (see paper &sect;5.1 for the full specification).
+            For each variant, we ran 50 simulated 30-season runs (headline run computed 2026-05-26). The lottery itself uses the real ZenGM COLA code unchanged. Regular-season outcomes are synthesized (strength-weighted wins, single-elimination playoff bracket) because the full ZenGM game engine does not run cleanly outside a browser. Team strength persists across seasons via a small Markov model; parameters are calibrated for plausibility, not fit to historical NBA data (see paper &sect;5.1 for the full specification).
         </p>
         <p class="methodology">
             Sensitivity passes at 30 and 100 replicates show no greater than 10% mean drift in the primary objective, so 50 replicates are statistically sufficient for the dominance ordering reported here.

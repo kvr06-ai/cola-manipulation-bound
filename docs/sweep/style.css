@@ -31,26 +31,6 @@ header.compact p.claim strong {
   color: var(--link);
 }
 
-/* Version banner */
-.version-banner {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.45rem 0.8rem;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin-bottom: 1.2rem;
-  text-align: center;
-}
-
-.version-banner code {
-  background: var(--code-bg);
-  color: var(--text);
-  padding: 0.05rem 0.35rem;
-  border-radius: 3px;
-  font-size: 0.78rem;
-}
-
 .boot-error {
   display: none;
   background: var(--surface);
