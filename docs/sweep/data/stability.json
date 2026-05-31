@@ -1,0 +1,38 @@
+{
+  "_meta": {
+    "headline_N": 50,
+    "sensitivity_N": [30, 100],
+    "subset_size": 9,
+    "subset_description": "Pareto-optimal headline configs (cids 11, 19, 26, 31, 45) union named variants (cids 0, 1, 17, 26, 32); 26 appears in both so the deduplicated subset has 9 configs.",
+    "headline_pareto_set": [11, 19, 26, 31, 45],
+    "primary_objective": "max_years_between_conf_finals",
+    "stability_rule": "A material shift is flagged when |mean(N=100) - mean(N=30)| / |mean(N=30)| > 10%.",
+    "flag_count": 0,
+    "flag_summary": "All sensitivity-subset configs have <=10% relative drift in mean(max_yrs_CF) between N=30 and N=100."
+  },
+  "configs": [
+    { "config_id": 11, "category": "Pareto",      "E": "14",         "C": 150,    "S": "reset-on-championship", "n30": { "med": 27.50, "std": 2.60 }, "n50": { "med": 27.00, "std": 2.71 }, "n100": { "med": 28.50, "std": 2.85 } },
+    { "config_id": 19, "category": "Pareto",      "E": "22",         "C": null,   "S": "reset-on-championship", "n30": { "med": 26.00, "std": 3.31 }, "n50": { "med": 26.00, "std": 3.31 }, "n100": { "med": 27.00, "std": 3.10 } },
+    { "config_id": 26, "category": "Pareto+Named","E": "22",         "C": 150,    "S": "bounded-30yr",          "n30": { "med": 28.00, "std": 2.58 }, "n50": { "med": 28.00, "std": 2.57 }, "n100": { "med": 28.00, "std": 2.67 } },
+    { "config_id": 31, "category": "Pareto",      "E": "22",         "C": 200,    "S": "reset-on-championship", "n30": { "med": 28.50, "std": 2.39 }, "n50": { "med": 27.50, "std": 2.76 }, "n100": { "med": 27.00, "std": 2.69 } },
+    { "config_id": 45, "category": "Pareto",      "E": "16-tiered",  "C": 200,    "S": "unbounded",             "n30": { "med": 28.00, "std": 2.35 }, "n50": { "med": 27.50, "std": 2.96 }, "n100": { "med": 28.00, "std": 3.25 } },
+    { "config_id": 0,  "category": "Named",       "E": "14",         "C": null,   "S": "single-season",         "n30": { "med": 29.50, "std": 3.30 }, "n50": { "med": 28.50, "std": 3.12 }, "n100": { "med": 29.00, "std": 3.03 } },
+    { "config_id": 1,  "category": "Named",       "E": "14",         "C": null,   "S": "unbounded",             "n30": { "med": 29.00, "std": 3.20 }, "n50": { "med": 27.50, "std": 2.99 }, "n100": { "med": 28.00, "std": 2.79 } },
+    { "config_id": 17, "category": "Named",       "E": "22",         "C": null,   "S": "unbounded",             "n30": { "med": 29.00, "std": 2.80 }, "n50": { "med": 29.00, "std": 2.89 }, "n100": { "med": 29.00, "std": 2.91 } },
+    { "config_id": 32, "category": "Named",       "E": "16-tiered",  "C": null,   "S": "single-season",         "n30": { "med": 28.00, "std": 2.13 }, "n50": { "med": 28.00, "std": 2.40 }, "n100": { "med": 28.00, "std": 2.79 } }
+  ],
+  "pareto_recomputed": {
+    "n30":  [0, 11, 19, 26, 45],
+    "n50":  [11, 19, 26, 31, 45],
+    "n100": [31],
+    "note": "Pareto sets at N=30 and N=100 are computed within the SUBSET only (9 configs), not against all 48. Membership flips reflect within-subset re-ordering, not full-grid instability."
+  },
+  "pareto_borderline": [
+    { "config_id": 0,  "n30": true,  "n50": false, "n100": false },
+    { "config_id": 11, "n30": true,  "n50": true,  "n100": false },
+    { "config_id": 19, "n30": true,  "n50": true,  "n100": false },
+    { "config_id": 26, "n30": true,  "n50": true,  "n100": false },
+    { "config_id": 31, "n30": false, "n50": true,  "n100": true  },
+    { "config_id": 45, "n30": true,  "n50": true,  "n100": false }
+  ]
+}

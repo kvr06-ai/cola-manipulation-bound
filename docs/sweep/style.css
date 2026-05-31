@@ -1,0 +1,571 @@
+/* Sweep viewer — page-specific styles. Inherits palette from ../css/variables.css */
+
+:root {
+  /* Category palette for scatter points / badges */
+  --sweep-pareto-named: var(--link);        /* gold — Capped@150 */
+  --sweep-pareto: #53a8b6;                  /* cyan — Pareto only */
+  --sweep-named: var(--accent);             /* red — named only */
+  --sweep-other: var(--text-secondary);     /* gray — neither */
+}
+
+.headline-claim {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--link);
+  border-radius: var(--radius);
+  padding: 1rem 1.2rem;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+
+.headline-claim h2 {
+  color: var(--link);
+  font-size: 1.05rem;
+  border: none;
+  padding: 0;
+  margin: 0 0 0.4rem 0;
+}
+
+.headline-claim p {
+  color: var(--text);
+  font-size: 0.92rem;
+  margin: 0.35rem 0;
+}
+
+.headline-claim p.note {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+/* Version banner — small meta strip beneath header */
+.version-banner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.8rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.version-banner code {
+  background: var(--code-bg);
+  color: var(--text);
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.78rem;
+}
+
+/* Legend for scatter plot */
+.scatter-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.2rem;
+  align-items: center;
+  margin: 0.4rem 0 0.7rem 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.legend-swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  display: inline-block;
+}
+
+.legend-dot.diamond {
+  transform: rotate(45deg);
+}
+
+.legend-dot.outline {
+  background: transparent !important;
+  border: 1.5px solid;
+}
+
+/* Plot view toggle pills */
+.view-toggle {
+  display: inline-flex;
+  margin-bottom: 0.6rem;
+}
+
+.view-toggle button {
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.9rem;
+  font-size: 0.83rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background var(--transition), color var(--transition);
+}
+
+.view-toggle button:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.view-toggle button:last-child  { border-radius: 0 var(--radius) var(--radius) 0; }
+.view-toggle button:not(:first-child) { border-left: none; }
+
+.view-toggle button:hover:not(.active) {
+  background: var(--surface-alt);
+  color: var(--text);
+}
+
+.view-toggle button.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+/* Sweep table */
+.sweep-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.sweep-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.sweep-table th,
+.sweep-table td {
+  padding: 0.4rem 0.55rem;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  background: var(--surface);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.sweep-table th {
+  background: var(--surface-alt);
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  text-align: right;
+}
+
+.sweep-table th.text,
+.sweep-table td.text {
+  text-align: left;
+}
+
+.sweep-table th:hover {
+  color: var(--link);
+}
+
+.sweep-table th .sort-arrow {
+  display: inline-block;
+  width: 0.8em;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.sweep-table tbody tr:hover td {
+  background: var(--surface-alt);
+}
+
+.sweep-table tbody tr.pareto-row td {
+  background: rgba(232, 180, 76, 0.08);
+}
+
+.sweep-table tbody tr.pareto-row:hover td {
+  background: rgba(232, 180, 76, 0.14);
+}
+
+.sweep-table tbody tr.pareto-named-row td {
+  background: rgba(232, 180, 76, 0.18);
+}
+
+.sweep-table tbody tr.pareto-named-row:hover td {
+  background: rgba(232, 180, 76, 0.26);
+}
+
+/* Badges inside table & tooltip */
+.badge {
+  display: inline-block;
+  padding: 0.08rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 3px;
+  background: var(--surface-alt);
+  color: var(--text);
+  letter-spacing: 0.03em;
+}
+
+.badge-pareto {
+  background: rgba(232, 180, 76, 0.18);
+  color: var(--link);
+  border: 1px solid var(--link);
+}
+
+.badge-named {
+  background: rgba(233, 69, 96, 0.15);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.badge-pareto-named {
+  background: var(--link);
+  color: var(--bg);
+}
+
+/* Filter panel */
+.filter-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.5rem;
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 0.8rem;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.filter-group .filter-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.filter-group .filter-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filter-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.filter-group input[type="checkbox"] {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.filter-group input[type="search"] {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.55rem;
+  font-size: 0.83rem;
+  min-width: 180px;
+  font-family: inherit;
+}
+
+.filter-group input[type="search"]:focus {
+  outline: 1px solid var(--accent);
+}
+
+.filter-reset {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  font-family: inherit;
+  align-self: flex-end;
+}
+
+.filter-reset:hover {
+  color: var(--text);
+  background: var(--surface-alt);
+}
+
+.row-count {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-top: 0.4rem;
+}
+
+/* Cap-cancels-out confirmation block */
+.cap-cancels-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+}
+
+.cap-cancels-block h3 {
+  color: var(--accent);
+  font-size: 0.98rem;
+  margin-bottom: 0.5rem;
+}
+
+.cap-cancels-block .lede {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-bottom: 0.7rem;
+}
+
+.cap-table {
+  width: auto;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+  margin: 0.4rem 0;
+  color: var(--text);
+}
+
+.cap-table th,
+.cap-table td {
+  padding: 0.42rem 0.85rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  text-align: center;
+  color: var(--text);
+}
+
+.cap-table th {
+  background: var(--surface-alt);
+  font-weight: 600;
+}
+
+.cap-table th:first-child,
+.cap-table td:first-child {
+  text-align: left;
+  font-weight: 600;
+}
+
+.cap-table .cap-value {
+  color: var(--link);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* Methodology dial grid */
+.dial-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+  margin: 0.6rem 0;
+  color: var(--text);
+}
+
+.dial-table th,
+.dial-table td {
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  text-align: left;
+  vertical-align: top;
+  color: var(--text);
+}
+
+.dial-table th {
+  background: var(--surface-alt);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dial-table code {
+  background: var(--code-bg);
+  color: var(--text);
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+  font-size: 0.78rem;
+}
+
+/* Assumption cards */
+.assumption-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+  margin-top: 0.4rem;
+  counter-reset: assumption;
+}
+
+.assumption-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  position: relative;
+  color: var(--text);
+}
+
+.assumption-card::before {
+  counter-increment: assumption;
+  content: counter(assumption);
+  position: absolute;
+  top: 0.7rem;
+  right: 0.9rem;
+  background: var(--surface-alt);
+  color: var(--link);
+  padding: 0.05rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.assumption-card h3 {
+  color: var(--accent);
+  font-size: 0.9rem;
+  margin: 0 1.8rem 0.35rem 0;
+}
+
+.assumption-card p {
+  color: var(--text);
+  font-size: 0.84rem;
+  margin-bottom: 0.3rem;
+}
+
+.assumption-card .why {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.assumption-card code {
+  background: var(--code-bg);
+  color: var(--text);
+  padding: 0.03rem 0.3rem;
+  border-radius: 3px;
+  font-size: 0.78rem;
+}
+
+.assumption-card .formula {
+  background: var(--code-bg);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 4px;
+  margin: 0.4rem 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.assumption-note {
+  background: var(--surface-alt);
+  border-left: 3px solid var(--link);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.8rem;
+  color: var(--text);
+  font-size: 0.85rem;
+  margin-bottom: 0.6rem;
+}
+
+/* Stability mini panel */
+.stability-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.8rem 1rem;
+  margin-top: 0.8rem;
+}
+
+.stability-panel h3 {
+  color: var(--accent);
+  font-size: 0.95rem;
+  margin-bottom: 0.4rem;
+}
+
+.stability-panel .ok {
+  color: var(--link);
+  font-weight: 600;
+}
+
+/* Downloads footer */
+.downloads-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem 1.2rem;
+}
+
+.downloads-grid a {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.8rem;
+  text-decoration: none;
+  color: var(--link);
+  font-size: 0.85rem;
+  transition: background var(--transition);
+}
+
+.downloads-grid a:hover {
+  background: var(--surface-alt);
+  text-decoration: none;
+}
+
+.downloads-grid a .lbl {
+  display: block;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.88rem;
+  margin-bottom: 0.15rem;
+}
+
+.downloads-grid a .desc {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+/* Tooltip-like styling for Chart.js external content (not used; keep canvas tooltip) */
+.scatter-canvas-wrap {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.8rem;
+}
+
+.scatter-canvas-wrap canvas {
+  max-height: 460px;
+}
+
+/* Cross-link banner to sister tool */
+.sister-link {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--link);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.8rem;
+  font-size: 0.85rem;
+  color: var(--text);
+  margin-bottom: 1.2rem;
+}
+
+.sister-link a {
+  color: var(--link);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.sister-link a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .assumption-list { grid-template-columns: 1fr; }
+  .downloads-grid { grid-template-columns: 1fr; }
+}
