@@ -1,4 +1,4 @@
-/* COLA Pareto Frontier Viewer — interactive logic (simplified).
+/* COLA Pareto Frontier Viewer: interactive logic (simplified).
  * Loads pre-computed sweep CSV; renders Chart.js scatter + 9-row key-results table.
  * No filters, no search, no sort, no toggle. */
 
@@ -19,8 +19,8 @@
   // (asc by max_yrs_CF), then named-only (asc by config_id).
   const KEY_ROW_IDS = [26, 19, 11, 31, 45, 0, 1, 17, 32];
 
-  // Cached palette pulled from the project's design tokens — read once at
-  // boot from getComputedStyle on :root so we never inline hex literals.
+  // Cached palette pulled from the project's design tokens (read once at
+  // boot from getComputedStyle on :root so we never inline hex literals).
   const palette = (function readPalette() {
     const root = getComputedStyle(document.documentElement);
     const g = (name) => root.getPropertyValue(name).trim();
@@ -95,7 +95,7 @@
   }
 
   function fmt(n, decimals) {
-    if (n === null || n === undefined || (typeof n === 'number' && isNaN(n))) return '—';
+    if (n === null || n === undefined || (typeof n === 'number' && isNaN(n))) return 'n/a';
     if (typeof n !== 'number') return String(n);
     return n.toFixed(decimals === undefined ? 2 : decimals);
   }
@@ -184,10 +184,10 @@
               label: function (item) {
                 const r = item.raw.row;
                 const lines = [];
-                lines.push('E = ' + r.E + '   C = ' + fmtCap(r.C) + '   S = ' + r.S);
-                lines.push('max yrs between CF (med ± std): ' + fmt(r.max_years_between_conf_finals_median, 2) + ' ± ' + fmt(r.max_years_between_conf_finals_std, 2));
-                lines.push('manipulation gain: ' + fmt(r.manipulation_gain_pct_median, 4) + '%');
-                lines.push('rank 1-to-5 spread (med): ' + fmt(r.rank_one_to_five_spread_median, 3));
+                lines.push('Eligibility = ' + r.E + ' · Cap = ' + fmtCap(r.C) + ' · Carry-over = ' + r.S);
+                lines.push('Years between conf. finals (med ± std): ' + fmt(r.max_years_between_conf_finals_median, 2) + ' ± ' + fmt(r.max_years_between_conf_finals_std, 2));
+                lines.push('Manipulation gain: ' + fmt(r.manipulation_gain_pct_median, 4) + '%');
+                lines.push('Rank 1-to-5 spread (median): ' + fmt(r.rank_one_to_five_spread_median, 3));
                 return lines;
               }
             }
@@ -198,7 +198,7 @@
             type: 'logarithmic',
             min: 1,
             max: 35,
-            title: { display: true, text: 'Manipulation gain Δp (%) — log scale · lower is better', color: palette.text },
+            title: { display: true, text: 'Manipulation gain (%, lower is better, log scale)', color: palette.text },
             ticks: {
               color: palette.textDim,
               callback: function (v) {
@@ -209,7 +209,7 @@
             grid: { color: palette.grid }
           },
           y: {
-            title: { display: true, text: 'max years between conference finals (median) · lower is better', color: palette.text },
+            title: { display: true, text: 'Years between conference finals (median, lower is better)', color: palette.text },
             ticks: { color: palette.textDim },
             grid: { color: palette.grid }
           }
@@ -269,7 +269,7 @@
       const main = document.getElementById('boot-error');
       if (main) {
         main.style.display = 'block';
-        main.textContent = 'Failed to load sweep data: ' + (err && err.message ? err.message : String(err)) + '. Open the page via a local web server (python3 -m http.server) — fetch() blocks file:// URLs in most browsers.';
+        main.textContent = 'Failed to load sweep data: ' + (err && err.message ? err.message : String(err)) + '. Open the page via a local web server (python3 -m http.server); fetch() blocks file:// URLs in most browsers.';
       }
     }
   }

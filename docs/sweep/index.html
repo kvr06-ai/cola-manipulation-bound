@@ -11,10 +11,10 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>COLA Pareto Frontier Viewer — SSAC27 headline sweep</title>
-    <meta name="description" content="Headline empirical sweep from the SSAC27 submission. Capped COLA @ MAX=150 is the only named variant on the Pareto frontier.">
+    <title>COLA Pareto Frontier Viewer: which NBA draft-lottery design is worth considering?</title>
+    <meta name="description" content="We tested 48 variants of Carry-Over Lottery Allocation (COLA) in a basketball simulator. Five are Pareto-optimal; only one of those is a named COLA variant.">
     <meta property="og:title" content="COLA Pareto Frontier Viewer">
-    <meta property="og:description" content="Headline empirical sweep from the SSAC27 submission. Capped COLA @ MAX=150 is the only named variant on the Pareto frontier.">
+    <meta property="og:description" content="We tested 48 variants of Carry-Over Lottery Allocation (COLA) in a basketball simulator. Five are Pareto-optimal; only one of those is a named COLA variant.">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="../css/variables.css">
     <link rel="stylesheet" href="../css/layout.css">
@@ -28,25 +28,49 @@
 
     <header class="compact">
         <h1>COLA Pareto Frontier Viewer</h1>
-        <p class="claim"><strong>Capped COLA @ MAX = 150 (cfg 26) is the only named variant on the Pareto frontier</strong> under universal-dominance comparison across three league-relevant objectives.</p>
-        <p class="section-lede">
-            Visualizes a Basketball-GM testbed across 48 configurations of the COLA design space. With three objectives in play (including "max years between conference-finals appearances"), the Pareto frontier identifies the configurations no alternative dominates on every axis: the configurations a league office could defensibly choose. Paper details in &sect;5.
+        <p class="claim">
+            Which NBA draft-lottery design is worth considering? We tested 48 variants in a basketball simulator. This page shows which ones came out on top.
         </p>
     </header>
 
     <div class="version-banner">
-        Headline run: <strong>2026-05-26</strong> &middot; commit <code>d91cffb</code>
+        Headline run: <strong>2026-05-26</strong> &middot; commit <code>d91cffb</code> &middot; from the MIT Sloan Sports Analytics Conference 2027 paper submission
     </div>
 
     <div id="boot-error" class="boot-error"></div>
 
     <!-- ============================================================ -->
-    <!-- SECTION 1: Pareto scatter (centerpiece)                      -->
+    <!-- SECTION 1: What this shows (background + objectives + Pareto) -->
     <!-- ============================================================ -->
     <section>
-        <h2>Pareto scatter — manipulation gain vs. CF gap</h2>
-        <p class="section-lede">
-            48 configurations (E &times; C &times; S grid). X: closed-form manipulation gain bound (log scale, lower is better). Y: median worst-franchise gap between conference-finals appearances (lower is better). Pareto-optimal configs are highlighted; cfg 26 (Capped@150) is the only one that is also a named variant.
+        <h2>What this shows</h2>
+        <p>
+            Every NBA season, teams that fall out of playoff contention have a documented incentive to lose games on purpose. Worse end-of-season records improve a team's odds in the draft lottery. <a href="https://cdn.prod.website-files.com/68d6be744d7efccc2207f571/68d6be744d7efccc2207f987_munro_no_tanking_draft_policy.pdf">Munro &amp; Banchio (2020)</a> proved that no draft mechanism based only on end-of-season records can both reward poor performance and eliminate this incentive.
+        </p>
+        <p>
+            <a href="https://arxiv.org/html/2602.02487v1">Carry-Over Lottery Allocation (COLA)</a>, proposed by Highley, Duncan, and Volkov (2026), sidesteps that impossibility by basing draft priority on a team's multi-year playoff history instead of single-season records. COLA is not one design but a family of them: Classic, Simple, Capped, Countdown, plus the NBA's 2026 &ldquo;3-2-1&rdquo; reform proposal, which sits nearby in the same design space.
+        </p>
+        <p>
+            We tested 48 variants from this design space against the <a href="https://zengm.com/basketball/">ZenGM Basketball-GM simulator</a> (per Prof. Highley's recommendation) and scored each variant on three things a league office cares about:
+        </p>
+        <ul>
+            <li><strong>Years between conference finals (lower is better).</strong> The longest stretch any single team goes without reaching the conference finals. Measures whether all teams eventually rotate into success. Prof. Highley flagged this as the primary objective.</li>
+            <li><strong>Manipulation gain (lower is better).</strong> The biggest probability boost a team can get by manipulating its position in the lottery pool. Measures tanking resistance.</li>
+            <li><strong>Rank-1 to rank-5 spread (higher is better).</strong> How much the lottery actually favors the worst teams over the slightly-less-bad teams. Measures whether the mechanism gives weak teams meaningful advantage.</li>
+        </ul>
+        <p>
+            With three objectives in play, no single variant is &ldquo;best&rdquo; on all of them at once. The <strong>Pareto frontier</strong> identifies the variants that are not dominated by any alternative on all three objectives simultaneously. Variants off the frontier are strictly worse than something else; variants on the frontier are the ones a league office could defensibly choose between.
+        </p>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 2: The Pareto frontier (scatter)                     -->
+    <!-- ============================================================ -->
+    <section>
+        <h2>The Pareto frontier</h2>
+        <p class="section-lede"><strong>Five of the 48 variants are Pareto-optimal. Only one is a named COLA variant: Capped COLA with cap value 150 (Capped@150).</strong></p>
+        <p>
+            Each dot below is one variant. The X-axis is manipulation gain (lower is better); the Y-axis is the longest gap between conference-finals appearances (lower is better). Pareto-optimal variants are highlighted in color; named variants (Classic, Simple, Status quo, 3-2-1, Capped@150) are shown as diamonds. Hover over any dot for full details.
         </p>
 
         <div class="scatter-canvas-wrap">
@@ -54,33 +78,33 @@
         </div>
 
         <div class="scatter-legend" aria-hidden="true">
-            <span class="legend-swatch"><span class="legend-dot diamond filled"></span>Pareto + named (Capped@150)</span>
-            <span class="legend-swatch"><span class="legend-dot pareto"></span>Pareto only (4 configs)</span>
-            <span class="legend-swatch"><span class="legend-dot diamond outline"></span>Named only (4 configs)</span>
-            <span class="legend-swatch"><span class="legend-dot other"></span>Neither (39 configs)</span>
+            <span class="legend-swatch"><span class="legend-dot diamond filled"></span>Pareto-optimal AND named (Capped@150)</span>
+            <span class="legend-swatch"><span class="legend-dot pareto"></span>Pareto-optimal only (4 variants)</span>
+            <span class="legend-swatch"><span class="legend-dot diamond outline"></span>Named only, dominated (4 variants)</span>
+            <span class="legend-swatch"><span class="legend-dot other"></span>Neither (39 variants)</span>
         </div>
     </section>
 
     <!-- ============================================================ -->
-    <!-- SECTION 2: Key-results table (9 unique configs)              -->
+    <!-- SECTION 3: Pareto-optimal + named variants table             -->
     <!-- ============================================================ -->
     <section>
-        <h2>Key results — Pareto-optimal and named variants</h2>
-        <p class="section-lede">
-            Nine unique configurations: five Pareto-optimal (cfgs 11, 19, 26, 31, 45) and five named variants (cfgs 0, 1, 17, 26, 32), deduplicated since cfg 26 is both.
+        <h2>Pareto-optimal and named variants</h2>
+        <p>
+            Nine variants in detail: the five Pareto-optimal configurations plus the four named variants that are dominated. Capped@150 appears once (it is both Pareto-optimal and named).
         </p>
         <div class="key-table-wrap">
             <table class="key-table">
                 <thead>
                     <tr>
-                        <th>cfg</th>
-                        <th>Tag</th>
-                        <th>E</th>
-                        <th>C</th>
-                        <th>S</th>
-                        <th>maxYrs CF (med &plusmn; std)</th>
-                        <th>manip %</th>
-                        <th>rank 1&ndash;5 spread (med)</th>
+                        <th>Variant #</th>
+                        <th>Named variant</th>
+                        <th>Eligibility size</th>
+                        <th>Cap</th>
+                        <th>Carry-over scope</th>
+                        <th>Years between conf. finals (median &plusmn; std)</th>
+                        <th>Manipulation gain (%)</th>
+                        <th>Rank 1&ndash;5 spread (median)</th>
                     </tr>
                 </thead>
                 <tbody id="key-tbody"></tbody>
@@ -89,31 +113,21 @@
     </section>
 
     <!-- ============================================================ -->
-    <!-- SECTION 3: Methodology (3-sentence prose, no math)           -->
+    <!-- SECTION 4: Cap-cancels-out pattern                           -->
     <!-- ============================================================ -->
     <section>
-        <h2>Methodology</h2>
-        <p class="methodology">
-            The 48 configurations vary three dials of the COLA design space: eligibility size E &isin; {14, 22, 16-tiered}, stockpile cap C &isin; {&infin;, 100, 150, 200}, and carry-over scope S &isin; {single-season, unbounded, bounded-30yr, reset-on-championship}. Each configuration is simulated for 50 replicates of 30 seasons; the real ZenGM lottery code is used unchanged, while regular-season outcomes are synthesized and team strength persists across seasons via a Markov model whose parameters are calibrated for plausibility (full parameters in paper &sect;5.1). Sensitivity at N=30 and N=100 on the 9-config subset above confirms no flagged drift in the primary objective (mean shift &le; 10% across replicate counts).
-        </p>
-    </section>
-
-    <!-- ============================================================ -->
-    <!-- SECTION 4: Cap-cancels-out 3x3                               -->
-    <!-- ============================================================ -->
-    <section>
-        <h2>Cap cancels out: manipulation gain is invariant under C</h2>
-        <p class="section-lede">
-            Corollary 2.1 predicts the capped manipulation-gain bound depends only on eligibility size, not on the cap value. Every capped configuration at the same E sits at the same gain across C &isin; {100, 150, 200}.
+        <h2>One clean analytical pattern: the cap value drops out</h2>
+        <p>
+            The paper proves (Corollary 2.1) that for capped COLA variants, the manipulation-gain bound depends only on the eligibility pool size, <em>not</em> on the cap value. The empirical sweep confirms it: at any given eligibility size, every cap value produces the same manipulation gain.
         </p>
         <table class="cap-table">
             <thead>
                 <tr>
-                    <th>E</th>
-                    <th>C = 100</th>
-                    <th>C = 150</th>
-                    <th>C = 200</th>
-                    <th>0.3 / |E|</th>
+                    <th>Eligibility size</th>
+                    <th>Cap = 100</th>
+                    <th>Cap = 150</th>
+                    <th>Cap = 200</th>
+                    <th>Predicted (0.3 / eligibility size)</th>
                 </tr>
             </thead>
             <tbody>
@@ -143,33 +157,49 @@
     </section>
 
     <!-- ============================================================ -->
-    <!-- SECTION 5: Three key assumptions                             -->
+    <!-- SECTION 5: Methodology                                       -->
+    <!-- ============================================================ -->
+    <section>
+        <h2>How the simulation works</h2>
+        <p class="methodology">
+            The 48 variants come from sweeping three of COLA's seven design &ldquo;dials&rdquo;: eligibility size (14, 22, or a 16-team tiered structure), stockpile cap (uncapped, 100, 150, or 200), and carry-over scope (single-season, unbounded, bounded over 30 years, or reset on championship). The other four dials are held at Classic COLA defaults.
+        </p>
+        <p class="methodology">
+            For each variant, we ran 50 simulated 30-season runs. The lottery itself uses the real ZenGM COLA code unchanged. Regular-season outcomes are synthesized (strength-weighted wins, single-elimination playoff bracket) because the full ZenGM game engine does not run cleanly outside a browser. Team strength persists across seasons via a small Markov model; parameters are calibrated for plausibility, not fit to historical NBA data (see paper &sect;5.1 for the full specification).
+        </p>
+        <p class="methodology">
+            Sensitivity passes at 30 and 100 replicates show no greater than 10% mean drift in the primary objective, so 50 replicates are statistically sufficient for the dominance ordering reported here.
+        </p>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 6: Three assumptions worth flagging                  -->
     <!-- ============================================================ -->
     <section>
         <h2>Three assumptions worth flagging</h2>
         <ol class="assumption-prose">
             <li>
-                <strong>Real ZenGM lottery; synthesized regular season.</strong>
-                The ZenGM lottery code runs unchanged. Regular-season game outcomes are synthesized (strength-weighted wins + single-elim playoff bracket) because ZenGM's <code>createLeague()</code> does not port cleanly to Node. The synthesis bypasses contracts, trades, and injuries (none of which the dial space controls) but preserves the feedback loop the primary objective measures.
+                <strong>Real lottery, synthesized rest-of-season.</strong>
+                The ZenGM lottery code runs unchanged. Game outcomes within each season are synthesized because ZenGM's full game engine does not run cleanly outside a browser. The synthesis skips contracts, trades, and injuries, none of which the dial space controls, but preserves the feedback loop the primary objective measures.
             </li>
             <li>
-                <strong>Team strength is a Markov model calibrated for plausibility.</strong>
-                Persistence, parity mean, per-draft impact, and annual shock variance were smoke-tuned so the CF-gap distribution disperses relative to an i.i.d. baseline. Parameters are not fit to historical NBA team-strength trajectories; sensitivity on these parameters is future work.
+                <strong>Team strength is a plausible model, not a calibrated one.</strong>
+                Persistence, parity mean, per-draft impact, and annual shock variance were tuned so the conference-finals gap distribution disperses relative to an i.i.d. baseline. Parameters are not fit to historical NBA team-strength trajectories; sensitivity on these parameters is future work.
             </li>
             <li>
-                <strong>Three dials swept; the other four held at Classic-COLA defaults.</strong>
-                Eligibility (E), cap (C), and carry-over scope (S) span the 48-cell grid. Increment &Delta;, diminishment &rho;, lottery weighting W, and tiebreak T are fixed; &Delta; scales the bound linearly (already in Theorem 1), and the others lack a published-policy anchor for sweeping.
+                <strong>Three dials swept, four held fixed.</strong>
+                The 48 variants vary eligibility size, cap, and carry-over scope. The remaining four dials (increment, diminishment, lottery weighting, tiebreak) stay at Classic COLA defaults. The increment dial scales the bound linearly (already covered by Theorem 1 in the paper); the others lack a published-policy anchor that would justify a sweep.
             </li>
         </ol>
     </section>
 
     <!-- ============================================================ -->
-    <!-- SECTION 6: Footer with 4 links                               -->
+    <!-- SECTION 7: Footer with links                                 -->
     <!-- ============================================================ -->
     <footer class="footer-links">
-        <a href="#" id="paper-link" title="Placeholder — SSAC27 portal URL will be filled once available">Paper PDF (TBD)</a>
+        <a href="#" id="paper-link" title="Placeholder; SSAC27 portal URL will be filled once available">Paper PDF (TBD)</a>
         <a href="https://github.com/kvr06-ai/cola-manipulation-bound">Engineering repo</a>
-        <a href="https://kvr06-ai.github.io/cola-manipulation-bound/">COLA Explorer (sister tool)</a>
+        <a href="https://kvr06-ai.github.io/cola-manipulation-bound/">COLA Explorer (historical backtester)</a>
         <a href="https://github.com/kvr06-ai/zengm">ZenGM upstream</a>
         <span class="footer-divider">&middot;</span>
         <a href="data/headline_summary.csv" download>headline_summary.csv</a>
