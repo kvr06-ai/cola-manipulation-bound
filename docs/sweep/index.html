@@ -12,9 +12,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>COLA Pareto Frontier Viewer — SSAC27 headline sweep</title>
-    <meta name="description" content="Interactive view of the headline empirical sweep from the SSAC27 submission. 48 configurations across three league-relevant objectives.">
+    <meta name="description" content="Headline empirical sweep from the SSAC27 submission. Capped COLA @ MAX=150 is the only named variant on the Pareto frontier.">
     <meta property="og:title" content="COLA Pareto Frontier Viewer">
-    <meta property="og:description" content="Interactive view of the headline empirical sweep from the SSAC27 submission. 48 configurations × 50 replicates × 30 simulated seasons.">
+    <meta property="og:description" content="Headline empirical sweep from the SSAC27 submission. Capped COLA @ MAX=150 is the only named variant on the Pareto frontier.">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="../css/variables.css">
     <link rel="stylesheet" href="../css/layout.css">
@@ -22,388 +22,154 @@
     <link rel="stylesheet" href="../css/charts.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
-    <script>
-        window.MathJax = {
-            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
-            svg: { fontCache: 'global' }
-        };
-    </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 </head>
 <body>
 <div class="container">
 
-    <header>
+    <header class="compact">
         <h1>COLA Pareto Frontier Viewer</h1>
-        <p class="subtitle">Interactive view of the headline empirical sweep from the SSAC27 submission.</p>
-        <p class="links">
-            <a href="#" id="paper-link" title="Placeholder — paper PDF link will be filled in once SSAC27 portal URL is live">Paper PDF (TBD)</a> &middot;
-            <a href="https://github.com/kvr06-ai/cola-manipulation-bound">Engineering repo</a> &middot;
-            <a href="https://kvr06-ai.github.io/cola-manipulation-bound/">COLA Explorer (sister tool)</a>
-        </p>
+        <p class="claim"><strong>Capped COLA @ MAX = 150 (cfg 26) is the only named variant on the Pareto frontier</strong> under universal-dominance comparison across three league-relevant objectives.</p>
     </header>
 
     <div class="version-banner">
-        Headline run: <strong>2026-05-26</strong> &middot; commit <code>d91cffb</code> &middot;
-        48 configurations &times; 50 replicates &times; 30 simulated seasons
+        Headline run: <strong>2026-05-26</strong> &middot; commit <code>d91cffb</code>
     </div>
 
-    <div id="boot-error" style="display:none; background: var(--surface); border: 1px solid var(--accent); border-left: 4px solid var(--accent); color: var(--text); padding: 0.8rem 1rem; border-radius: 6px; margin-bottom: 1rem;"></div>
+    <div id="boot-error" class="boot-error"></div>
 
     <!-- ============================================================ -->
-    <!-- SECTION 1: Headline claim                                    -->
+    <!-- SECTION 1: Pareto scatter (centerpiece)                      -->
     <!-- ============================================================ -->
     <section>
-        <div class="headline-claim">
-            <h2>Headline Result</h2>
-            <p><strong>Capped COLA at MAX = 150 (configuration 26) is the only named variant on the Pareto frontier</strong> under unified universal-dominance comparison across three league-relevant objectives.</p>
-            <p class="note">Status quo, Classic COLA, Simple COLA, and the NBA's 2026 3-2-1 proposal are all dominated. Four un-named configurations (cfgs 11, 19, 31, 45) also surface as Pareto-optimal.</p>
-        </div>
-    </section>
-
-    <!-- ============================================================ -->
-    <!-- SECTION 2: Interactive Pareto scatter                        -->
-    <!-- ============================================================ -->
-    <section>
-        <h2>Pareto Scatter — manipulation gain vs. CF gap</h2>
-        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.6rem;">
-            Each point is one of the 48 configurations. X axis: closed-form manipulation gain bound (lower is better, log-scaled). Y axis: median worst-franchise gap between conference-finals appearances across 50 replicates (lower is better). The third dominance dimension (rank-1-to-5 spread) is in the tooltip and the table below. Hover any point for full details.
+        <h2>Pareto scatter — manipulation gain vs. CF gap</h2>
+        <p class="section-lede">
+            48 configurations (E &times; C &times; S grid). X: closed-form manipulation gain bound (log scale, lower is better). Y: median worst-franchise gap between conference-finals appearances (lower is better). Pareto-optimal configs are highlighted; cfg 26 (Capped@150) is the only one that is also a named variant.
         </p>
 
-        <div class="view-toggle" id="view-toggle" role="tablist" aria-label="Scatter view">
-            <button class="active" data-view="all">All 48 configs</button>
-            <button data-view="pareto">Pareto only</button>
-            <button data-view="named">Named variants only</button>
-        </div>
-
-        <div class="scatter-canvas-wrap" style="height: 460px;">
+        <div class="scatter-canvas-wrap">
             <canvas id="pareto-scatter"></canvas>
         </div>
 
         <div class="scatter-legend" aria-hidden="true">
-            <span class="legend-swatch"><span class="legend-dot diamond" style="background: var(--link);"></span>Pareto + named (Capped@150, cfg 26)</span>
-            <span class="legend-swatch"><span class="legend-dot" style="background: var(--sweep-pareto, #53a8b6); border-radius: 50%;"></span>Pareto only (cfgs 11, 19, 31, 45)</span>
-            <span class="legend-swatch"><span class="legend-dot diamond outline" style="border-color: var(--accent);"></span>Named only (cfgs 0, 1, 17, 32)</span>
-            <span class="legend-swatch"><span class="legend-dot" style="background: var(--text-secondary); border-radius: 50%; width: 8px; height: 8px;"></span>Neither (39 configs)</span>
+            <span class="legend-swatch"><span class="legend-dot diamond filled"></span>Pareto + named (Capped@150)</span>
+            <span class="legend-swatch"><span class="legend-dot pareto"></span>Pareto only (4 configs)</span>
+            <span class="legend-swatch"><span class="legend-dot diamond outline"></span>Named only (4 configs)</span>
+            <span class="legend-swatch"><span class="legend-dot other"></span>Neither (39 configs)</span>
         </div>
     </section>
 
     <!-- ============================================================ -->
-    <!-- SECTION 3: Sortable + filterable config table                -->
+    <!-- SECTION 2: Key-results table (9 unique configs)              -->
     <!-- ============================================================ -->
     <section>
-        <h2>Configuration Table — all 48 rows</h2>
-        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.6rem;">
-            Filter by dial value, by Pareto / named-variant status, or by search. Click any column header to sort. Default sort: Pareto-optimal first, then by max-yrs-CF ascending.
+        <h2>Key results — Pareto-optimal and named variants</h2>
+        <p class="section-lede">
+            Nine unique configurations: five Pareto-optimal (cfgs 11, 19, 26, 31, 45) and five named variants (cfgs 0, 1, 17, 26, 32), deduplicated since cfg 26 is both.
         </p>
-
-        <div class="filter-panel">
-            <div class="filter-group">
-                <span class="filter-label">Eligibility (E)</span>
-                <div class="filter-checks">
-                    <label><input type="checkbox" data-filter="E" value="14" checked>14</label>
-                    <label><input type="checkbox" data-filter="E" value="22" checked>22</label>
-                    <label><input type="checkbox" data-filter="E" value="16-tiered" checked>16-tiered</label>
-                </div>
-            </div>
-            <div class="filter-group">
-                <span class="filter-label">Cap (C)</span>
-                <div class="filter-checks">
-                    <label><input type="checkbox" data-filter="C" value="null" checked>&infin;</label>
-                    <label><input type="checkbox" data-filter="C" value="100" checked>100</label>
-                    <label><input type="checkbox" data-filter="C" value="150" checked>150</label>
-                    <label><input type="checkbox" data-filter="C" value="200" checked>200</label>
-                </div>
-            </div>
-            <div class="filter-group">
-                <span class="filter-label">Carry-over scope (S)</span>
-                <div class="filter-checks">
-                    <label><input type="checkbox" data-filter="S" value="single-season" checked>single-season</label>
-                    <label><input type="checkbox" data-filter="S" value="unbounded" checked>unbounded</label>
-                    <label><input type="checkbox" data-filter="S" value="bounded-30yr" checked>bounded-30yr</label>
-                    <label><input type="checkbox" data-filter="S" value="reset-on-championship" checked>reset-on-championship</label>
-                </div>
-            </div>
-            <div class="filter-group">
-                <span class="filter-label">Category</span>
-                <div class="filter-checks">
-                    <label><input type="checkbox" data-filter="cat" value="pareto-named" checked>Pareto + named</label>
-                    <label><input type="checkbox" data-filter="cat" value="pareto" checked>Pareto only</label>
-                    <label><input type="checkbox" data-filter="cat" value="named" checked>Named only</label>
-                    <label><input type="checkbox" data-filter="cat" value="other" checked>Neither</label>
-                </div>
-            </div>
-            <div class="filter-group">
-                <span class="filter-label">Search</span>
-                <input id="search-box" type="search" placeholder="cfg id or name (e.g. 'Classic', '26')">
-            </div>
-            <button id="filter-reset" class="filter-reset" type="button">Reset filters</button>
-        </div>
-
-        <div class="sweep-table-wrap" style="max-height: 560px; overflow-y: auto;">
-            <table class="sweep-table">
-                <thead id="sweep-thead"></thead>
-                <tbody id="sweep-tbody"></tbody>
+        <div class="key-table-wrap">
+            <table class="key-table">
+                <thead>
+                    <tr>
+                        <th>cfg</th>
+                        <th>Tag</th>
+                        <th>E</th>
+                        <th>C</th>
+                        <th>S</th>
+                        <th>maxYrs CF (med &plusmn; std)</th>
+                        <th>manip %</th>
+                        <th>rank 1&ndash;5 spread (med)</th>
+                    </tr>
+                </thead>
+                <tbody id="key-tbody"></tbody>
             </table>
         </div>
-        <p class="row-count" id="row-count">&nbsp;</p>
     </section>
 
     <!-- ============================================================ -->
-    <!-- SECTION 4: Methodology summary                               -->
+    <!-- SECTION 3: Methodology (3-sentence prose, no math)           -->
     <!-- ============================================================ -->
     <section>
         <h2>Methodology</h2>
-
-        <h3 style="color: var(--text); font-size: 0.98rem; margin: 0.6rem 0 0.3rem 0;">Dial grid (48 configurations)</h3>
-        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.4rem;">
-            Three dials of the COLA configuration space (Definition 2, §3 of the paper) are swept; the remaining four are held at Classic-COLA defaults.
+        <p class="methodology">
+            The 48 configurations vary three dials of the COLA design space: eligibility size E &isin; {14, 22, 16-tiered}, stockpile cap C &isin; {&infin;, 100, 150, 200}, and carry-over scope S &isin; {single-season, unbounded, bounded-30yr, reset-on-championship}. Each configuration is simulated for 50 replicates of 30 seasons; the real ZenGM lottery code is used unchanged, while regular-season outcomes are synthesized and team strength persists across seasons via a Markov model whose parameters are calibrated for plausibility (full parameters in paper &sect;5.1). Sensitivity at N=30 and N=100 on the 9-config subset above confirms no flagged drift in the primary objective (mean shift &le; 10% across replicate counts).
         </p>
-        <table class="dial-table">
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 4: Cap-cancels-out 3x3                               -->
+    <!-- ============================================================ -->
+    <section>
+        <h2>Cap cancels out: manipulation gain is invariant under C</h2>
+        <p class="section-lede">
+            Corollary 2.1 predicts the capped manipulation-gain bound depends only on eligibility size, not on the cap value. Every capped configuration at the same E sits at the same gain across C &isin; {100, 150, 200}.
+        </p>
+        <table class="cap-table">
             <thead>
-                <tr><th>Dial</th><th>Values</th><th>Semantics</th></tr>
+                <tr>
+                    <th>E</th>
+                    <th>C = 100</th>
+                    <th>C = 150</th>
+                    <th>C = 200</th>
+                    <th>0.3 / |E|</th>
+                </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td><strong>E</strong> &mdash; eligibility set</td>
-                    <td><code>{14, 22, 16-tiered}</code></td>
-                    <td>14 = Classic pool (non-playoff teams). 22 = Simple / Capped pool (14 non-playoff + 8 first-round losers). 16-tiered = NBA 3-2-1 proposal pool.</td>
+                    <td>14</td>
+                    <td class="cap-value">2.1429%</td>
+                    <td class="cap-value">2.1429%</td>
+                    <td class="cap-value">2.1429%</td>
+                    <td>2.143%</td>
                 </tr>
                 <tr>
-                    <td><strong>C</strong> &mdash; stockpile cap</td>
-                    <td><code>{&infin;, 100, 150, 200}</code></td>
-                    <td>&infin; = no cap (Classic / Simple). 150 = Highley Capped-COLA Substack default. 100 / 200 are tighter / looser caps.</td>
+                    <td>22</td>
+                    <td class="cap-value">1.3636%</td>
+                    <td class="cap-value">1.3636%</td>
+                    <td class="cap-value">1.3636%</td>
+                    <td>1.364%</td>
                 </tr>
                 <tr>
-                    <td><strong>S</strong> &mdash; carry-over scope</td>
-                    <td><code>{single-season, unbounded, bounded-30yr, reset-on-championship}</code></td>
-                    <td>single-season = no cross-year memory (3-2-1 baseline). unbounded = Classic multi-year. bounded-30yr = 30-year rolling window. reset-on-championship = clear index when a team wins a title.</td>
-                </tr>
-                <tr>
-                    <td style="color: var(--text-secondary);">Fixed at Classic defaults</td>
-                    <td colspan="2" style="color: var(--text-secondary);">
-                        &Delta; = 1000 (increment) &middot;
-                        &rho; = playoff-success-step (diminishment) &middot;
-                        W = uniform (lottery weighting) &middot;
-                        T = coin-flip (tiebreak)
-                    </td>
+                    <td>16-tiered</td>
+                    <td class="cap-value">1.8750%</td>
+                    <td class="cap-value">1.8750%</td>
+                    <td class="cap-value">1.8750%</td>
+                    <td>1.875%</td>
                 </tr>
             </tbody>
         </table>
-
-        <h3 style="color: var(--text); font-size: 0.98rem; margin: 1rem 0 0.3rem 0;">Four objectives reported per configuration</h3>
-        <table class="dial-table">
-            <thead>
-                <tr><th>Objective</th><th>Direction</th><th>Definition</th></tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><code>max_years_between_conf_finals</code><br><span style="color: var(--text-secondary); font-size: 0.78rem;">primary</span></td>
-                    <td>lower better</td>
-                    <td>Worst-franchise gap between conference-finals appearances across the simulation horizon. Median across 50 replicates of 30 simulated seasons.</td>
-                </tr>
-                <tr>
-                    <td><code>manipulation_gain_pct</code></td>
-                    <td>lower better</td>
-                    <td>Worst-case probability gain from pool manipulation. Closed-form analytical: Theorem 1 (uncapped) or Corollary 2.1 (capped). No Monte Carlo &mdash; invariant across replicate counts.</td>
-                </tr>
-                <tr>
-                    <td><code>per_series_cost_typical</code><br><span style="color: var(--text-secondary); font-size: 0.78rem;">capped only; disclosure column</span></td>
-                    <td>lower better</td>
-                    <td>Per-series tanking exposure from Lemma 2: 20% of MAX for each playoff-round transition (capped configs only; n/a for uncapped).</td>
-                </tr>
-                <tr>
-                    <td><code>rank_one_to_five_spread</code></td>
-                    <td>higher better</td>
-                    <td>Expected pick-position spread between lottery-rank-1 and lottery-rank-5 teams.</td>
-                </tr>
-            </tbody>
-        </table>
-        <p style="color: var(--text-secondary); font-size: 0.83rem; margin-top: 0.4rem;">
-            Pareto-optimality is computed under 3-objective universal dominance on max-yrs-CF, manipulation-gain, and rank-1-to-5 spread. <code>per_series_cost_typical</code> is reported as a 4th disclosure column (n/a for uncapped) but is not used as a dominance dimension.
-        </p>
-
-        <h3 style="color: var(--text); font-size: 0.98rem; margin: 1rem 0 0.3rem 0;">Simulation model</h3>
-        <p style="color: var(--text-secondary); font-size: 0.85rem;">
-            Real ZenGM lottery + synthesized regular-season game outcomes (strength-weighted wins, single-elim playoff bracket). Persistent team-strength Markov:
-        </p>
-        <p style="margin: 0.5rem 0; text-align: center; font-size: 0.95rem; color: var(--text);">
-            $s_{t+1} = \mathrm{clip}\bigl(\rho\, s_t + (1 - \rho)\,\mu + \alpha\,\pi(p_t) + \varepsilon_t,\ 0,\ 1\bigr)$
-        </p>
-        <p style="color: var(--text-secondary); font-size: 0.85rem;">
-            with $\rho = 0.9$, $\mu = 0.5$, $\alpha = 0.15$, $\sigma = 0.05$, initial strength $\sim \mathrm{Uniform}[0.3,\, 0.7]$, and pick-value $\pi(p) = \max(0, (16 - p) / 15)$. Calibration is parametric (smoke-tuned for plausibility), not fit to historical team-strength trajectories.
-        </p>
-
-        <h3 style="color: var(--text); font-size: 0.98rem; margin: 1rem 0 0.3rem 0;">Replicates &amp; sensitivity</h3>
-        <p style="color: var(--text-secondary); font-size: 0.85rem;">
-            50 replicates per configuration at the headline. Sensitivity at N=30 and N=100 on a 9-config subset (5 Pareto + 5 named, deduplicated). No flagged drift &mdash; all sensitivity-subset configs hold below 10% relative shift in mean(max_yrs_CF) between N=30 and N=100.
-        </p>
-
-        <div class="stability-panel" id="stability-panel">
-            <h3>Stability snapshot</h3>
-            <div id="stability-body"><p style="color: var(--text-secondary);">Loading...</p></div>
-        </div>
     </section>
 
     <!-- ============================================================ -->
-    <!-- SECTION 5: Cap-cancels-out empirical confirmation            -->
+    <!-- SECTION 5: Three key assumptions                             -->
     <!-- ============================================================ -->
     <section>
-        <h2>Cap-cancels-out: empirical confirmation</h2>
-        <div class="cap-cancels-block">
-            <h3>Manipulation gain is invariant under C for capped configurations</h3>
-            <p class="lede">
-                Corollary 2.1 of the paper predicts that the capped manipulation-gain bound $\Delta p_{\mathrm{capped}} \leq 0.3\, /\, |E|$ depends only on the eligibility size $|E|$, not on the cap value $C$. The headline sweep confirms this analytically: every capped configuration at the same E sits at exactly the same manipulation gain across C ∈ {100, 150, 200}.
-            </p>
-
-            <table class="cap-table">
-                <thead>
-                    <tr>
-                        <th>E</th>
-                        <th>C = 100</th>
-                        <th>C = 150</th>
-                        <th>C = 200</th>
-                        <th>$0.3 / |E|$</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>14</td>
-                        <td class="cap-value">2.1429%</td>
-                        <td class="cap-value">2.1429%</td>
-                        <td class="cap-value">2.1429%</td>
-                        <td>2.143%</td>
-                    </tr>
-                    <tr>
-                        <td>22</td>
-                        <td class="cap-value">1.3636%</td>
-                        <td class="cap-value">1.3636%</td>
-                        <td class="cap-value">1.3636%</td>
-                        <td>1.364%</td>
-                    </tr>
-                    <tr>
-                        <td>16-tiered</td>
-                        <td class="cap-value">1.8750%</td>
-                        <td class="cap-value">1.8750%</td>
-                        <td class="cap-value">1.8750%</td>
-                        <td>1.875%</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <p style="color: var(--text-secondary); font-size: 0.83rem; margin-top: 0.5rem;">
-                Each cell is the manipulation-gain median for the four S-variants at that (E, C) pair &mdash; all four collapse to the same closed-form value. The 16-tiered approximation uses $|E| = 16$ pool seats.
-            </p>
-        </div>
+        <h2>Three assumptions worth flagging</h2>
+        <ol class="assumption-prose">
+            <li>
+                <strong>Real ZenGM lottery; synthesized regular season.</strong>
+                The ZenGM lottery code runs unchanged. Regular-season game outcomes are synthesized (strength-weighted wins + single-elim playoff bracket) because ZenGM's <code>createLeague()</code> does not port cleanly to Node. The synthesis bypasses contracts, trades, and injuries (none of which the dial space controls) but preserves the feedback loop the primary objective measures.
+            </li>
+            <li>
+                <strong>Team strength is a Markov model calibrated for plausibility.</strong>
+                Persistence, parity mean, per-draft impact, and annual shock variance were smoke-tuned so the CF-gap distribution disperses relative to an i.i.d. baseline. Parameters are not fit to historical NBA team-strength trajectories; sensitivity on these parameters is future work.
+            </li>
+            <li>
+                <strong>Three dials swept; the other four held at Classic-COLA defaults.</strong>
+                Eligibility (E), cap (C), and carry-over scope (S) span the 48-cell grid. Increment &Delta;, diminishment &rho;, lottery weighting W, and tiebreak T are fixed; &Delta; scales the bound linearly (already in Theorem 1), and the others lack a published-policy anchor for sweeping.
+            </li>
+        </ol>
     </section>
 
     <!-- ============================================================ -->
-    <!-- SECTION 6: Assumptions panel                                 -->
+    <!-- SECTION 6: Footer with 4 links                               -->
     <!-- ============================================================ -->
-    <section>
-        <h2>Assumptions worth flagging</h2>
-        <div class="assumption-note">
-            These are the 8 assumptions worth flagging at signoff. Each materially shapes the interpretation of the Pareto frontier above. The comprehensive list lives in <code>scripts/basketball_gm_sweep/ASSUMPTIONS.md</code>; the items below are the distilled subset.
-        </div>
-
-        <div class="assumption-list">
-            <div class="assumption-card">
-                <h3>ZenGM pool size left at 22, behavior matched to 14</h3>
-                <p>ZenGM's default COLA pool is 22 teams (14 non-playoff + 8 first-round losers), not 14. We recover the 14-team Classic pool by zeroing the COLA index of R1 losers before the lottery draw, leaving ZenGM's source unmodified.</p>
-                <p class="why">Why it matters: lottery weights are correct, but the pool-size constant inside ZenGM still reads 22 for any future diagnostic. Flag if you'd prefer a per-config source patch.</p>
-            </div>
-
-            <div class="assumption-card">
-                <h3>Dial-space reduced to E × C × S = 48</h3>
-                <p>$\Delta$, $\rho$, $W$, $T$ are held at Classic defaults. $\Delta$ scales the bound linearly (already in Theorem 1); $\rho$, $W$, $T$ variations require ZenGM-source modifications with no published-policy anchor to compare against.</p>
-                <p class="why">Why it matters: if you want any of these in the headline grid (e.g., $\rho$ = playoff-success-linear vs. step), we should add it before locking.</p>
-            </div>
-
-            <div class="assumption-card">
-                <h3>Lottery is real ZenGM; game outcomes synthesized; strength is Markov</h3>
-                <p>ZenGM's full game engine requires a browser-side <code>createLeague()</code> invocation impractical to port to Node. We synthesize regular-season outcomes and evolve team strength via:</p>
-                <div class="formula">strength_{t+1} = clip(rho * strength_t + (1 - rho) * mu + alpha * pick_value(pick_t) + eps_t, 0, 1)</div>
-                <p>Tuned: $\rho = 0.9$, $\mu = 0.5$, $\alpha = 0.15$, $\sigma = 0.05$. Initial strength $\sim$ Uniform[0.3, 0.7]. Pick-value monotone-decreasing: pick 1 = full $+\alpha$, pick 15 = 0, picks 16+ = 0.</p>
-                <p class="why">Why it matters: synthesis bypasses contracts / trades / injuries (none of which the dial space controls) but preserves the feedback loop the primary objective measures. Calibration is parametric, not fit to historical NBA trajectories.</p>
-            </div>
-
-            <div class="assumption-card">
-                <h3>30-season horizon, 50 replicates at headline</h3>
-                <p>30 years lets the bounded-30yr scope manifest. Sensitivity at N = 30 / 100 on 9 representative configs verifies the Pareto frontier is not a Monte Carlo artefact.</p>
-                <p class="why">Why it matters: total headline cost is 48 × 50 = 2,400 simulated seasons, ~3s per replicate at the 30-season horizon.</p>
-            </div>
-
-            <div class="assumption-card">
-                <h3>Forward-simulated, not historical</h3>
-                <p>This testbed answers: "what does each dial setting look like under a synthetic but ZenGM-calibrated 30-team league?" &mdash; distinct from the COLA Explorer backtest over NBA 1999&ndash;2025.</p>
-                <p class="why">Why it matters: the paper needs both: backtest for historical anchoring (Capped@150 calibration; the "Process" replication); forward-sim for the Pareto frontier across counterfactual dial settings.</p>
-            </div>
-
-            <div class="assumption-card">
-                <h3>Lottery-draw nondeterminism propagates into strength</h3>
-                <p>ZenGM's lottery draw uses an unseeded <code>Math.random</code> (the driver's mulberry32 only seeds the synthetic season / bracket sim). Under the Markov model the draft pick feeds next season's strength, so two single-replicate runs with identical mulberry32 seeds can produce materially different max-yrs-CF (observed range 22&ndash;30 across five smoke runs of Classic).</p>
-                <p class="why">Why it matters: multiple replicates per config absorb the nondeterminism into Monte Carlo error bars. Single-replicate smoke results should be read as one random draw, not a deterministic baseline. Dependency-injecting ZenGM's random source is tracked future work.</p>
-            </div>
-
-            <div class="assumption-card">
-                <h3>License: source-available, private research use only</h3>
-                <p>The cloned <code>kvr06-ai/zengm</code> fork is gitignored from the public paper repo; no modified ZenGM source is pushed anywhere. Aggregate metrics (CSV, Pareto plots) are derivative work and publishable as scholarly output.</p>
-                <p class="why">Why it matters: keeps the public-facing artifact (this page, the CSVs, the paper) cleanly separable from the in-tree engine fork.</p>
-            </div>
-
-            <div class="assumption-card">
-                <h3>16-tiered pool approximated by 16 worst-record teams</h3>
-                <p>The 16-tiered E dial (paper's 3-2-1 proposal pool) is approximated in the driver as "the 16 worst-record teams" rather than the exact tier composition (10 non-playoff non-play-in + 4 record-9/10 + 2 7v8 losers).</p>
-                <p class="why">Why it matters: cfg 32 (the named 3-2-1 baseline) is dominated regardless. Cfg 45 (16-tiered, C=200, unbounded) appears on the frontier and should be re-checked against the exact tier weighting before submission &mdash; tracked as a follow-up ticket.</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- ============================================================ -->
-    <!-- SECTION 7: Downloads + links footer                          -->
-    <!-- ============================================================ -->
-    <section>
-        <h2>Downloads &amp; links</h2>
-        <div class="downloads-grid">
-            <a href="data/headline_summary.csv" download>
-                <span class="lbl">headline_summary.csv</span>
-                <span class="desc">48 rows &mdash; per-configuration medians and stds across replicates.</span>
-            </a>
-            <a href="data/headline.csv" download>
-                <span class="lbl">headline.csv</span>
-                <span class="desc">2,400 rows &mdash; raw per-replicate outputs (48 configs &times; 50 replicates).</span>
-            </a>
-            <a href="data/stability_report.md" download>
-                <span class="lbl">stability_report.md</span>
-                <span class="desc">Sensitivity at N=30 and N=100 on the 9-config subset.</span>
-            </a>
-            <a href="data/stability.json" download>
-                <span class="lbl">stability.json</span>
-                <span class="desc">Distilled stability data the page consumes (same content as the .md, JSON form).</span>
-            </a>
-            <a href="https://github.com/kvr06-ai/cola-manipulation-bound">
-                <span class="lbl">Engineering repo</span>
-                <span class="desc">Source for both the COLA Explorer (sister tool) and this viewer.</span>
-            </a>
-            <a href="https://github.com/kvr06-ai/cola-manipulation-bound/tree/main/scripts/basketball_gm_sweep">
-                <span class="lbl">Sweep scripts directory</span>
-                <span class="desc">Driver, dial-grid spec, post-processing, and assumption docs.</span>
-            </a>
-            <a href="https://github.com/kvr06-ai/zengm">
-                <span class="lbl">Upstream ZenGM fork</span>
-                <span class="desc">Basketball-GM engine the sweep instantiates (source-available, private research use only).</span>
-            </a>
-            <a href="https://kvr06-ai.github.io/cola-manipulation-bound/">
-                <span class="lbl">COLA Explorer</span>
-                <span class="desc">Sister tool &mdash; historical backtester over 1999&ndash;2025 NBA seasons.</span>
-            </a>
-        </div>
-    </section>
-
-    <footer>
-        Built for the <a href="https://www.sloansportsconference.com/">MIT Sloan Sports Analytics Conference (SSAC27, March 2027)</a> submission &middot;
-        <a href="https://kaushikrajan.me">Kaushik Rajan</a> &middot;
-        <a href="https://github.com/kvr06-ai/cola-manipulation-bound">Codebase</a>
+    <footer class="footer-links">
+        <a href="#" id="paper-link" title="Placeholder — SSAC27 portal URL will be filled once available">Paper PDF (TBD)</a>
+        <a href="https://github.com/kvr06-ai/cola-manipulation-bound">Engineering repo</a>
+        <a href="https://kvr06-ai.github.io/cola-manipulation-bound/">COLA Explorer (sister tool)</a>
+        <a href="https://github.com/kvr06-ai/zengm">ZenGM upstream</a>
+        <span class="footer-divider">&middot;</span>
+        <a href="data/headline_summary.csv" download>headline_summary.csv</a>
     </footer>
 
 </div>
