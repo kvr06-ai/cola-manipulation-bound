@@ -122,7 +122,8 @@ file (`zengm-fork/src/test/setup.ts`) which provides `fake-indexeddb`
 and mocks `self`/`window`. The driver:
 
 1. Bootstraps a 30-team league directly into the mocked IDB cache
-   (bypassing `createLeague()`, which is browser-coupled).
+   (bypassing `createLeague()`, which the Track B agent believed was
+   browser-coupled; the Full-engine spike section below disproved that).
 2. For each simulated season:
    - Synthesizes wins + playoff bracket outcomes (strength-weighted).
    - Applies carry-over scope (dial S) by zeroing/clamping team.cola.
@@ -176,6 +177,51 @@ claiming quantitative accuracy.
 See `ASSUMPTIONS.md` for the full list of engine/dial/objective
 assumptions and `ASSUMPTIONS_FOR_HIGHLEY.md` for the policy-relevant
 distillation.
+
+## Full-engine spike (2026-06-10)
+
+The Track B testbed above synthesizes regular-season wins and team strength
+to keep the lottery question fast. A reviewer (Prof. Highley) asked for the
+validity gains ZenGM's full engine adds: per-game simulation, AI GMs,
+contracts, and city-size effects. A spike confirmed the full engine runs
+headless in Node, so a higher-fidelity validation pass is viable without a
+browser. Two artifacts (mirrored into `zengm-fork/src/test/` to run, like
+the driver above):
+
+| File | Role |
+|---|---|
+| `colaFullEngineSpike.test.ts` | Drives the real `league.createStream()` (the path the UI uses) against `fake-indexeddb/auto`. Builds a complete random league headless. |
+| `colaSimBenchmark.test.ts` | Drives the per-game engine (regular season, playoffs, draft, free agency, all AI-GM-controlled) via the engine's own `autoPlayUntil` self-continuation, and benchmarks sec/season. |
+
+Findings:
+
+- The "createLeague is browser-coupled" assumption is false. The only
+  missing piece in Node was a global `indexedDB`, supplied by
+  `fake-indexeddb/auto` in one import. A random league's input stream is
+  empty (`createStreamFromLeagueObject({})`); players, contracts, and
+  rosters are generated after the stream drains, in `afterDBStream`.
+- `createStream` builds a full league in ~1.6 s with all four flagged
+  features: 750 players (390 rostered, 13 per team), 390/390 valid
+  contracts, 30/30 AI-GM strategies, and 24 distinct city populations
+  (1.6 to 21.5 million).
+- The per-game engine simulates full 82-game seasons headless at roughly
+  9 to 20 sec/season on an M3 Max (per-season cost drifts up with the
+  accumulating retired-player pool; mitigable with ZenGM's `deleteOldData`).
+- Compute envelope: the 9-config hybrid validation (13,500 seasons) is a
+  single overnight at 12-way parallelism (~3 hr pruned, ~8 hr un-pruned);
+  the full 48-config sweep (72,000 seasons) is ~17 hr pruned. No cloud.
+
+Run (both tests are env-gated so a bare `npm test` stays fast):
+
+```
+# from zengm-fork/
+COLA_SPIKE=1 npx vitest --run src/test/colaFullEngineSpike.test.ts --project basketball
+COLA_SPIKE=1 COLA_BENCH_SEASONS=5 npx vitest --run src/test/colaSimBenchmark.test.ts --project basketball
+```
+
+Next: build the full-engine COLA driver (the Track B driver's dial-patching
+and lottery hooks, but with real createStream + per-game sim + per-season
+pruning) and run the 9-config hybrid validation against the Pareto frontier.
 
 ## Next-session work
 
