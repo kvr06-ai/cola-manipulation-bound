@@ -11,6 +11,20 @@ any deviation from Highley's published spec.
 The distilled, policy-relevant subset is in `ASSUMPTIONS_FOR_HIGHLEY.md` —
 this file is the exhaustive reference for internal review.
 
+**Status note (2026-06-10).** A full-engine viability spike
+(`colaFullEngineSpike.test.ts`, `colaSimBenchmark.test.ts`; findings in
+README.md "Full-engine spike") disproved the browser-coupling premise in
+Z-2/Z-3: ZenGM's real `createStream()` league creation and per-game
+season engine run headless in Node against `fake-indexeddb`. The
+synthesized testbed below remains the engine of the 48-configuration
+screen; under the hybrid validation plan the 9 headline configurations
+(5 Pareto-optimal + 4 dominated named variants) are re-run against the
+full engine, which exercises for real what Z-2, Z-3, Z-4, Z-10, Z-11,
+and Z-12 bypass. The full-engine driver will carry its own assumptions
+section when it lands. Corrections this date are marked
+[CORRECTED 2026-06-10] inline (Z-3, S-1, S-2); Z-2's cross-reference to
+Z-3 was updated to match.
+
 ---
 
 ## 1. ZenGM Engine Assumptions
@@ -27,8 +41,9 @@ before the lottery draw, making them effectively ineligible while leaving
 ZenGM's source untouched.
 
 **Z-2. Team-strength model is a persistent Markov process tied to draft outcomes.**
-We do not run ZenGM's full game-by-game simulation in the Node driver (that
-requires a browser-side `createLeague()` invocation; see Z-3). Instead, we
+We do not run ZenGM's full game-by-game simulation in the Node driver (a
+speed-and-scale choice; the feasibility rationale this item originally
+cited was disproven 2026-06-10, see Z-3). Instead, we
 synthesize per-season win records from a per-team strength variable that
 persists across seasons (`simulateSeasonOutcomes` +
 `transitionStrength` in colaSweepDriver.test.ts). The transition is
@@ -59,15 +74,24 @@ plausibility, not exact NBA-data fit. Documented limitations in L-Z2 below.
 The model still omits ZenGM's contracts/trades/injuries, which the paper's
 dial space does not control.
 
-**Z-3. Regular-season game simulation is bypassed.**
-ZenGM's `actions.playAmount('untilDraft')` requires a fully constructed
-league (players, contracts, schedule, salary cap state), which the worker
-builds via `createLeague()` — a browser-coupled path involving leagueFile
-upload streams (zengm-fork/src/worker/api/index.ts:545+). In Node with
-`fake-indexeddb`, the upload-stream API is not viable without porting
-substantial browser globals. We accept the cost: the paper's dial space
-controls the lottery mechanism, not the game engine, so this is the right
-trade.
+**Z-3. [CORRECTED 2026-06-10] Regular-season game simulation is bypassed
+by choice, not necessity.**
+Original claim: `actions.playAmount('untilDraft')` requires a fully
+constructed league built via `createLeague()`, a browser-coupled path
+involving leagueFile upload streams not viable in Node without porting
+substantial browser globals. The 2026-06-10 spike disproved this: with
+`fake-indexeddb/auto` providing a global IndexedDB, the real
+`league.createStream()` builds a complete league headless in ~1.6 s
+(750 players, full rosters, contracts, AI-GM strategies, per-team city
+populations; the random-league input stream is empty, so there is no
+payload schema to port), and the per-game engine simulates full 82-game
+seasons at ~10-15 s/season (see `colaFullEngineSpike.test.ts`,
+`colaSimBenchmark.test.ts`, README.md "Full-engine spike"). The bypass
+is retained for the 48-configuration screen because the synthesized
+season costs ~3 ms vs ~10-15 s per season and the dial space controls
+the lottery mechanism, not the game engine. The 9 headline
+configurations are re-run against the full engine under the hybrid
+validation plan.
 
 **Z-4. Playoff bracket: single-elimination, 8-team-per-conference NBA-style.**
 We hardcode the bracket structure (1v8, 2v7, 3v6, 4v5 reseeded to single-
@@ -213,18 +237,25 @@ draw subsumed by W).
 
 ## 4. Simulation Assumptions
 
-**S-1. Default horizon: 30 seasons per replicate for smoke; 50 for headline.**
-`dial_grid.json` field `seasons_per_config: 50`. The smoke test
-overrides to 30 (per task spec). 30 years is long enough for carry-over
-scope (S=bounded-30yr) to manifest. 50 years is the headline horizon
-for the Pareto frontier.
+**S-1. [CORRECTED 2026-06-10] Horizon: 30 seasons per replicate for smoke
+AND headline.**
+`dial_grid.json` carries `seasons_per_config: 50`, but the shipped
+2026-05-26 headline run overrode it to 30 (every row of
+`runs/headline_20260526_132248/headline.csv` has seasons=30). An
+earlier version of this item described a 50-season headline horizon;
+no shipped run used 50. 30 years is long enough for carry-over scope
+(S=bounded-30yr) to manifest, and the hybrid full-engine validation
+mirrors the same 50 × 30 replicate shape.
 
-**S-2. Default replicates: 1 for smoke, 50 for headline.**
-The smoke test uses 1 replicate to validate the engine path. Headline
-runs use 50 replicates per config (2,400 total simulated seasons at the
-50-season horizon). Sensitivity runs at 30 and 100 replicates (per
-dial_grid.json `_sensitivity_protocol`) verify the frontier is not a
-Monte Carlo artefact.
+**S-2. [CORRECTED 2026-06-10] Default replicates: 1 for smoke, 50 for headline.**
+The smoke test uses 1 replicate to validate the engine path. The
+shipped headline run used 50 replicates per config at the 30-season
+horizon (2,400 replicates, 72,000 simulated seasons, 219 s wall time
+batched); an earlier version of this item miscounted that as "2,400
+total simulated seasons at the 50-season horizon". Sensitivity runs at
+30 and 100 replicates (per dial_grid.json `_sensitivity_protocol`, run
+over 9 configs: the 5 Pareto-optimal + 4 named variants) verified the
+frontier is not a Monte Carlo artefact.
 
 **S-3. Reproducibility: deterministic PRNG keyed by `(config_id, replicate_seed, base_seed=42)`, INCLUDING the lottery draw.**
 `hashSeed(configId, replicateSeed, baseSeed)` in colaSweepDriver.test.ts.

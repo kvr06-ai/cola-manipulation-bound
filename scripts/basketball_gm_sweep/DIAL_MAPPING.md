@@ -78,8 +78,10 @@ The zengm engine runs in a browser Web Worker. To drive it from Node for
    Gap: existing tests do not run *full* seasons (regular-season schedule
    simulation + playoff bracket + draft + free agency). Driving the engine
    through a full annual cycle requires invoking the worker's phase-stepping
-   API (`actions.playAmount`, `phase.newPhase`, etc.). This is the engineering
-   ticket for the next session.
+   API (`actions.playAmount`, `phase.newPhase`, etc.). This ticket landed
+   2026-06-10: `colaFullEngineSpike.test.ts` and `colaSimBenchmark.test.ts`
+   drive full annual cycles headless via the engine's own autoPlay
+   self-continuation (see README.md "Full-engine spike").
 
 2. **Playwright e2e driver**. Spin up `node --run dev`, drive the UI through
    Playwright, intercept league state via `window` globals. Higher per-season

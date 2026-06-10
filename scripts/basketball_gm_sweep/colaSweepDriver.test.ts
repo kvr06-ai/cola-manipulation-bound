@@ -11,9 +11,10 @@
 //           bbgm.cola.updateLotteryChancesAfterLottery (executed on the in-Node bbgm worker
 //           globals set up by src/test/setup.ts + src/worker/index.ts).
 //   - SYNTHESIZED: win-record + playoff-bracket outcomes. We do NOT run the full
-//           regular-season + playoff game-by-game simulation here; that would require a
-//           browser-side createLeague() invocation (the actions.playAmount('untilDraft')
-//           path documented in DIAL_MAPPING.md is browser-coupled). The COLA index logic
+//           regular-season + playoff game-by-game simulation here. (Historical note:
+//           this was originally justified as a browser-coupling limitation; the
+//           2026-06-10 spike disproved that — see colaFullEngineSpike.test.ts. The
+//           bypass stands as a speed choice for the 48-config screen.) The COLA index logic
 //           and the lottery draw — i.e. the parts the paper's dial space actually controls
 //           — are executed by real ZenGM code.
 //
@@ -383,8 +384,9 @@ async function applyEligibilityMask(
 }
 
 // ============================================================================
-// Build a 30-team league directly. We bypass createLeague() — it is browser
-// coupled — and inject teams + minimal-shape data into the mocked IDB cache.
+// Build a 30-team league directly. We bypass createLeague() — a speed choice;
+// it runs headless too (see colaFullEngineSpike.test.ts) — and inject teams +
+// minimal-shape data into the mocked IDB cache.
 // ============================================================================
 
 async function bootstrapLeague(numTeams: number, startSeason: number) {

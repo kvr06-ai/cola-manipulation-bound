@@ -9,6 +9,13 @@ Comprehensive assumption list lives in `ASSUMPTIONS.md`; the items
 below are the distilled subset that materially shapes interpretation
 of the resulting Pareto frontier.
 
+Status (2026-06-10): items 3, 4, and 6 corrected after the 2026-05-26
+headline run and the 2026-06-10 full-engine spike (see README.md,
+"Full-engine spike"). Under the hybrid validation plan, the synthesized
+testbed described here carries the full 48-configuration screen, and
+the full ZenGM engine separately validates the 9 configurations that
+matter (5 Pareto-optimal + 4 dominated named variants).
+
 ---
 
 1. **ZenGM's default COLA pool is 22 teams (14 non-playoff + 8
@@ -32,9 +39,13 @@ of the resulting Pareto frontier.
 
 3. **The lottery mechanism is real ZenGM; regular-season game outcomes
    are synthesized AND team strength persists across seasons via a
-   Markov model tied to draft outcomes.** ZenGM's full game engine
-   (`actions.playAmount`) requires a browser-side `createLeague()`
-   invocation that is impractical to port to Node. The synthesis
+   Markov model tied to draft outcomes.** An earlier version of this
+   item claimed ZenGM's full game engine requires a browser-side
+   `createLeague()` invocation impractical to port to Node; the
+   2026-06-10 spike disproved that (the full engine runs headless, and
+   the hybrid plan re-runs the 9 headline configurations against it).
+   The synthesis is retained for the 48-configuration screen as a
+   speed-and-scale choice (~3 ms vs ~10-15 s per simulated season). It
    bypasses contracts/trades/injuries (none of which the dial space
    controls) but preserves the feedback loop the primary objective
    measures by evolving team strength via
@@ -56,14 +67,18 @@ of the resulting Pareto frontier.
    historical NBA team-strength trajectories; sensitivity on (rho,
    alpha, sigma) is future work.
 
-4. **30-year simulation horizon for the smoke; 50-year horizon for the
-   headline; 50 replicates per configuration at the headline.** 30 years
-   lets the bounded-30yr carry-over scope manifest. Sensitivity sweeps at
-   30 and 100 replicates (4 representative configs) verify the Pareto
-   frontier is not a Monte Carlo artefact. Total headline cost: 48 × 50
-   = 2,400 simulated seasons, currently ~3 s per replicate at the 30-
-   season horizon (one vitest subprocess per replicate; batching is a
-   known optimization for the headline pass).
+4. **30-year simulation horizon for both smoke and headline; 50
+   replicates per configuration at the headline.** The 2026-05-26
+   headline run used 30 seasons per replicate (every row of
+   `runs/headline_20260526_132248/headline.csv`), overriding the 50 in
+   `dial_grid.json`; an earlier version of this item described a
+   50-year headline horizon that no shipped run used. 30 years lets the
+   bounded-30yr carry-over scope manifest. Sensitivity sweeps at 30 and
+   100 replicates over 9 configs (the 5 Pareto-optimal + 4 named
+   variants) verify the Pareto frontier is not a Monte Carlo artefact.
+   Total headline cost: 48 configs × 50 replicates × 30 seasons =
+   72,000 simulated seasons, 219 s wall time with replicates batched
+   per config.
 
 5. **Evidence type is forward-simulated, not historical.** This testbed
    answers "what does each dial setting look like under a synthetic but
@@ -72,21 +87,20 @@ of the resulting Pareto frontier.
    historical anchoring, forward-sim for the Pareto frontier across
    counterfactual dial settings.
 
-6. **Lottery-draw nondeterminism propagates into the strength
-   trajectory under the Markov model.** ZenGM's lottery draw uses an
-   unseeded `Math.random` (the driver's mulberry32 only seeds the
-   synthetic season/bracket sim). Under the prior i.i.d. strength
-   model that nondeterminism was confined to the per-season draftPick
-   field; under the Markov model in item 3, the draft pick feeds into
-   next season's strength, so two single-replicate runs with identical
-   mulberry32 seeds can produce materially different
-   `max_years_between_conf_finals` (observed range 22-30 across five
-   smoke runs of the Classic-COLA config). The headline run uses
-   multiple replicates per config so this nondeterminism is absorbed
-   into Monte Carlo error bars; single-replicate smoke results should
-   be read as one random draw, not as a deterministic baseline.
-   Dependency-injecting ZenGM's random source is tracked as a
-   known-future-work item.
+6. **[Resolved 2026-05-26] Lottery-draw nondeterminism propagated into
+   the strength trajectory under the Markov model.** ZenGM's lottery
+   draw calls an unseeded `Math.random` internally, and under the
+   Markov model in item 3 the draft pick feeds next season's strength,
+   so two single-replicate runs with identical mulberry32 seeds could
+   produce materially different `max_years_between_conf_finals`
+   (observed range 22-30 across five smoke runs of the Classic-COLA
+   config). Resolved before the headline run: the driver now overrides
+   `Math.random` for the duration of each replicate with the same
+   seeded stream that drives the season synthesis (restored after each
+   replicate), so every (configuration, replicate) pair is
+   bit-identical across runs. The headline still uses 50 replicates
+   per configuration so the frontier carries Monte Carlo error bars
+   over the strength-and-lottery joint distribution.
 
 7. **License compliance: source-available private research use only.**
    The cloned `kvr06-ai/zengm` fork is gitignored from the public paper
