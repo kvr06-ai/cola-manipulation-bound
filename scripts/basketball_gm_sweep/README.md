@@ -207,9 +207,9 @@ Findings:
 - The per-game engine simulates full 82-game seasons headless at roughly
   9 to 20 sec/season on an M3 Max (per-season cost drifts up with the
   accumulating retired-player pool; mitigable with ZenGM's `deleteOldData`).
-- Compute envelope: the 9-config hybrid validation (13,500 seasons) is a
-  single overnight at 12-way parallelism (~3 hr pruned, ~8 hr un-pruned);
-  the full 48-config sweep (72,000 seasons) is ~17 hr pruned. No cloud.
+- Compute envelope: the full-engine validation sweep (48 grid configs + 2
+  named anchors = 50 configs, 75,000 seasons) is ~18 hr pruned / ~45 hr
+  un-pruned at 12-way parallelism. No cloud.
 
 Run (both tests are env-gated so a bare `npm test` stays fast):
 
@@ -219,9 +219,26 @@ COLA_SPIKE=1 npx vitest --run src/test/colaFullEngineSpike.test.ts --project bas
 COLA_SPIKE=1 COLA_BENCH_SEASONS=5 npx vitest --run src/test/colaSimBenchmark.test.ts --project basketball
 ```
 
+Validation design (updated 2026-06-11, per co-author review): the
+full-engine sweep runs ALL 48 grid configurations plus two off-grid named
+anchors (Countdown COLA and Beckett COLA), 50 configs × 50 replicates × 30
+seasons = 75,000 seasons, and re-derives the Pareto frontier from scratch.
+The synthesized frontier above becomes a prediction to score, not an
+assumption (the earlier 9-config hybrid plan validated only the predicted
+frontier and could not surface a config the cheap model wrongly excluded).
+Variant decisions per the co-author: Simple Lottery skipped (mostly mirrors
+Simple); McCarty, 2-Year 22, and Flat 10+R excluded (not endorsed).
+Countdown ports from the parent repo's `cola-engine.js`
+(`computeCountdownCOLA`, 100k-trial MC audit); Beckett implements from the
+2026-04-10 Substack spec (drought-gated McCarty-number raffle; uncapped
+pending co-author confirmation). Both anchors use the same driver hook:
+compute the draft order driver-side, inject before ZenGM's draft phase.
+See `dial_grid.json` `_named_anchors`.
+
 Next: build the full-engine COLA driver (the Track B driver's dial-patching
 and lottery hooks, but with real createStream + per-game sim + per-season
-pruning) and run the 9-config hybrid validation against the Pareto frontier.
+pruning + the draft-order injection hook), run the formal pilot, then the
+full 50-config sweep.
 
 ## Next-session work
 

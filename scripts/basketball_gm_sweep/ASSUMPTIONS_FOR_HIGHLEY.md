@@ -9,12 +9,15 @@ Comprehensive assumption list lives in `ASSUMPTIONS.md`; the items
 below are the distilled subset that materially shapes interpretation
 of the resulting Pareto frontier.
 
-Status (2026-06-10): items 3, 4, and 6 corrected after the 2026-05-26
-headline run and the 2026-06-10 full-engine spike (see README.md,
-"Full-engine spike"). Under the hybrid validation plan, the synthesized
-testbed described here carries the full 48-configuration screen, and
-the full ZenGM engine separately validates the 9 configurations that
-matter (5 Pareto-optimal + 4 dominated named variants).
+Status (2026-06-11): items 3, 4, and 6 were corrected 2026-06-10 after
+the 2026-05-26 headline run and the full-engine spike (see README.md,
+"Full-engine spike"). Validation design updated 2026-06-11 per
+co-author review: the full ZenGM engine re-runs ALL 48 grid
+configurations plus two named anchors (Countdown COLA and Beckett
+COLA), 75,000 seasons, and re-derives the Pareto frontier from scratch;
+the synthesized frontier becomes a prediction to score rather than an
+assumption. Simple Lottery is skipped (would mostly mirror Simple) and
+McCarty, 2-Year 22, and Flat 10+R are excluded, per co-author guidance.
 
 ---
 
@@ -43,7 +46,8 @@ matter (5 Pareto-optimal + 4 dominated named variants).
    item claimed ZenGM's full game engine requires a browser-side
    `createLeague()` invocation impractical to port to Node; the
    2026-06-10 spike disproved that (the full engine runs headless, and
-   the hybrid plan re-runs the 9 headline configurations against it).
+   the validation sweep re-runs all grid configurations plus the named
+   anchors against it).
    The synthesis is retained for the 48-configuration screen as a
    speed-and-scale choice (~3 ms vs ~10-15 s per simulated season). It
    bypasses contracts/trades/injuries (none of which the dial space

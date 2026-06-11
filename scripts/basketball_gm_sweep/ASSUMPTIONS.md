@@ -17,13 +17,17 @@ README.md "Full-engine spike") disproved the browser-coupling premise in
 Z-2/Z-3: ZenGM's real `createStream()` league creation and per-game
 season engine run headless in Node against `fake-indexeddb`. The
 synthesized testbed below remains the engine of the 48-configuration
-screen; under the hybrid validation plan the 9 headline configurations
-(5 Pareto-optimal + 4 dominated named variants) are re-run against the
-full engine, which exercises for real what Z-2, Z-3, Z-4, Z-10, Z-11,
-and Z-12 bypass. The full-engine driver will carry its own assumptions
-section when it lands. Corrections this date are marked
-[CORRECTED 2026-06-10] inline (Z-3, S-1, S-2); Z-2's cross-reference to
-Z-3 was updated to match.
+screen. Validation design updated 2026-06-11 per co-author review: the
+full engine re-runs ALL 48 grid configurations plus two off-grid named
+anchors (Countdown COLA, Beckett COLA; see `dial_grid.json`
+`_named_anchors`), 75,000 seasons total, and re-derives the Pareto
+frontier from scratch, exercising for real what Z-2, Z-3, Z-4, Z-10,
+Z-11, and Z-12 bypass. The earlier 9-config hybrid plan (validate only
+the predicted Pareto set) was superseded: frontier membership is the
+hypothesis under test, not a prior. The full-engine driver will carry
+its own assumptions section when it lands. Corrections of 2026-06-10
+are marked [CORRECTED 2026-06-10] inline (Z-3, S-1, S-2); Z-2's
+cross-reference to Z-3 was updated to match.
 
 ---
 
@@ -89,9 +93,10 @@ seasons at ~10-15 s/season (see `colaFullEngineSpike.test.ts`,
 `colaSimBenchmark.test.ts`, README.md "Full-engine spike"). The bypass
 is retained for the 48-configuration screen because the synthesized
 season costs ~3 ms vs ~10-15 s per season and the dial space controls
-the lottery mechanism, not the game engine. The 9 headline
-configurations are re-run against the full engine under the hybrid
-validation plan.
+the lottery mechanism, not the game engine. The full engine re-runs all
+48 grid configurations plus the Countdown and Beckett named anchors and
+re-derives the frontier (design updated 2026-06-11; the earlier
+9-config hybrid was superseded).
 
 **Z-4. Playoff bracket: single-elimination, 8-team-per-conference NBA-style.**
 We hardcode the bracket structure (1v8, 2v7, 3v6, 4v5 reseeded to single-

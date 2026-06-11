@@ -65,7 +65,30 @@
     "default_runs": 50,
     "thin_check_runs": 30,
     "fat_check_runs": 100,
-    "purpose": "Verify the Pareto frontier is not an artefact of 50-season Monte Carlo noise. Re-run a 4-config subset (Classic, Capped@150, 3-2-1 baseline, unbounded@22) at each of {30, 100} to compare frontiers.",
+    "purpose": "Verify the Pareto frontier is not an artefact of Monte Carlo noise. The shipped 2026-05-26 sensitivity re-ran a 9-config subset (the 5 Pareto-optimal configs + 4 dominated named variants) at each of {30, 100} replicates; an earlier draft of this note described a 4-config subset.",
     "seed_strategy": "Fixed seed per (config_id, replicate_id). PRNG state captured in the run manifest for reproducibility."
+  },
+  "_named_anchors": {
+    "updated": "2026-06-11",
+    "purpose": "Off-grid named variants run alongside the 48 grid configs in the FULL-ENGINE validation sweep (frontier re-derived over all 50). These mechanisms differ on dials frozen in this grid (W / increment form / eligibility semantics), so they are implemented as bespoke driver configs, not grid points. Both use the same driver hook: compute the draft order driver-side, inject before ZenGM's draft phase.",
+    "anchors": {
+      "countdown-cola": {
+        "spec_source": "Highley Substack, 'NBA Tanking Is Solvable: Four Candidates' (Part 3)",
+        "reference_implementation": "docs/js/cola-engine.js computeCountdownCOLA (100k-trial MC audit, seed 42)",
+        "mechanism": "McCarty number (drought x wins); survivor-style elimination pools (5-team pools, 2-6 tickets); no team falls more than 4 spots"
+      },
+      "beckett-cola": {
+        "spec_source": "Highley & Sanderson Substack, 'Design Your Own Anti-Tanking NBA Draft: We Built Beckett COLA' (2026-04-10)",
+        "reference_implementation": null,
+        "mechanism": "Eligibility drought >= 2 (drought = years since last #1 pick, top-6 seed, or playoff series win); entries = drought x wins (McCarty number); top-4 raffled by entries, rest in McCarty order; drought resets on top-6 seed / series win / #1 pick; lottery-day pick attribution",
+        "open_spec_question": "No stockpile cap mentioned in the post; implementing uncapped pending co-author confirmation"
+      }
+    },
+    "excluded_per_coauthor_2026-06-11": {
+      "simple-lottery-cola": "would mostly mirror Simple COLA results",
+      "mccarty-cola": "not endorsed by co-author at this point",
+      "2-year-22": "not endorsed; spec not sourced",
+      "flat-10-plus-r": "not endorsed; spec not sourced"
+    }
   }
 }
