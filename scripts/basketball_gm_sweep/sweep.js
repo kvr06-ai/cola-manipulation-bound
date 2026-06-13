@@ -471,6 +471,147 @@ function runSweep({ gridPath, outPath, configIdsToRun, replicates, mode, useStub
 }
 
 // =============================================================================
+// 4b. Parallel + resumable sweep runner.
+//
+// runSweep() above accumulates every row in memory and writes the CSV once at
+// the end -- fine for the ~minutes-long synthesized sweep, but fatal for a ~24h
+// full-engine sweep (a crash/sleep loses everything). This runner splits the
+// work into independent (config, seed-chunk) UNITS, each of which:
+//   - runs in its own driver subprocess, so a pool of `concurrency` units runs
+//     in parallel (~12-way on a 16-core M3 Max turns ~12 days into ~24h), and
+//   - writes its rows to its own file on completion (atomic tmp + rename), so a
+//     re-run with the SAME --name skips finished units and resumes.
+// Bounded loss on interruption = the in-flight units only (~chunk-size x 7min).
+// =============================================================================
+
+// Columns must stay in sync with runSweep's csvHeader above (kept local so the
+// sequential path is untouched; both end with the `variant` column).
+const PAR_CSV_HEADER = [
+    'config_id', 'replicate_id', 'E', 'C', 'S', 'delta', 'seasons',
+    'max_years_between_conf_finals', 'franchises_never_reached_cf',
+    'manipulation_gain_pct', 'manipulation_gain_bound', 'manipulation_gain_regime',
+    'per_series_cost_typical', 'per_series_cost_playin',
+    'rank_one_to_five_spread', 'expected_pick_worst', 'expected_pick_fifth_worst',
+    'variant',
+];
+
+function parBuildRow(config, seed, r) {
+    return [
+        config.id, seed, config.E, config.C === null ? 'null' : config.C, config.S,
+        config.delta, config.seasons,
+        r.max_years_between_conf_finals, r.franchises_never_reached_cf,
+        r.manipulation_gain_pct, r.manipulation_gain_bound, r.manipulation_gain_regime,
+        r.per_series_cost_typical === null ? '' : r.per_series_cost_typical,
+        r.per_series_cost_playin === null ? '' : r.per_series_cost_playin,
+        r.rank_one_to_five_spread, r.expected_pick_worst, r.expected_pick_fifth_worst,
+        config.variant || 'grid',
+    ].join(',');
+}
+
+// Non-blocking driver invocation (one subprocess for a chunk of seeds). Same env
+// contract as runZengmSeasonsRealBatch, but returns a Promise.
+function runDriverAsync(config, seeds) {
+    return new Promise((resolve, reject) => {
+        const driverConfig = {
+            id: config.id, E: config.E, C: config.C, S: config.S,
+            delta: config.delta, rho: config.rho, W: config.W, T: config.T,
+            variant: config.variant, seasons: config.seasons, seed: seeds[0],
+        };
+        const outputPath = path.join(__dirname, 'runs',
+            `_driver_${process.pid}_cfg${config.id}_${seeds[0]}-${seeds[seeds.length - 1]}_${Date.now()}_${Math.round(performance.now())}.json`);
+        fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+        const env = Object.assign({}, process.env, {
+            COLA_DRIVER_CONFIG: JSON.stringify(driverConfig),
+            COLA_DRIVER_OUTPUT: outputPath,
+            COLA_DRIVER_REPLICATES: JSON.stringify(seeds),
+        });
+        const child = child_process.spawn(
+            path.join(ZENGM_FORK_DIR, 'node_modules/.bin/vitest'),
+            ['--run', '--project', 'basketball', DRIVER_TEST_REL],
+            { cwd: ZENGM_FORK_DIR, env, stdio: ['ignore', 'ignore', 'pipe'] },
+        );
+        let stderr = '';
+        child.stderr.on('data', (d) => { stderr += d.toString(); });
+        child.on('error', reject);
+        child.on('close', (code) => {
+            if (code !== 0) { reject(new Error(`driver exit ${code}: ${stderr.slice(-400)}`)); return; }
+            if (!fs.existsSync(outputPath)) { reject(new Error('driver produced no output')); return; }
+            try {
+                const raw = JSON.parse(fs.readFileSync(outputPath, 'utf8'));
+                fs.unlinkSync(outputPath);
+                if (!Array.isArray(raw) || raw.length !== seeds.length || !raw.every((x) => Array.isArray(x.seasonLog))) {
+                    reject(new Error(`driver output shape mismatch (expected ${seeds.length} {seed,seasonLog})`)); return;
+                }
+                resolve(raw);
+            } catch (e) { reject(e); }
+        });
+    });
+}
+
+async function runSweepParallel({ gridPath, sweepDir, configIdsToRun, replicates, seasonsOverride, seeds: seedsOverride, concurrency, chunkSize }) {
+    const { configs } = loadGrid(gridPath);
+    let targetConfigs = (configIdsToRun === 'all') ? configs : configs.filter((c) => configIdsToRun.includes(c.id));
+    if (seasonsOverride !== undefined) targetConfigs = targetConfigs.map((c) => ({ ...c, seasons: seasonsOverride }));
+    const baseSeeds = (Array.isArray(seedsOverride) && seedsOverride.length) ? seedsOverride : Array.from({ length: replicates }, (_, i) => i);
+
+    fs.mkdirSync(sweepDir, { recursive: true });
+    const log = (m) => {
+        const line = `[${new Date().toISOString()}] ${m}`;
+        console.log(line);
+        fs.appendFileSync(path.join(sweepDir, 'progress.log'), line + '\n');
+    };
+
+    // Independent work units = (config, seed-chunk). File existence = "done".
+    const units = [];
+    for (const config of targetConfigs) {
+        for (let i = 0; i < baseSeeds.length; i += chunkSize) {
+            const chunk = baseSeeds.slice(i, i + chunkSize);
+            const file = path.join(sweepDir, `cfg${config.id}_s${chunk[0]}-${chunk[chunk.length - 1]}.csv`);
+            units.push({ config, seeds: chunk, file });
+        }
+    }
+    const pending = units.filter((u) => !fs.existsSync(u.file));
+    log(`sweep '${path.basename(sweepDir)}': ${units.length} units, ${units.length - pending.length} done, ${pending.length} pending; concurrency=${concurrency}, chunk=${chunkSize}, configs=${targetConfigs.length}, replicates=${baseSeeds.length}`);
+
+    let done = 0, failed = 0;
+    const failedUnits = [];
+    const runUnit = async (u) => {
+        const label = `cfg${u.config.id}[${u.config.variant || 'grid'}] s${u.seeds[0]}-${u.seeds[u.seeds.length - 1]}`;
+        for (let attempt = 1; attempt <= 2; attempt++) {
+            try {
+                const t0 = Date.now();
+                const raw = await runDriverAsync(u.config, u.seeds);
+                const rows = raw.map((r) => parBuildRow(u.config, r.seed, evaluateAll(u.config, r.seasonLog)));
+                fs.writeFileSync(u.file + '.tmp', rows.join('\n') + '\n');
+                fs.renameSync(u.file + '.tmp', u.file); // atomic: a partial file never looks "done"
+                done++;
+                log(`OK   ${label} (${((Date.now() - t0) / 1000 / 60).toFixed(1)}min)  [${done}/${pending.length} done, ${failed} failed]`);
+                return;
+            } catch (e) {
+                if (attempt === 2) { failed++; failedUnits.push(label); log(`FAIL ${label}: ${e.message}`); }
+            }
+        }
+    };
+
+    const queue = pending.slice();
+    const workers = Array.from({ length: Math.max(1, Math.min(concurrency, queue.length)) }, async () => {
+        while (queue.length) await runUnit(queue.shift());
+    });
+    await Promise.all(workers);
+
+    // Concatenate completed units into the master CSV (idempotent; reflects all
+    // units done so far, so it is also valid after a partial/resumed run).
+    const master = path.join(sweepDir, 'sweep.csv');
+    const allRows = [PAR_CSV_HEADER.join(',')];
+    for (const u of units) {
+        if (fs.existsSync(u.file)) allRows.push(fs.readFileSync(u.file, 'utf8').trim());
+    }
+    fs.writeFileSync(master, allRows.join('\n') + '\n');
+    log(`DONE: ${done} run this pass, ${failed} failed, ${allRows.length - 1} total rows -> ${master}`);
+    if (failed) log(`Re-run the SAME command to retry ${failed} failed unit(s): ${failedUnits.join('; ')}`);
+}
+
+// =============================================================================
 // 5. CLI.
 // =============================================================================
 
@@ -495,6 +636,10 @@ function parseArgs(argv) {
             }
         }
         else if (argv[i] === '--out') args.outPath = argv[++i];
+        else if (argv[i] === '--parallel') args.parallel = true;
+        else if (argv[i] === '--concurrency') args.concurrency = parseInt(argv[++i], 10);
+        else if (argv[i] === '--chunk-size') args.chunkSize = parseInt(argv[++i], 10);
+        else if (argv[i] === '--name') args.name = argv[++i];
     }
     return args;
 }
@@ -513,16 +658,35 @@ if (require.main === module) {
         args.seasonsOverride = 30;
     }
 
-    runSweep({
-        gridPath,
-        outPath,
-        configIdsToRun: args.configIds,
-        replicates,
-        mode: args.mode,
-        useStub: args.useStub,
-        seasonsOverride: args.seasonsOverride,
-        seeds: args.seeds,
-    });
+    if (args.parallel) {
+        // Resumable, parallel, crash/sleep-safe path for the long full-engine sweep.
+        const name = args.name || `sweep_${Date.now()}`;
+        const sweepDir = path.join(__dirname, 'runs', name);
+        runSweepParallel({
+            gridPath,
+            sweepDir,
+            configIdsToRun: args.configIds,
+            replicates,
+            seasonsOverride: args.seasonsOverride,
+            seeds: args.seeds,
+            concurrency: args.concurrency || 12,
+            chunkSize: args.chunkSize || 5,
+        }).catch((e) => {
+            console.error(`sweep failed: ${e.stack || e.message}`);
+            process.exit(1);
+        });
+    } else {
+        runSweep({
+            gridPath,
+            outPath,
+            configIdsToRun: args.configIds,
+            replicates,
+            mode: args.mode,
+            useStub: args.useStub,
+            seasonsOverride: args.seasonsOverride,
+            seeds: args.seeds,
+        });
+    }
 }
 
 module.exports = {
@@ -531,4 +695,6 @@ module.exports = {
     runZengmSeasonsRealBatch,
     runZengmSeasonStub,
     runSweep,
+    runSweepParallel,
+    runDriverAsync,
 };
