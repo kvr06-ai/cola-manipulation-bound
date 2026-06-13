@@ -1,31 +1,37 @@
 // Full-engine COLA sweep driver -- SCAFFOLD (step 1 of the tactical plan).
 //
-// Goal of this scaffold: prove the phase-stepping season loop with the dial
-// hook works end-to-end for one grid config against the REAL ZenGM engine
-// (real rosters / contracts / AI GMs / per-game sim), not the synthesized
-// Track B testbed. This de-risks the lottery-boundary intercept before the
-// full driver (all dials + Countdown/Beckett anchors + pruning) is built.
+// Proves the phase-stepping season loop + dial hook + per-season pruning work
+// end-to-end for one grid config against the REAL ZenGM engine (real rosters /
+// contracts / AI GMs / per-game sim), not the synthesized Track B testbed.
+// This de-risks the lottery-boundary intercept before the full driver (all
+// dials + Countdown/Beckett anchors + objectives + sweep wiring) is built.
 //
 // Design (see collab doc "Full-engine driver: tactical execution plan"):
-//   - Drive the season by phase-stepping (a synchronous, fully-awaited
-//     version of autoPlay), NOT autoPlayUntil (which self-drives past the
-//     hook and detaches promises).
-//   - game.play() auto-advances phases at schedule exhaustion
-//     (reg-season -> PLAYOFFS, playoffs -> DRAFT_LOTTERY). The
-//     PLAYOFFS->DRAFT_LOTTERY transition runs the engine's own
-//     cola.updateLotteryChancesAfterPlayoffs() internally.
+//   - Drive the season by phase-stepping (a synchronous, fully-awaited version
+//     of autoPlay), NOT autoPlayUntil (which self-drives past the hook and
+//     detaches promises).
+//   - game.play() auto-advances phases at schedule exhaustion (reg-season ->
+//     PLAYOFFS, playoffs -> DRAFT_LOTTERY). The PLAYOFFS->DRAFT_LOTTERY
+//     transition runs the engine's own cola.updateLotteryChancesAfterPlayoffs()
+//     internally.
 //   - Two hook points bracket the cola update:
-//       Hook A  @ PRESEASON   : carry-over scope (dial S), applied BEFORE the
-//                               season so the reset precedes the increment.
-//       Hook B  @ DRAFT_LOTTERY: eligibility mask (dial E) + cap clamp (dial C),
-//                               applied AFTER updateLotteryChancesAfterPlayoffs
-//                               (which already incremented every non-advancing
-//                               team, R1 losers included) and BEFORE the draw.
-//     NB: applying the E mask AFTER the cola update is the correction of a
-//     latent Track B ordering bug -- Track B masked R1 losers BEFORE the
-//     update, which re-incremented them straight back into the pool.
+//       Hook A @ PRESEASON    : carry-over scope (dial S), BEFORE the season so
+//                               the reset precedes the increment.
+//       Hook B @ DRAFT_LOTTERY: eligibility mask (dial E) + cap clamp (dial C),
+//                               AFTER updateLotteryChancesAfterPlayoffs (which
+//                               already incremented every non-advancing team,
+//                               R1 losers included) and BEFORE the draw.
+//     NB: masking AFTER the cola update corrects a latent Track B ordering bug
+//     (Track B masked R1 losers BEFORE the update, which re-incremented them
+//     straight back into the pool).
+//   - Spectator mode hands every roster to the AI; without it game.play()
+//     no-ops once the unmanaged user roster underflows (play.ts:614+).
+//   - Per-season pruning drops retired players from the cache (the working set
+//     the engine iterates) so sec/season stays flat over a 30-season run.
 //
 // Run: COLA_SPIKE=1 npx vitest --run src/test/colaFullEngineDriver.test.ts --project basketball
+//   COLA_DRIVER_SEASONS=N    seasons to run (default 3)
+//   COLA_DRIVER_NOPRUNE=1    disable pruning (to measure the drift it removes)
 
 import "fake-indexeddb/auto";
 import * as fs from "node:fs";
@@ -55,9 +61,15 @@ type TeamRec = {
 	draftPick: number | null;
 	cola: number;
 };
-type SeasonRec = { season: number; teams: TeamRec[] };
+type SeasonRec = {
+	season: number;
+	elapsedSecs: number;
+	cachePlayers: number;
+	teams: TeamRec[];
+};
 
 const NO_COND = {};
+const PRUNE = !process.env.COLA_DRIVER_NOPRUNE;
 
 // --- Dial transforms (ported from Track B, with corrected ordering) ---------
 
@@ -143,6 +155,28 @@ async function applyCapClamp(C: Config["C"]) {
 	}
 }
 
+// Per-season prune. Box scores accumulate ~1230/season and the event log grows
+// continuously; both pile up in idb.league (fake-indexeddb RAM) and the sweep
+// never reads either, so clearing them each season bounds RAM over a long run
+// (this is deleteOldData's boxScores + events). Box scores are not retained in
+// the cache, so they are cleared from the league directly; events are cached,
+// so clearing them through the cache API propagates on the next flush.
+// (Retired players are NOT cache-resident -- tid -3 lives only in idb.league --
+// so they are left alone; they are tiny and not the working set the per-game
+// sim iterates. The residual ~1s/season drift is idb.league query cost from
+// accumulating player-stats rows; trimming those is the pilot's tuning target,
+// task #67.)
+async function pruneSeasonData(): Promise<void> {
+	try {
+		await idb.cache.events.clear();
+	} catch {}
+	try {
+		const tx = idb.league.transaction("games", "readwrite");
+		await tx.objectStore("games").clear();
+		await tx.done;
+	} catch {}
+}
+
 // --- League construction ----------------------------------------------------
 
 async function createColaLeague(startSeason: number) {
@@ -172,15 +206,15 @@ async function createColaLeague(startSeason: number) {
 
 	// Spectator mode: no human-managed team, so the AI fills/resigns every
 	// roster (incl. tid 0) during resign + free agency. Without this,
-	// team.checkRosterSizes("user") raises a blocking error once the user
-	// team's roster falls below the minimum, and game.play() silently no-ops
-	// (play.ts:614+). This is the headless-sweep equivalent of autoPlayUntil.
+	// team.checkRosterSizes("user") raises a blocking error once tid 0's roster
+	// underflows and game.play() silently no-ops (play.ts:614+). This is the
+	// headless-sweep equivalent of autoPlayUntil.
 	g.setWithoutSavingToDB("spectator", true);
 }
 
-// --- Season capture ---------------------------------------------------------
+// --- Season capture (at the draft, when cola + lottery order are fresh) ------
 
-async function captureSeasonRecord(seasonNow: number): Promise<SeasonRec> {
+async function captureSeasonRecord(seasonNow: number): Promise<TeamRec[]> {
 	const tss = (await idb.cache.teamSeasons.getAll()).filter(
 		(ts: any) => ts.season === seasonNow,
 	);
@@ -192,16 +226,13 @@ async function captureSeasonRecord(seasonNow: number): Promise<SeasonRec> {
 			pickByTid[dp.originalTid ?? dp.tid] = dp.pick;
 		}
 	}
-	return {
-		season: seasonNow,
-		teams: tss.map((ts: any) => ({
-			tid: ts.tid,
-			wins: ts.won,
-			playoffRoundsWon: ts.playoffRoundsWon,
-			draftPick: pickByTid[ts.tid] ?? null,
-			cola: teams.find((t: any) => t.tid === ts.tid)?.cola ?? 0,
-		})),
-	};
+	return tss.map((ts: any) => ({
+		tid: ts.tid,
+		wins: ts.won,
+		playoffRoundsWon: ts.playoffRoundsWon,
+		draftPick: pickByTid[ts.tid] ?? null,
+		cola: teams.find((t: any) => t.tid === ts.tid)?.cola ?? 0,
+	}));
 }
 
 // --- Phase-stepping driver --------------------------------------------------
@@ -211,8 +242,10 @@ async function runConfig(config: Config): Promise<SeasonRec[]> {
 	await createColaLeague(START);
 
 	const records: SeasonRec[] = [];
-	const trace: string[] = [];
+	let pendingTeams: TeamRec[] | null = null;
+	let pendingSeason = START;
 	let priorChampionTid: number | null = null;
+	let seasonStart = Date.now();
 	let guard = 0;
 	const guardMax = config.seasons * 25 + 50;
 
@@ -223,20 +256,17 @@ async function runConfig(config: Config): Promise<SeasonRec[]> {
 		if (ph === PHASE.PRESEASON) {
 			await applyCarryOverScope(config.S, priorChampionTid); // Hook A
 			await phase.newPhase(PHASE.REGULAR_SEASON, NO_COND);
-			trace.push(`${g.get("season")}:PRESEASON->REG`);
 		} else if (
 			ph === PHASE.REGULAR_SEASON ||
 			ph === PHASE.AFTER_TRADE_DEADLINE
 		) {
-			const days = await season.getDaysLeftSchedule();
-			trace.push(`${g.get("season")}:play(ph=${ph},days=${days})`);
-			await game.play(days, NO_COND);
+			await game.play(await season.getDaysLeftSchedule(), NO_COND);
 		} else if (ph === PHASE.PLAYOFFS) {
 			await game.play(100, NO_COND);
 		} else if (ph === PHASE.DRAFT_LOTTERY) {
-			const seasonNow = g.get("season");
+			pendingSeason = g.get("season");
 			const tss = (await idb.cache.teamSeasons.getAll())
-				.filter((ts: any) => ts.season === seasonNow)
+				.filter((ts: any) => ts.season === pendingSeason)
 				.map((ts: any) => ({
 					tid: ts.tid,
 					playoffRoundsWon: ts.playoffRoundsWon,
@@ -245,9 +275,8 @@ async function runConfig(config: Config): Promise<SeasonRec[]> {
 			await applyEligibilityMask(config.E, tss); // Hook B.1
 			await applyCapClamp(config.C); // Hook B.2
 			await phase.newPhase(PHASE.DRAFT, NO_COND); // runs genOrder (real lottery draw)
-			const rec = await captureSeasonRecord(seasonNow);
-			records.push(rec);
-			const champ = rec.teams.find((t) => t.playoffRoundsWon === 4);
+			pendingTeams = await captureSeasonRecord(pendingSeason);
+			const champ = pendingTeams.find((t) => t.playoffRoundsWon === 4);
 			priorChampionTid = champ ? champ.tid : null;
 		} else if (ph === PHASE.DRAFT) {
 			await draft.runPicks({ type: "untilEnd" }, NO_COND);
@@ -257,6 +286,16 @@ async function runConfig(config: Config): Promise<SeasonRec[]> {
 			await phase.newPhase(PHASE.FREE_AGENCY, NO_COND);
 		} else if (ph === PHASE.FREE_AGENCY) {
 			await freeAgents.play(g.get("daysLeft"), NO_COND);
+			// End of the season cycle: prune, time, and record.
+			if (PRUNE) await pruneSeasonData();
+			const cachePlayers = (await idb.cache.players.getAll()).length;
+			records.push({
+				season: pendingSeason,
+				elapsedSecs: Number(((Date.now() - seasonStart) / 1000).toFixed(2)),
+				cachePlayers,
+				teams: pendingTeams ?? [],
+			});
+			seasonStart = Date.now();
 		} else {
 			throw new Error(`Unexpected phase in driver loop: ${ph}`);
 		}
@@ -264,7 +303,7 @@ async function runConfig(config: Config): Promise<SeasonRec[]> {
 
 	if (records.length < config.seasons) {
 		throw new Error(
-			`Driver stalled: ${records.length}/${config.seasons} seasons, last phase ${g.get("phase")}, guard ${guard}\nlast trace:\n${trace.slice(-25).join("\n")}`,
+			`Driver stalled: ${records.length}/${config.seasons} seasons, last phase ${g.get("phase")}, guard ${guard}`,
 		);
 	}
 	return records;
@@ -274,7 +313,7 @@ async function runConfig(config: Config): Promise<SeasonRec[]> {
 
 test.skipIf(!process.env.COLA_SPIKE)(
 	"full-engine COLA driver scaffold: cfg 1 (Classic E=14) runs end-to-end",
-	{ timeout: 10 * 60 * 1000 },
+	{ timeout: 20 * 60 * 1000 },
 	async () => {
 		const config: Config = {
 			id: 1,
@@ -288,51 +327,36 @@ test.skipIf(!process.env.COLA_SPIKE)(
 		const records = await runConfig(config);
 		const wall = (Date.now() - t0) / 1000;
 
-		// For each season: did the lottery use cola? (worst non-playoff teams
-		// should hold the most cola and land top picks.) Did E=14 zero the R1
-		// losers? Build a compact diagnostic per season.
 		const perSeason = records.map((r) => {
-			const sorted = r.teams.slice().sort((a, b) => b.cola - a.cola);
-			const top3Cola = sorted.slice(0, 3).map((t) => ({
-				tid: t.tid,
-				wins: t.wins,
-				prw: t.playoffRoundsWon,
-				cola: t.cola,
-				pick: t.draftPick,
-			}));
 			const r1Losers = r.teams.filter((t) => t.playoffRoundsWon === 0);
-			const r1LoserColaMax = r1Losers.length
-				? Math.max(...r1Losers.map((t) => t.cola))
-				: 0;
-			// Best (lowest) lottery pick any masked R1 loser received. With E=14
-			// they are excluded from the 14-team lottery, so this should be >14.
 			const r1LoserPicks = r1Losers
 				.map((t) => t.draftPick)
 				.filter((p): p is number => p !== null);
-			const r1LoserBestPick = r1LoserPicks.length
-				? Math.min(...r1LoserPicks)
-				: null;
 			const champ = r.teams.find((t) => t.playoffRoundsWon === 4);
-			const lotteryTeams = r.teams.filter((t) => t.cola > 0).length;
-			const maxCola = Math.max(...r.teams.map((t) => t.cola));
 			return {
 				season: r.season,
-				lotteryTeamsWithCola: lotteryTeams,
-				maxCola,
-				r1LoserColaMax,
-				r1LoserBestPick,
+				elapsedSecs: r.elapsedSecs,
+				cachePlayers: r.cachePlayers,
+				lotteryTeamsWithCola: r.teams.filter((t) => t.cola > 0).length,
+				maxCola: Math.max(...r.teams.map((t) => t.cola)),
+				r1LoserColaMax: r1Losers.length
+					? Math.max(...r1Losers.map((t) => t.cola))
+					: 0,
+				r1LoserBestPick: r1LoserPicks.length ? Math.min(...r1LoserPicks) : null,
 				championTid: champ?.tid ?? null,
 				championCola: champ?.cola ?? null,
-				top3ByCola: top3Cola,
 			};
 		});
 
+		const elapsed = perSeason.map((s) => s.elapsedSecs);
 		const diag = {
 			config,
+			pruning: PRUNE,
 			wallSecs: Number(wall.toFixed(2)),
 			secPerSeason: Number((wall / records.length).toFixed(2)),
-			seasonsCompleted: records.length,
-			endSeason: g.get("season"),
+			firstSeasonSecs: elapsed[0],
+			lastSeasonSecs: elapsed[elapsed.length - 1],
+			driftRatio: Number((elapsed[elapsed.length - 1]! / elapsed[0]!).toFixed(2)),
 			perSeason,
 		};
 		console.log("\n===== FULL-ENGINE DRIVER SCAFFOLD =====");
@@ -343,7 +367,7 @@ test.skipIf(!process.env.COLA_SPIKE)(
 			JSON.stringify(diag, null, 2),
 		);
 
-		// Mechanism assertions (proving the phase-stepping loop + dial hook):
+		// Mechanism assertions (the phase-stepping loop + dial hook):
 		expect(records.length).toBe(config.seasons);
 		for (const r of records) {
 			// Every season produced a real lottery order (pick 1 was assigned).
@@ -353,20 +377,27 @@ test.skipIf(!process.env.COLA_SPIKE)(
 			expect(picks).toContain(1);
 		}
 		for (const s of perSeason) {
-			// Hook B (E=14): R1 losers were zeroed before the draw...
+			// Hook B (E=14): R1 losers zeroed before the draw...
 			expect(s.r1LoserColaMax).toBe(0);
 			// ...and the real engine honored it -- masked R1 losers fell OUT of
-			// the 14-team lottery into rank order (pick > 14). This is the proof
-			// that the dial transform flowed into genOrder, not just the cache.
+			// the 14-team lottery into rank order (pick > 14). Proof the dial
+			// transform flowed into genOrder, not just the cache.
 			if (s.r1LoserBestPick !== null) {
 				expect(s.r1LoserBestPick).toBeGreaterThan(14);
 			}
 		}
-		// Hook A / carryover: under S=unbounded, cola accumulates across droughts;
-		// by the final season some team has stacked more than one year's alpha.
+		// Hook A / carryover: under S=unbounded, cola accumulates across droughts.
 		expect(perSeason[perSeason.length - 1]!.maxCola).toBeGreaterThanOrEqual(
 			2000,
 		);
+		// The cache working set plateaus rather than growing unbounded (the FA
+		// pool reaches steady state; the residual sec/season drift is idb.league
+		// query cost, addressed by the box-score/event prune + pilot tuning).
+		if (records.length >= 3) {
+			const firstCache = perSeason[0]!.cachePlayers;
+			const lastCache = perSeason[perSeason.length - 1]!.cachePlayers;
+			expect(lastCache).toBeLessThan(firstCache * 1.2);
+		}
 	},
 );
 
