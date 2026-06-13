@@ -52,13 +52,21 @@ COLA_FULL_ENGINE=1) adds, beyond the cola dial mechanics:
   top-6-by-wins within conference. Injection rewrites the round-1 `pick`
   numbers; determinism is per (config.id, seed) via the Math.random override.
 
-- **FE-3. The manipulation-gain secondary objective is NOT well-defined for the
-  non-cola anchors.** objectives.js computes it from a nominal E=22 / C=null, so
-  Countdown and Beckett carry a placeholder (~18.18%) rather than a
-  mechanism-true bound. Their PRIMARY objective (max years between conference
-  finals) and rank-spread ARE computed from the real seasonLog and are
-  meaningful. Surface this to Highley with the anchor results: on the
-  manipulation axis the anchors are "not applicable," not a measured value.
+- **FE-3. [RESOLVED 2026-06-13] The manipulation-gain secondary objective is NOT
+  well-defined for the non-cola anchors, so it is blanked (N/A), not faked.**
+  The cola manipulation bound is a closed form in |E|; it has no meaning for
+  Countdown/Beckett. objectives.js now returns `gain_pct = bound = null`,
+  `regime = "n/a"` for any `variant` config, so the CSV manipulation cells are
+  empty for the anchors and they are neither credited nor penalized on that axis
+  of the Pareto frontier. Their PRIMARY objective (max years between conference
+  finals) and rank-spread are computed from the real seasonLog and are
+  meaningful. Per-series-cost is already null (anchors are uncapped, C=null).
+  Surface to Highley with the results: the anchors are "not applicable" on the
+  manipulation axis by construction.
+
+- **FE-2 cap, RESOLVED 2026-06-13: Beckett runs UNCAPPED.** Our 2026-06-11 reply
+  stated we would implement Beckett uncapped unless Highley flagged a cap; he did
+  not reply, so per the opt-out posture uncapped is confirmed for the sweep.
 
 ---
 

@@ -142,6 +142,20 @@ function maxYearsBetweenConferenceFinals(seasonLog) {
 function manipulationGainUpperBound(config) {
     const { E, C } = config;
 
+    // Off-grid named anchors (Countdown, Beckett) are NOT cola mechanisms, so the
+    // cola manipulation-gain bound (a closed form in |E|) is undefined for them.
+    // Return N/A rather than a misleading nominal value, so the anchors are not
+    // credited or penalized on the manipulation axis of the Pareto frontier.
+    if (config.variant) {
+        return {
+            gain_pct: null,
+            bound: null,
+            regime: "n/a",
+            formula: "n/a (non-cola named anchor)",
+            notes: `Manipulation-gain bound is undefined for the '${config.variant}' mechanism; not a cola variant.`,
+        };
+    }
+
     const eligibilitySize = typeof E === "number" ? E : (E === "16-tiered" ? 16 : 22);
 
     if (C !== null && C !== undefined) {

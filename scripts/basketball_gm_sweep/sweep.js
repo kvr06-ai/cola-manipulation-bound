@@ -621,7 +621,10 @@ function parseArgs(argv) {
         if (argv[i] === '--smoke') args.mode = 'smoke';
         else if (argv[i] === '--full') args.mode = 'full';
         else if (argv[i] === '--stub') args.useStub = true;
-        else if (argv[i] === '--config-id') args.configIds = [parseInt(argv[++i], 10)];
+        else if (argv[i] === '--config-id') {
+            const v = argv[++i];
+            args.configIds = (v === 'all') ? 'all' : [parseInt(v, 10)];
+        }
         else if (argv[i] === '--replicates') args.replicates = parseInt(argv[++i], 10);
         else if (argv[i] === '--seasons') args.seasonsOverride = parseInt(argv[++i], 10);
         else if (argv[i] === '--seeds') {
