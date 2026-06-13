@@ -29,6 +29,37 @@ its own assumptions section when it lands. Corrections of 2026-06-10
 are marked [CORRECTED 2026-06-10] inline (Z-3, S-1, S-2); Z-2's
 cross-reference to Z-3 was updated to match.
 
+**Full-engine driver, step 2 modeling choices (2026-06-11).** The
+`colaFullEngineDriver.test.ts` driver (a sweep.js drop-in under
+COLA_FULL_ENGINE=1) adds, beyond the cola dial mechanics:
+
+- **FE-1. 16-tiered pool = per-conference seeds 8-15 (record-based).** The
+  3-2-1 proposal pool is modeled as the bottom 8 by regular-season record in
+  each conference (= 10 non-playoff-non-play-in [seeds 11-15] + 4 record-9/10
+  [seeds 9-10] + 2 7v8-losers [proxied by the 8-seed]). This is the
+  per-conference 3-2-1 structure, more faithful than Track B's "16 worst
+  overall" (B-2). The exact 7v8-game loser (vs the 8-seed proxy) is available
+  from `playoffSeries.playIns` / `getTidPlayIns`; using it is a 2-team,
+  play-in-upset-only refinement, deferred.
+
+- **FE-2. Named anchors (Countdown, Beckett) track drought in the driver and
+  inject a computed draft order over the engine's lottery.** Countdown drought
+  = years since a playoff series win OR top-3 pick (port of cola-engine.js
+  computeSimpleCOLA); McCarty = drought x wins; survivor elimination-pool draw.
+  Beckett drought = years since a #1 pick OR top-6 seed OR playoff series win;
+  eligible = drought >= 2; entries = drought x wins; top-4 raffled, rest by
+  entries; uncapped (cap pending Highley). "Top-6 seed" is proxied by
+  top-6-by-wins within conference. Injection rewrites the round-1 `pick`
+  numbers; determinism is per (config.id, seed) via the Math.random override.
+
+- **FE-3. The manipulation-gain secondary objective is NOT well-defined for the
+  non-cola anchors.** objectives.js computes it from a nominal E=22 / C=null, so
+  Countdown and Beckett carry a placeholder (~18.18%) rather than a
+  mechanism-true bound. Their PRIMARY objective (max years between conference
+  finals) and rank-spread ARE computed from the real seasonLog and are
+  meaningful. Surface this to Highley with the anchor results: on the
+  manipulation axis the anchors are "not applicable," not a measured value.
+
 ---
 
 ## 1. ZenGM Engine Assumptions

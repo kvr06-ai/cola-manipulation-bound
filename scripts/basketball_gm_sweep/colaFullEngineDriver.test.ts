@@ -52,6 +52,9 @@ type Config = {
 	C: number | null;
 	S: "single-season" | "unbounded" | "bounded-30yr" | "reset-on-championship";
 	seasons: number;
+	// Off-grid named anchors. When set, E/C/S are ignored and the draft order is
+	// computed by the anchor mechanism and injected over the engine's lottery.
+	variant?: "countdown" | "beckett";
 };
 
 type TeamRec = {
@@ -109,7 +112,7 @@ async function applyCarryOverScope(
 // draw skips them (cola=0 -> zero chance -> falls through to rank order).
 async function applyEligibilityMask(
 	E: Config["E"],
-	seasonTeamSeasons: { tid: number; playoffRoundsWon: number; won: number }[],
+	seasonTeamSeasons: { tid: number; playoffRoundsWon: number; won: number; cid: number }[],
 ) {
 	if (E === 22) return; // engine default pool (14 non-playoff + 8 R1 losers)
 	const teams = await idb.cache.teams.getAll();
@@ -128,14 +131,24 @@ async function applyEligibilityMask(
 		return;
 	}
 	if (E === "16-tiered") {
-		// SCAFFOLD: approximate as the 16 worst-record teams (Track B B-2).
-		const eligible = new Set(
-			seasonTeamSeasons
+		// 3-2-1 proposal pool, per conference: the bottom 8 by record (seeds
+		// 8-15) in each conference = 10 non-playoff-non-play-in (seeds 11-15) +
+		// 4 record-9/10 (seeds 9-10) + 2 7v8-losers (proxied by the 8-seed).
+		// This is the per-conference 3-2-1 structure -- more faithful than Track
+		// B's "16 worst overall" -- using only regular-season record. The exact
+		// 7v8-game loser (vs the 8-seed proxy) would come from
+		// playoffSeries.playIns; that refinement is a 2-team, play-in-upset-only
+		// difference (the engine has the data; documented in ASSUMPTIONS).
+		const byConf: Record<number, typeof seasonTeamSeasons> = {};
+		for (const ts of seasonTeamSeasons) (byConf[ts.cid] ??= []).push(ts);
+		const eligible = new Set<number>();
+		for (const cid of Object.keys(byConf)) {
+			byConf[Number(cid)]!
 				.slice()
 				.sort((a, b) => a.won - b.won)
-				.slice(0, 16)
-				.map((ts) => ts.tid),
-		);
+				.slice(0, 8)
+				.forEach((ts) => eligible.add(ts.tid));
+		}
 		for (const t of teams) {
 			if (!eligible.has(t.tid)) {
 				t.cola = 0;
@@ -242,6 +255,166 @@ async function captureSeasonRecord(seasonNow: number): Promise<TeamRec[]> {
 	});
 }
 
+// --- Named anchors (Countdown, Beckett): non-cola mechanisms ----------------
+// These compute a full draft order driver-side and inject it (override the
+// engine's lottery order). Drought is tracked across seasons by the driver.
+//   Countdown: drought = years since a playoff series win OR top-3 pick;
+//     McCarty number = drought x wins; survivor-style elimination-pool draw
+//     (5-team pools, tickets 6..2 worst..best). Eligible = seriesWon === 0.
+//     Source: docs/js/cola-engine.js computeCountdownCOLA / countdownTrial.
+//   Beckett: drought = years since a #1 pick OR top-6 seed OR playoff series
+//     win; eligible = drought >= 2; entries = drought x wins; top-4 raffled by
+//     entries, rest by entries DESC. Uncapped (cap pending Highley).
+//     Source: Highley & Sanderson Substack 2026-04-10.
+
+type AnchorTeam = { tid: number; wins: number; playoffRoundsWon: number; cid: number };
+
+const COUNTDOWN_POOL_TICKETS = [6, 5, 4, 3, 2];
+
+// Port of cola-engine.js countdownTrial: one survivor-style draw over the
+// McCarty-ranked eligible pool. Uses the (seeded) Math.random stream.
+function countdownTrial(rankedTids: number[]): Record<number, number> {
+	const remaining = [...rankedTids].reverse(); // index 0 = worst McCarty
+	const assignment: Record<number, number> = {};
+	const total = remaining.length;
+	for (let pick = total; pick >= 1; pick--) {
+		if (remaining.length === 1) {
+			assignment[remaining[0]!] = pick;
+			break;
+		}
+		const poolSize = Math.min(5, remaining.length);
+		const tickets = COUNTDOWN_POOL_TICKETS.slice(0, poolSize);
+		const ticketTotal = tickets.reduce((a, b) => a + b, 0);
+		const roll = Math.random() * ticketTotal;
+		let cumulative = 0;
+		let drawn = 0;
+		for (let i = 0; i < poolSize; i++) {
+			cumulative += tickets[i]!;
+			if (roll < cumulative) {
+				drawn = i;
+				break;
+			}
+		}
+		assignment[remaining[drawn]!] = pick;
+		remaining.splice(drawn, 1);
+	}
+	return assignment;
+}
+
+// Beckett: top-4 weighted raffle (by entries, without replacement), rest by
+// entries DESC.
+function beckettDraw(eligible: { tid: number; entries: number }[]): Record<number, number> {
+	const pool = eligible.slice();
+	const assignment: Record<number, number> = {};
+	const nRaffle = Math.min(4, pool.length);
+	for (let pick = 1; pick <= nRaffle; pick++) {
+		const total = pool.reduce((a, t) => a + Math.max(0, t.entries), 0);
+		let idx = 0;
+		if (total > 0) {
+			const roll = Math.random() * total;
+			let cum = 0;
+			for (let i = 0; i < pool.length; i++) {
+				cum += Math.max(0, pool[i]!.entries);
+				if (roll < cum) {
+					idx = i;
+					break;
+				}
+			}
+		}
+		assignment[pool[idx]!.tid] = pick;
+		pool.splice(idx, 1);
+	}
+	pool.sort((a, b) => b.entries - a.entries);
+	let pick = nRaffle + 1;
+	for (const t of pool) assignment[t.tid] = pick++;
+	return assignment;
+}
+
+// Top-6-by-wins within each conference (proxy for "top-6 seed", which excludes
+// play-in teams). Used by Beckett's drought reset.
+function top6ByConf(tss: AnchorTeam[]): Set<number> {
+	const byConf: Record<number, AnchorTeam[]> = {};
+	for (const ts of tss) (byConf[ts.cid] ??= []).push(ts);
+	const top6 = new Set<number>();
+	for (const cid of Object.keys(byConf)) {
+		byConf[Number(cid)]!
+			.slice()
+			.sort((a, b) => b.wins - a.wins)
+			.slice(0, 6)
+			.forEach((ts) => top6.add(ts.tid));
+	}
+	return top6;
+}
+
+// Compute the full round-1 draft order (tid -> pick) for an anchor variant.
+// Updates droughtState in place (Phase A: post-playoff, pre-draft). Phase B
+// (post-draft pick reset) is applied by the caller after injection.
+function computeAnchorOrder(
+	variant: "countdown" | "beckett",
+	tss: AnchorTeam[],
+	droughtState: Record<number, number>,
+): Record<number, number> {
+	// Phase A drought update.
+	const top6 = variant === "beckett" ? top6ByConf(tss) : null;
+	for (const ts of tss) {
+		const wonSeries = ts.playoffRoundsWon >= 1;
+		const reset =
+			variant === "countdown"
+				? wonSeries
+				: wonSeries || top6!.has(ts.tid); // #1-pick reset is Phase B
+		droughtState[ts.tid] = reset ? 0 : (droughtState[ts.tid] ?? 0) + 1;
+	}
+
+	let assignment: Record<number, number>;
+	if (variant === "countdown") {
+		// Eligible = no playoff series win (14 non-playoff + 8 R1 losers).
+		const eligible = tss
+			.filter((ts) => ts.playoffRoundsWon < 1)
+			.map((ts) => ({
+				tid: ts.tid,
+				mccarty: (droughtState[ts.tid] ?? 0) * ts.wins,
+				drought: droughtState[ts.tid] ?? 0,
+				wins: ts.wins,
+			}))
+			.sort(
+				(a, b) =>
+					b.mccarty - a.mccarty || b.drought - a.drought || b.wins - a.wins,
+			);
+		assignment = countdownTrial(eligible.map((e) => e.tid));
+	} else {
+		const eligible = tss
+			.filter((ts) => (droughtState[ts.tid] ?? 0) >= 2)
+			.map((ts) => ({ tid: ts.tid, entries: (droughtState[ts.tid] ?? 0) * ts.wins }));
+		assignment = beckettDraw(eligible);
+	}
+
+	// Non-eligible teams pick after the pool, worst playoff finish / record first.
+	const eligibleSet = new Set(Object.keys(assignment).map(Number));
+	const tail = tss
+		.filter((ts) => !eligibleSet.has(ts.tid))
+		.sort((a, b) => a.playoffRoundsWon - b.playoffRoundsWon || a.wins - b.wins);
+	let next = eligibleSet.size + 1;
+	for (const ts of tail) assignment[ts.tid] = next++;
+	return assignment;
+}
+
+// Overwrite the engine's round-1 pick numbers with the anchor order.
+async function injectDraftOrder(
+	seasonNow: number,
+	tidToPick: Record<number, number>,
+) {
+	const dps = await idb.cache.draftPicks.getAll();
+	for (const dp of dps as any[]) {
+		if (dp.season === seasonNow && dp.round === 1) {
+			const pick = tidToPick[dp.originalTid ?? dp.tid];
+			if (pick !== undefined) {
+				dp.pick = pick;
+				await idb.cache.draftPicks.put(dp);
+			}
+		}
+	}
+}
+
 // --- Phase-stepping driver --------------------------------------------------
 
 async function runConfig(config: Config): Promise<SeasonRec[]> {
@@ -249,6 +422,7 @@ async function runConfig(config: Config): Promise<SeasonRec[]> {
 	await createColaLeague(START);
 
 	const records: SeasonRec[] = [];
+	const droughtState: Record<number, number> = {}; // anchors only
 	let pendingTeams: TeamRec[] | null = null;
 	let pendingSeason = START;
 	let priorChampionTid: number | null = null;
@@ -261,7 +435,9 @@ async function runConfig(config: Config): Promise<SeasonRec[]> {
 		const ph = g.get("phase");
 
 		if (ph === PHASE.PRESEASON) {
-			await applyCarryOverScope(config.S, priorChampionTid); // Hook A
+			if (!config.variant) {
+				await applyCarryOverScope(config.S, priorChampionTid); // Hook A (cola only)
+			}
 			await phase.newPhase(PHASE.REGULAR_SEASON, NO_COND);
 		} else if (
 			ph === PHASE.REGULAR_SEASON ||
@@ -272,17 +448,44 @@ async function runConfig(config: Config): Promise<SeasonRec[]> {
 			await game.play(100, NO_COND);
 		} else if (ph === PHASE.DRAFT_LOTTERY) {
 			pendingSeason = g.get("season");
+			const teamsNow = await idb.cache.teams.getAll();
 			const tss = (await idb.cache.teamSeasons.getAll())
 				.filter((ts: any) => ts.season === pendingSeason)
 				.map((ts: any) => ({
 					tid: ts.tid,
 					playoffRoundsWon: ts.playoffRoundsWon,
 					won: ts.won,
+					cid: teamsNow.find((t: any) => t.tid === ts.tid)?.cid ?? ts.cid ?? 0,
 				}));
-			await applyEligibilityMask(config.E, tss); // Hook B.1
-			await applyCapClamp(config.C); // Hook B.2
-			await phase.newPhase(PHASE.DRAFT, NO_COND); // runs genOrder (real lottery draw)
-			pendingTeams = await captureSeasonRecord(pendingSeason);
+			if (config.variant) {
+				// Anchor: compute the order driver-side, inject over the engine's.
+				const anchorTss: AnchorTeam[] = tss.map((ts: any) => ({
+					tid: ts.tid,
+					wins: ts.won,
+					playoffRoundsWon: ts.playoffRoundsWon,
+					cid: ts.cid,
+				}));
+				const order = computeAnchorOrder(config.variant, anchorTss, droughtState);
+				await phase.newPhase(PHASE.DRAFT, NO_COND); // engine sets a lottery order...
+				await injectDraftOrder(pendingSeason, order); // ...which we overwrite
+				pendingTeams = await captureSeasonRecord(pendingSeason);
+				// Phase B drought reset (post-draft): Countdown on top-3, Beckett on #1.
+				for (const ts of anchorTss) {
+					const pick = order[ts.tid];
+					if (
+						pick !== undefined &&
+						((config.variant === "countdown" && pick <= 3) ||
+							(config.variant === "beckett" && pick === 1))
+					) {
+						droughtState[ts.tid] = 0;
+					}
+				}
+			} else {
+				await applyEligibilityMask(config.E, tss); // Hook B.1
+				await applyCapClamp(config.C); // Hook B.2
+				await phase.newPhase(PHASE.DRAFT, NO_COND); // runs genOrder (real lottery draw)
+				pendingTeams = await captureSeasonRecord(pendingSeason);
+			}
 			const champ = pendingTeams.find((t) => t.playoffRoundsWon === 4);
 			priorChampionTid = champ ? champ.tid : null;
 		} else if (ph === PHASE.DRAFT) {

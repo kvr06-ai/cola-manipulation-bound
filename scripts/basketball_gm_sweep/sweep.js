@@ -75,6 +75,29 @@ function loadGrid(gridPath) {
     if (expectedTotal !== undefined && configs.length !== expectedTotal) {
         throw new Error(`Grid expansion: expected ${expectedTotal} configs, got ${configs.length}`);
     }
+
+    // Off-grid named anchors (Countdown, Beckett). These are non-cola
+    // mechanisms (different W / increment / eligibility) implemented as bespoke
+    // driver configs, not grid points. They are only runnable under the full
+    // engine (the synthesized Track B driver has no `variant` handling), so they
+    // are appended only when COLA_FULL_ENGINE is set. E/C are nominal (the
+    // anchors ignore the cola dials); they exist so objectives.js still produces
+    // a manipulation-gain value -- which is NOT well-defined for a non-cola
+    // mechanism and is flagged as such (see ASSUMPTIONS.md).
+    if (process.env.COLA_FULL_ENGINE && raw._named_anchors && raw._named_anchors.anchors) {
+        const fixed = fixed_at_classic_cola_defaults;
+        const variantByKey = { 'countdown-cola': 'countdown', 'beckett-cola': 'beckett' };
+        for (const [key, variant] of Object.entries(variantByKey)) {
+            if (raw._named_anchors.anchors[key]) {
+                configs.push({
+                    id: id++, E: 22, C: null, S: 'unbounded',
+                    delta: fixed.delta, rho: fixed.rho, W: fixed.W, T: fixed.T,
+                    seasons: seasonsPerConfig, variant,
+                });
+            }
+        }
+    }
+
     return { configs, meta, sensitivity_checks: sensitivityChecks };
 }
 
@@ -138,6 +161,7 @@ function runZengmSeasonsRealBatch(config, seeds) {
         rho: config.rho,
         W: config.W,
         T: config.T,
+        variant: config.variant, // off-grid named anchors (countdown/beckett); undefined for grid
         seasons: config.seasons,
         // `seed` is the LEGACY single-replicate field — when COLA_DRIVER_REPLICATES
         // is set (batched mode), the driver ignores this and iterates over the
@@ -352,6 +376,9 @@ function runSweep({ gridPath, outPath, configIdsToRun, replicates, mode, useStub
         'rank_one_to_five_spread',
         'expected_pick_worst',
         'expected_pick_fifth_worst',
+        // 'grid' for the 48 dial configs; 'countdown'/'beckett' for the off-grid
+        // named anchors (appended last so the schema stays backward-compatible).
+        'variant',
     ];
 
     const rows = [csvHeader.join(',')];
@@ -388,6 +415,7 @@ function runSweep({ gridPath, outPath, configIdsToRun, replicates, mode, useStub
             result.rank_one_to_five_spread,
             result.expected_pick_worst,
             result.expected_pick_fifth_worst,
+            config.variant || 'grid',
         ].join(','));
     };
 
