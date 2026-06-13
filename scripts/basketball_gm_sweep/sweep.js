@@ -32,7 +32,14 @@ const child_process = require('child_process');
 const { evaluateAll } = require('./objectives.js');
 
 const ZENGM_FORK_DIR = path.join(__dirname, 'zengm-fork');
-const DRIVER_TEST_REL = 'src/worker/core/draft/colaSweepDriver.test.ts';
+// Driver selection. Default: the synthesized Track B testbed (fast 48-config
+// screen). COLA_FULL_ENGINE=1: the full ZenGM engine driver (per-game sim, real
+// rosters/contracts/AI GMs), used to re-derive the frontier (validation design
+// v2). Both honor the same env contract (COLA_DRIVER_CONFIG / _REPLICATES /
+// _OUTPUT -> [{seed, seasonLog}]), so the objectives + CSV pipeline is unchanged.
+const DRIVER_TEST_REL = process.env.COLA_FULL_ENGINE
+	? 'src/test/colaFullEngineDriver.test.ts'
+	: 'src/worker/core/draft/colaSweepDriver.test.ts';
 
 // =============================================================================
 // 1. Grid expansion: dial_grid.json -> 48 explicit configurations.

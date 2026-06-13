@@ -56,6 +56,7 @@ type Config = {
 
 type TeamRec = {
 	tid: number;
+	conf: "E" | "W";
 	wins: number;
 	playoffRoundsWon: number;
 	draftPick: number | null;
@@ -97,8 +98,10 @@ async function applyCarryOverScope(
 		}
 		return;
 	}
-	// bounded-30yr: SCAFFOLD STUB -- treated as unbounded for now; the real
-	// 30-year-window truncation lands with the full driver (task #68).
+	// bounded-30yr: for a 30-season run this is IDENTICAL to unbounded -- no
+	// cola contribution is ever older than the 30-year window, so the window
+	// never binds. It would only differ for >30-season horizons, which the
+	// sweep does not run. Intentional no-op (documented in ASSUMPTIONS).
 }
 
 // Hook B (part 1): eligibility mask. Applied at DRAFT_LOTTERY, AFTER the cola
@@ -226,13 +229,17 @@ async function captureSeasonRecord(seasonNow: number): Promise<TeamRec[]> {
 			pickByTid[dp.originalTid ?? dp.tid] = dp.pick;
 		}
 	}
-	return tss.map((ts: any) => ({
-		tid: ts.tid,
-		wins: ts.won,
-		playoffRoundsWon: ts.playoffRoundsWon,
-		draftPick: pickByTid[ts.tid] ?? null,
-		cola: teams.find((t: any) => t.tid === ts.tid)?.cola ?? 0,
-	}));
+	return tss.map((ts: any) => {
+		const t = teams.find((x: any) => x.tid === ts.tid);
+		return {
+			tid: ts.tid,
+			conf: (t?.cid ?? ts.cid) === 0 ? ("E" as const) : ("W" as const),
+			wins: ts.won,
+			playoffRoundsWon: ts.playoffRoundsWon,
+			draftPick: pickByTid[ts.tid] ?? null,
+			cola: t?.cola ?? 0,
+		};
+	});
 }
 
 // --- Phase-stepping driver --------------------------------------------------
@@ -309,7 +316,71 @@ async function runConfig(config: Config): Promise<SeasonRec[]> {
 	return records;
 }
 
-// --- Test -------------------------------------------------------------------
+// --- Determinism + replicate wrapper ----------------------------------------
+
+// Seed Math.random per replicate. ZenGM's randInt() (common/random.ts) routes
+// through Math.random, so overriding it makes the WHOLE run reproducible for a
+// fixed (config.id, seed): league generation, per-game sim, and the lottery
+// draw all read the same stream. Restored after each replicate so it never
+// leaks across replicates batched in one vitest process.
+function hashSeed(configId: number, replicate: number, baseSeed: number) {
+	let h = baseSeed >>> 0;
+	h = ((h ^ configId) * 2654435761) >>> 0;
+	h = ((h ^ replicate) * 2654435761) >>> 0;
+	return h;
+}
+function mulberry32(seed: number) {
+	return function () {
+		let t = (seed += 0x6d2b79f5);
+		t = Math.imul(t ^ (t >>> 15), t | 1);
+		t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+	};
+}
+
+// Project rich driver records to the seasonLog shape objectives.js consumes.
+function toSeasonLog(records: SeasonRec[]) {
+	return records.map((r) => ({ season: r.season, teams: r.teams }));
+}
+
+async function runReplicate(config: Config, seed: number) {
+	const original = Math.random;
+	Math.random = mulberry32(hashSeed(config.id, seed, 42));
+	try {
+		return toSeasonLog(await runConfig(config));
+	} finally {
+		Math.random = original;
+	}
+}
+
+// --- Env-driven sweep mode (drop-in for colaSweepDriver in sweep.js) ---------
+// Reads the dial config + replicate seeds from env, writes
+// [{ seed, seasonLog }, ...] to COLA_DRIVER_OUTPUT in the order requested.
+
+test.skipIf(!process.env.COLA_DRIVER_CONFIG)(
+	"full-engine COLA driver: env-driven sweep batch",
+	{ timeout: 6 * 60 * 60 * 1000 },
+	async () => {
+		const config = JSON.parse(process.env.COLA_DRIVER_CONFIG!) as Config;
+		const seeds = JSON.parse(
+			process.env.COLA_DRIVER_REPLICATES ?? "[0]",
+		) as number[];
+		const outputPath = process.env.COLA_DRIVER_OUTPUT!;
+		const results: { seed: number; seasonLog: any[] }[] = [];
+		for (const seed of seeds) {
+			const t0 = Date.now();
+			const seasonLog = await runReplicate(config, seed);
+			console.log(
+				`[colaFullEngineDriver] cfg=${config.id} seed=${seed} seasons=${seasonLog.length} elapsed=${((Date.now() - t0) / 1000).toFixed(1)}s`,
+			);
+			results.push({ seed, seasonLog });
+		}
+		fs.writeFileSync(outputPath, JSON.stringify(results, null, 2));
+		expect(results.length).toBe(seeds.length);
+	},
+);
+
+// --- Dev test ---------------------------------------------------------------
 
 test.skipIf(!process.env.COLA_SPIKE)(
 	"full-engine COLA driver scaffold: cfg 1 (Classic E=14) runs end-to-end",
